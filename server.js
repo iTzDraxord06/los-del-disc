@@ -4,6 +4,8 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 process.on('uncaughtException', (err) => console.error('ERROR NO CONTROLADO:', err));
 process.on('unhandledRejection', (err) => console.error('PROMESA NO CONTROLADA:', err));
@@ -13,24 +15,30 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 1. Configuración y entrega de imágenes subidas
+// 1. Configuración de Cloudinary (toma las variables de Render o respaldo local)
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 't0q7ltl',
+    api_key: process.env.CLOUDINARY_API_KEY || '421676215584541',
+    api_secret: process.env.CLOUDINARY_API_SECRET || 'RBJuAR6QFd4D0EjOGvvwmBPtiGg'
+});
+
+// 2. Storage de Multer apuntando directo a Cloudinary
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'los-del-disc',
+        allowed_formats: ['jpg', 'png', 'jpeg', 'webp']
+    }
+});
+const upload = multer({ storage });
+
+// Servir estáticos locales (frontend e imágenes base)
 const rutaImagenes = path.join(__dirname, 'imagenes');
 if (!fs.existsSync(rutaImagenes)) {
     fs.mkdirSync(rutaImagenes, { recursive: true });
 }
 app.use('/imagenes', express.static(rutaImagenes));
-
-// 2. Servir archivos estáticos del frontend
 app.use(express.static(path.join(__dirname)));
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, rutaImagenes),
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname).toLowerCase();
-        cb(null, file.fieldname + '-' + Date.now() + '-' + Math.round(Math.random() * 1E6) + ext);
-    }
-});
-const upload = multer({ storage });
 
 const dbConfig = {
     user: 'admin_discord',
@@ -99,12 +107,11 @@ app.get('/api/amigos', async (req, res) => {
         const fotosResult = await pool.request().query('SELECT Id, AmigoId, FotoUrl FROM FotosAmigo ORDER BY Id ASC');
 
         const amigos = amigosResult.recordset.map(amigo => {
-            // 1. Buscamos en la tabla nueva FotosAmigo
             let fotos = fotosResult.recordset
                 .filter(f => f.AmigoId === amigo.Id)
                 .map(f => f.FotoUrl);
 
-            // 2. RESPALDO: Si no hay fotos en la tabla relacional, leemos las columnas antiguas
+            // Respaldo de compatibilidad por si alguna quedó en Waifu1-3
             if (fotos.length === 0) {
                 if (amigo.Waifu1) fotos.push(amigo.Waifu1);
                 if (amigo.Waifu2) fotos.push(amigo.Waifu2);
@@ -116,7 +123,6 @@ app.get('/api/amigos', async (req, res) => {
                 DiscordUsername: amigo.DiscordTag || '',
                 Apodo: amigo.NombreVisible || 'Sin nombre',
                 AvatarUrl: amigo.FotoRuta || 'imagenes/default.png',
-                // Lee el rol real de la base de datos (RolServidor o Rol) si existe, si no usa 'Miembro'
                 RolServidor: amigo.RolServidor || amigo.Rol || 'Miembro',
                 Fotos: fotos
             };
@@ -140,7 +146,8 @@ app.post('/api/amigos', upload.any(), async (req, res) => {
         const avatarF = files.find(f => f.fieldname === 'avatarFile');
         const waifuFiles = files.filter(f => f.fieldname === 'waifuFiles');
 
-        const fotoRuta = avatarF ? `imagenes/${avatarF.filename}` : 'imagenes/default.png';
+        // Con Cloudinary, la URL permanente viene en file.path
+        const fotoRuta = avatarF ? avatarF.path : 'imagenes/default.png';
 
         const insertRes = await pool.request()
             .input('tag', sql.NVarChar, body.discordUsername || '')
@@ -157,7 +164,7 @@ app.post('/api/amigos', upload.any(), async (req, res) => {
         for (const file of waifuFiles) {
             await pool.request()
                 .input('amigoId', sql.Int, amigoId)
-                .input('fotoUrl', sql.NVarChar, `imagenes/${file.filename}`)
+                .input('fotoUrl', sql.NVarChar, file.path)
                 .query('INSERT INTO FotosAmigo (AmigoId, FotoUrl) VALUES (@amigoId, @fotoUrl)');
         }
 
@@ -181,7 +188,7 @@ app.put('/api/amigos/:id', upload.any(), async (req, res) => {
         const avatarF = files.find(f => f.fieldname === 'avatarFile');
         const waifuFiles = files.filter(f => f.fieldname === 'waifuFiles');
 
-        const fotoRuta = avatarF ? `imagenes/${avatarF.filename}` : (body.avatarUrlActual || 'imagenes/default.png');
+        const fotoRuta = avatarF ? avatarF.path : (body.avatarUrlActual || 'imagenes/default.png');
 
         await pool.request()
             .input('id', sql.Int, id)
@@ -201,7 +208,7 @@ app.put('/api/amigos/:id', upload.any(), async (req, res) => {
         for (const file of waifuFiles) {
             await pool.request()
                 .input('amigoId', sql.Int, id)
-                .input('fotoUrl', sql.NVarChar, `imagenes/${file.filename}`)
+                .input('fotoUrl', sql.NVarChar, file.path)
                 .query('INSERT INTO FotosAmigo (AmigoId, FotoUrl) VALUES (@amigoId, @fotoUrl)');
         }
 
@@ -291,7 +298,7 @@ app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
         if (rolSolicitante !== 'Admin') {
             return res.status(403).json({ error: 'Acceso denegado: Solo Admin.' });
         }
-        const imgUrl = req.file ? `imagenes/${req.file.filename}` : '';
+        const imgUrl = req.file ? req.file.path : '';
         await pool.request()
             .input('t', sql.NVarChar, titulo || '')
             .input('d', sql.NVarChar, descripcion || '')
