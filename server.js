@@ -15,24 +15,39 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 1. Configuración de Cloudinary (toma las variables de Render o respaldo local)
+// 1. Configuración de Cloudinary
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 't0q7ltl',
     api_key: process.env.CLOUDINARY_API_KEY || '421676215584541',
     api_secret: process.env.CLOUDINARY_API_SECRET || 'RBJuAR6QFd4D0EjOGvvwmBPtiGg'
 });
 
-// 2. Storage de Multer apuntando directo a Cloudinary
+// 2. Storage de Multer flexible para dispositivos móviles
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
         folder: 'los-del-disc',
-        allowed_formats: ['jpg', 'png', 'jpeg', 'webp']
+        resource_type: 'auto'
     }
 });
-const upload = multer({ storage });
 
-// Servir estáticos locales (frontend e imágenes base)
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 15 * 1024 * 1024 } // Hasta 15MB por archivo
+});
+
+// Middleware para capturar errores de subida de Multer antes de que boten error 500 HTML
+const manejarSubida = (req, res, next) => {
+    upload.any()(req, res, (err) => {
+        if (err) {
+            console.error('Error al procesar archivos en Cloudinary/Multer:', err);
+            return res.status(400).json({ error: 'Error al subir la imagen: ' + err.message });
+        }
+        next();
+    });
+};
+
+// Servir estáticos locales
 const rutaImagenes = path.join(__dirname, 'imagenes');
 if (!fs.existsSync(rutaImagenes)) {
     fs.mkdirSync(rutaImagenes, { recursive: true });
@@ -80,6 +95,7 @@ app.post('/api/login', async (req, res) => {
             res.status(401).json({ exito: false, mensaje: 'Usuario o contraseña incorrectos' });
         }
     } catch (err) {
+        console.error('Error en /api/login:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -95,6 +111,7 @@ app.post('/api/register', async (req, res) => {
             .query('INSERT INTO UsuariosWeb (Username, Password, NombreVisible, RolApp) VALUES (@u, @p, @n, @r)');
         res.json({ exito: true, mensaje: 'Usuario registrado con éxito.' });
     } catch (err) {
+        console.error('Error en /api/register:', err);
         res.status(400).json({ error: 'El usuario ya existe o hubo un problema.' });
     }
 });
@@ -111,7 +128,6 @@ app.get('/api/amigos', async (req, res) => {
                 .filter(f => f.AmigoId === amigo.Id)
                 .map(f => f.FotoUrl);
 
-            // Respaldo de compatibilidad por si alguna quedó en Waifu1-3
             if (fotos.length === 0) {
                 if (amigo.Waifu1) fotos.push(amigo.Waifu1);
                 if (amigo.Waifu2) fotos.push(amigo.Waifu2);
@@ -130,11 +146,12 @@ app.get('/api/amigos', async (req, res) => {
 
         res.json(amigos);
     } catch (err) {
+        console.error('Error en GET /api/amigos:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
-app.post('/api/amigos', upload.any(), async (req, res) => {
+app.post('/api/amigos', manejarSubida, async (req, res) => {
     try {
         const body = req.body || {};
         const files = req.files || [];
@@ -146,7 +163,6 @@ app.post('/api/amigos', upload.any(), async (req, res) => {
         const avatarF = files.find(f => f.fieldname === 'avatarFile');
         const waifuFiles = files.filter(f => f.fieldname === 'waifuFiles');
 
-        // Con Cloudinary, la URL permanente viene en file.path
         const fotoRuta = avatarF ? avatarF.path : 'imagenes/default.png';
 
         const insertRes = await pool.request()
@@ -170,12 +186,12 @@ app.post('/api/amigos', upload.any(), async (req, res) => {
 
         res.json({ mensaje: 'Amigo agregado exitosamente' });
     } catch (err) {
-        console.error('Error al insertar:', err);
-        res.status(500).json({ error: 'Error interno en la base de datos.' });
+        console.error('Error en POST /api/amigos:', err);
+        res.status(500).json({ error: err.message || 'Error interno en la base de datos.' });
     }
 });
 
-app.put('/api/amigos/:id', upload.any(), async (req, res) => {
+app.put('/api/amigos/:id', manejarSubida, async (req, res) => {
     try {
         const { id } = req.params;
         const body = req.body || {};
@@ -214,8 +230,8 @@ app.put('/api/amigos/:id', upload.any(), async (req, res) => {
 
         res.json({ mensaje: 'Perfil actualizado exitosamente' });
     } catch (err) {
-        console.error('Error al actualizar:', err);
-        res.status(500).json({ error: 'Error interno en la base de datos.' });
+        console.error('Error en PUT /api/amigos:', err);
+        res.status(500).json({ error: err.message || 'Error interno en la base de datos.' });
     }
 });
 
@@ -234,6 +250,7 @@ app.delete('/api/amigos/:id', async (req, res) => {
 
         res.json({ mensaje: 'Amigo eliminado correctamente' });
     } catch (err) {
+        console.error('Error en DELETE /api/amigos:', err);
         res.status(500).json({ error: 'No se pudo eliminar el registro.' });
     }
 });
@@ -247,6 +264,7 @@ app.get('/api/comentarios/:amigoId', async (req, res) => {
             .query('SELECT * FROM Comentarios WHERE AmigoId = @amigoId ORDER BY FechaPublicacion DESC');
         res.json(result.recordset);
     } catch (err) {
+        console.error('Error en GET /api/comentarios:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -261,6 +279,7 @@ app.post('/api/comentarios', async (req, res) => {
             .query('INSERT INTO Comentarios (AmigoId, Autor, Contenido) VALUES (@amigoId, @autor, @contenido)');
         res.json({ mensaje: 'Comentario publicado' });
     } catch (err) {
+        console.error('Error en POST /api/comentarios:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -279,6 +298,7 @@ app.delete('/api/comentarios/:id', async (req, res) => {
             .query('DELETE FROM Comentarios WHERE Id = @id');
         res.json({ mensaje: 'Comentario eliminado correctamente' });
     } catch (err) {
+        console.error('Error al eliminar comentario:', err);
         res.status(500).json({ error: 'No se pudo eliminar el comentario.' });
     }
 });
@@ -288,6 +308,7 @@ app.get('/api/anuncio', async (req, res) => {
         const result = await pool.request().query('SELECT * FROM AnuncioGlobal ORDER BY Id DESC');
         res.json(result.recordset);
     } catch (err) {
+        console.error('Error en GET /api/anuncio:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -306,6 +327,7 @@ app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
             .query('INSERT INTO AnuncioGlobal (Titulo, Descripcion, ImagenUrl, Activo) VALUES (@t, @d, @img, 1)');
         res.json({ mensaje: 'Afiche publicado' });
     } catch (err) {
+        console.error('Error en POST /api/anuncio:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -322,6 +344,7 @@ app.delete('/api/anuncio/:id', async (req, res) => {
             .query('DELETE FROM AnuncioGlobal WHERE Id = @id');
         res.json({ mensaje: 'Afiche eliminado' });
     } catch (err) {
+        console.error('Error en DELETE /api/anuncio:', err);
         res.status(500).json({ error: err.message });
     }
 });
