@@ -1,4 +1,4 @@
-const API_AUTH = 'http://localhost:3000/api';
+const API_URL = '/api';
 
 // Elementos de la interfaz de login
 const tabLogin = document.getElementById('tabLogin');
