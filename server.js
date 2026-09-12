@@ -278,7 +278,7 @@ app.delete('/api/comentarios/:id', async (req, res) => {
 
 app.get('/api/anuncio', async (req, res) => {
     try {
-        const result = await pool.request().query('SELECT * FROM Afiches ORDER BY Id DESC');
+        const result = await pool.request().query('SELECT * FROM AnuncioGlobal ORDER BY Id DESC');
         res.json(result.recordset);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -296,7 +296,7 @@ app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
             .input('t', sql.NVarChar, titulo || '')
             .input('d', sql.NVarChar, descripcion || '')
             .input('img', sql.NVarChar, imgUrl)
-            .query('INSERT INTO Afiches (Titulo, Descripcion, ImagenUrl) VALUES (@t, @d, @img)');
+            .query('INSERT INTO AnuncioGlobal (Titulo, Descripcion, ImagenUrl, Activo) VALUES (@t, @d, @img, 1)');
         res.json({ mensaje: 'Afiche publicado' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -312,7 +312,7 @@ app.delete('/api/anuncio/:id', async (req, res) => {
         }
         await pool.request()
             .input('id', sql.Int, id)
-            .query('DELETE FROM Afiches WHERE Id = @id');
+            .query('DELETE FROM AnuncioGlobal WHERE Id = @id');
         res.json({ mensaje: 'Afiche eliminado' });
     } catch (err) {
         res.status(500).json({ error: err.message });
