@@ -570,39 +570,60 @@ body {
 }
 
 @media (max-width: 768px) {
-    .btn-hamburguesa {
-        display: block;
+    /* Bloqueo total de desborde lateral */
+    html, body {
+        overflow-x: hidden;
+        max-width: 100vw;
     }
 
+    /* 1. Header adaptativo de 2 filas si es necesario */
     .navbar {
-        padding: 0.6rem 0.8rem;
+        padding: 0.5rem 0.8rem;
+        gap: 0.5rem;
+        flex-wrap: wrap;
     }
 
-    .logo h2 {
-        display: none; /* En pantallas pequeñas se oculta el texto para ahorrar espacio */
+    .btn-hamburguesa {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 
-    .nav-derecha {
+    .logo {
         gap: 0.4rem;
     }
 
-    .btn-secundario {
-        padding: 0.4rem 0.6rem;
-        font-size: 0.78rem;
+    .logo h2 {
+        display: none; /* Ahorra espacio clave en móvil */
     }
 
-    /* Oculta textos largos de los botones de admin para dejar solo el emoji */
-    .btn-secundario span.txt-btn,
-    .btn-secundario span:not(:first-child) {
+    /* Contenedor derecho: scroll horizontal suave para acciones si no caben */
+    .nav-derecha {
+        gap: 0.4rem;
+        max-width: calc(100vw - 80px);
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Oculta barra fea en móvil */
+    }
+
+    .nav-derecha::-webkit-scrollbar {
         display: none;
+    }
+
+    .btn-secundario, .btn-primary {
+        padding: 0.4rem 0.65rem;
+        font-size: 0.78rem;
+        flex-shrink: 0;
     }
 
     .sesion-info {
         gap: 0.4rem;
+        flex-shrink: 0;
     }
 
     .sesion-info span {
-        max-width: 85px;
+        max-width: 90px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -614,88 +635,84 @@ body {
         font-size: 0.75rem;
     }
 
+    /* 2. Estructura principal y Drawer */
     .contenedor-principal {
         grid-template-columns: 1fr;
-        height: calc(100vh - 55px);
+        height: calc(100vh - 60px);
     }
 
     .seccion-amigos {
-        position: absolute;
+        position: fixed;
         top: 0;
         left: 0;
-        width: 270px;
-        height: 100%;
-        z-index: 1500;
+        width: 280px;
+        max-width: 80vw;
+        height: 100vh;
+        z-index: 2500;
         transform: translateX(-100%);
-        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
+        box-shadow: 6px 0 25px rgba(0, 0, 0, 0.7);
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .seccion-amigos.abierto {
         transform: translateX(0);
     }
 
+    /* 3. Muro y Contenido de Perfil */
     .seccion-muro {
+        padding: 0.8rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .perfil-info {
         padding: 1rem;
+    }
+
+    .perfil-avatar-wrapper {
+        top: -35px;
+        left: 15px;
     }
 
     .perfil-avatar-wrapper img {
         width: 70px;
         height: 70px;
+        border-width: 4px;
     }
 
     .perfil-textos {
-        margin-top: 35px;
+        margin-top: 40px;
     }
 
     .perfil-textos h2 {
-        font-size: 1.2rem;
+        font-size: 1.25rem;
     }
 
+    /* Waifus en cuadrícula responsiva sin deformar */
     .grid-waifus {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 10px;
     }
 
     .grid-waifus img {
-        height: 120px;
+        height: 140px;
+        border-radius: 8px;
     }
 
-    .modal-card {
-        width: 92%;
-        max-width: 100%;
-        padding: 1.2rem;
-        max-height: 90vh;
-        overflow-y: auto;
-    }
-
-    .campo input[type="file"] {
-        padding: 0.5rem;
-        font-size: 0.78rem;
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.5rem;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        overflow: hidden;
-    }
-
-    .campo input[type="file"]::file-selector-button {
-        width: 100%;
-        margin-right: 0;
-        padding: 0.6rem;
-        text-align: center;
+    /* 4. Tarjeta de Afiches centrada y ajustada a pantalla chica */
+    .feed-afiches {
+        padding: 5px;
     }
 
     .tarjeta-afiche {
         padding: 12px;
-        max-width: 100%;
+        border-radius: 10px;
     }
 
     .tarjeta-afiche img {
-        display: block;
-        margin: 0 auto 10px auto;
-        max-height: 380px;
-        width: auto;
+        max-height: 340px;
+        width: 100%;
+        object-fit: contain;
     }
 
     .tarjeta-afiche h2 {
@@ -704,5 +721,13 @@ body {
 
     .tarjeta-afiche p {
         font-size: 0.85rem;
+    }
+
+    /* Modal adaptado */
+    .modal-card {
+        width: 95%;
+        padding: 1.2rem;
+        max-height: 90vh;
+        overflow-y: auto;
     }
 }

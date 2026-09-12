@@ -6,7 +6,7 @@ if (!usuarioSesion) {
 }
 
 // --- CONTROL DE INACTIVIDAD (AUTO LOGOUT) ---
-const TIEMPO_INACTIVIDAD = 15 * 60 * 1000; // 15 minutos en milisegundos
+const TIEMPO_INACTIVIDAD = 15 * 60 * 1000; // 15 minutos
 let temporizadorInactividad;
 
 function cerrarSesionPorInactividad() {
@@ -20,13 +20,11 @@ function reiniciarTemporizadorInactividad() {
     temporizadorInactividad = setTimeout(cerrarSesionPorInactividad, TIEMPO_INACTIVIDAD);
 }
 
-// Eventos que detectan actividad real del usuario
 const eventosActividad = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
 eventosActividad.forEach(evento => {
     window.addEventListener(evento, reiniciarTemporizadorInactividad, { passive: true });
 });
 
-// Arranca el temporizador apenas carga la aplicación
 reiniciarTemporizadorInactividad();
 // --------------------------------------------
 
@@ -43,6 +41,7 @@ const btnInicio = document.getElementById('btnInicio');
 const btnVolverInicio = document.getElementById('btnVolverInicio');
 
 const seccionAmigos = document.querySelector('.seccion-amigos');
+const seccionMuro = document.getElementById('seccionMuro');
 const listaAmigosEl = document.getElementById('listaAmigos');
 const muroVacioEl = document.getElementById('muroVacio');
 const muroDetalleEl = document.getElementById('muroDetalle');
@@ -73,6 +72,13 @@ const formAfiche = document.getElementById('formAfiche');
 const feedAfiches = document.getElementById('feedAfiches');
 const aficheDefault = document.getElementById('aficheDefault');
 
+// Función utilitaria para cerrar el drawer en móviles
+function cerrarMenuLateral() {
+    if (seccionAmigos && seccionAmigos.classList.contains('abierto')) {
+        seccionAmigos.classList.remove('abierto');
+    }
+}
+
 if (usuarioSesion) {
     labelUsuario.textContent = `${usuarioSesion.NombreVisible} [${usuarioSesion.RolApp}]`;
     if (inputAutor) inputAutor.value = usuarioSesion.NombreVisible;
@@ -91,12 +97,21 @@ if (btnCerrarSesion) {
 }
 
 if (btnMenu) {
-    btnMenu.addEventListener('click', () => {
+    btnMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
         seccionAmigos.classList.toggle('abierto');
     });
 }
 
+// Cerrar drawer al tocar el muro principal en pantallas móviles
+if (seccionMuro) {
+    seccionMuro.addEventListener('click', () => {
+        cerrarMenuLateral();
+    });
+}
+
 function volverAlInicio() {
+    cerrarMenuLateral();
     amigoSeleccionadoId = null;
     amigoSeleccionado = null;
 
@@ -121,6 +136,8 @@ if (btnInicio) {
 if (btnVolverInicio) {
     btnVolverInicio.addEventListener('click', volverAlInicio);
 }
+
+// ================= AFICHES =================
 
 async function cargarAfiche() {
     try {
@@ -191,6 +208,8 @@ async function cargarAfiche() {
     }
 }
 
+// ================= GESTIÓN DE AMIGOS =================
+
 async function cargarAmigos() {
     try {
         const res = await fetch(`${API_URL}/amigos`);
@@ -216,7 +235,6 @@ async function cargarAmigos() {
             `;
             card.addEventListener('click', () => {
                 seleccionarAmigo(amigo);
-                if (seccionAmigos) seccionAmigos.classList.remove('abierto');
             });
             listaAmigosEl.appendChild(card);
         });
@@ -232,6 +250,8 @@ async function cargarAmigos() {
 }
 
 function seleccionarAmigo(amigo) {
+    cerrarMenuLateral();
+
     amigoSeleccionado = amigo;
     amigoSeleccionadoId = amigo.Id;
 
@@ -287,6 +307,8 @@ if (btnEliminarPerfil) {
     });
 }
 
+// ================= COMENTARIOS =================
+
 async function cargarComentarios(amigoId) {
     listaComentariosEl.innerHTML = '<p class="cargando">Cargando comentarios...</p>';
     try {
@@ -315,7 +337,7 @@ async function cargarComentarios(amigoId) {
                         <span class="comentario-autor">${c.Autor}</span>
                         <span class="comentario-fecha">${fecha}</span>
                     </div>
-                    ${esAdmin ? `<button class="btn-borrar-comentario" data-id="${c.Id}" title="Eliminar comentario" style="background: none; border: none; cursor: pointer; color: #ed4245; font-size: 14px;">🗑️</button>` : ''}
+                    ${esAdmin ? `<button class="btn-borrar-comentario" data-id="${c.Id}" title="Eliminar comentario" style="background: none; border: none; cursor: pointer; color: #ed4245; font-size: 14px; padding: 2px 6px;">🗑️</button>` : ''}
                 </div>
                 <p class="comentario-texto">${c.Contenido}</p>
             `;
@@ -338,7 +360,7 @@ async function cargarComentarios(amigoId) {
                             alert(data.error || 'No se pudo eliminar el comentario.');
                         }
                     } catch (err) {
-                        console.error(err);
+                        console.error('Error al borrar comentario:', err);
                         alert('Error de conexión al eliminar.');
                     }
                 });
@@ -374,9 +396,11 @@ formComentario.addEventListener('submit', async (e) => {
             cargarComentarios(amigoSeleccionadoId);
         }
     } catch (err) {
-        console.error(err);
+        console.error('Error al enviar comentario:', err);
     }
 });
+
+// ================= MODAL AMIGO (AGREGAR / EDITAR) =================
 
 if (btnAbrirModal) {
     btnAbrirModal.addEventListener('click', () => {
@@ -461,7 +485,7 @@ formNuevoAmigo.addEventListener('submit', async (e) => {
             alert(resp.error || 'No se pudo completar la operación.');
         }
     } catch (err) {
-        console.error(err);
+        console.error('Detalle del fallo:', err);
         alert('Error al enviar la solicitud: ' + err.message);
     } finally {
         if (btnGuardarAmigo) {
@@ -470,6 +494,8 @@ formNuevoAmigo.addEventListener('submit', async (e) => {
         }
     }
 });
+
+// ================= MODAL AFICHE =================
 
 if (btnAbrirModalAfiche) {
     btnAbrirModalAfiche.addEventListener('click', () => {
