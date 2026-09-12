@@ -152,10 +152,12 @@ body {
     padding: 0;
     overflow: hidden;
     transition: transform 0.3s ease;
+    box-sizing: border-box;
 }
 
 .amigos-header {
     padding: 1.2rem 1.2rem 0.6rem 1.2rem;
+    flex-shrink: 0;
 }
 
 .amigos-header h3 {
@@ -171,7 +173,8 @@ body {
     gap: 0.5rem;
     padding: 0 1.2rem 1.2rem 1.2rem;
     overflow-y: auto;
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 0; /* Impide que desplace el panel de usuario fuera de pantalla */
 }
 
 /* Panel inferior tipo Discord */
@@ -183,6 +186,7 @@ body {
     padding: 0.75rem 1rem;
     border-top: 1px solid var(--borde);
     margin-top: auto;
+    flex-shrink: 0; /* Asegura que el botón salir no se aplaste */
     z-index: 10;
 }
 
@@ -656,11 +660,16 @@ body {
         left: 0;
         width: 280px;
         max-width: 80vw;
-        height: 100vh;
+        height: 100%;
+        height: 100dvh; /* Altura dinámica real para navegadores móviles */
         z-index: 2500;
         transform: translateX(-100%);
         box-shadow: 6px 0 25px rgba(0, 0, 0, 0.7);
         transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
     }
 
     .seccion-amigos.abierto {
