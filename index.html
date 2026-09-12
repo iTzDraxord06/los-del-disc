@@ -22,8 +22,7 @@
         <div class="nav-derecha">
             <button id="btnVolverInicio" class="btn-secundario">🏠 Inicio</button>
             <button id="btnAbrirModal" class="btn-primary oculto">+ Nuevo Amigo</button>
-            <button id="btnAbrirModalAfiche" class="btn-primary oculto" style="background-color: #5865F2;">📢 Publicar
-                Afiche</button>
+            <button id="btnAbrirModalAfiche" class="btn-primary oculto" style="background-color: #5865F2;">📢 Publicar Afiche</button>
         </div>
     </header>
 
@@ -62,8 +61,7 @@
                         <img id="muroAvatar" src="" alt="Avatar">
                     </div>
                     <div class="perfil-textos">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                             <div>
                                 <h2 id="muroApodo">Apodo</h2>
                                 <span id="muroTag" class="discord-tag">@username</span>
@@ -71,8 +69,7 @@
                             </div>
                             <div style="display: flex; gap: 8px;">
                                 <button id="btnEditarPerfil" class="btn-secundario oculto">✏️ Editar</button>
-                                <button id="btnEliminarPerfil" class="btn-secundario oculto"
-                                    style="background-color: #ed4245; color: #fff; border: none;">🗑️ Eliminar</button>
+                                <button id="btnEliminarPerfil" class="btn-secundario oculto" style="background-color: #ed4245; color: #fff; border: none;">🗑️ Eliminar</button>
                             </div>
                         </div>
                         <p id="muroDesc" class="bio-texto"></p>
@@ -91,8 +88,7 @@
 
                     <form id="formComentario" class="form-comentario">
                         <input type="text" id="inputAutor" placeholder="Tu nombre / apodo" required readonly>
-                        <textarea id="inputComentario" placeholder="Escribe un comentario en su muro..." required
-                            maxlength="500"></textarea>
+                        <textarea id="inputComentario" placeholder="Escribe un comentario en su muro..." required maxlength="500"></textarea>
                         <button type="submit" class="btn-primary">Enviar comentario</button>
                     </form>
 
@@ -102,6 +98,7 @@
         </section>
     </main>
 
+    <!-- Modal Agregar/Editar Amigo -->
     <div id="modalAmigo" class="modal oculto">
         <div class="modal-card">
             <div class="modal-header">
@@ -143,6 +140,7 @@
         </div>
     </div>
 
+    <!-- Modal Afiche -->
     <div id="modalAfiche" class="modal oculto">
         <div class="modal-card">
             <div class="modal-header">
@@ -165,6 +163,12 @@
                 <button type="submit" id="btnGuardarAfiche" class="btn-primary btn-block">Publicar Afiche</button>
             </form>
         </div>
+    </div>
+
+    <!-- Modal Visor de Imagen (Lightbox) -->
+    <div id="modalVisor" class="modal-visor oculto">
+        <span id="btnCerrarVisor" class="btn-cerrar-visor" title="Cerrar">&times;</span>
+        <img id="imagenVisorAmpliada" src="" alt="Vista previa ampliada">
     </div>
 
     <script src="js/app.js"></script>

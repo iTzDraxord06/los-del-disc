@@ -72,6 +72,34 @@ const formAfiche = document.getElementById('formAfiche');
 const feedAfiches = document.getElementById('feedAfiches');
 const aficheDefault = document.getElementById('aficheDefault');
 
+// Visor de Imágenes (Lightbox)
+const modalVisor = document.getElementById('modalVisor');
+const imagenVisorAmpliada = document.getElementById('imagenVisorAmpliada');
+const btnCerrarVisor = document.getElementById('btnCerrarVisor');
+
+function abrirVisor(url) {
+    if (!url) return;
+    imagenVisorAmpliada.src = url;
+    modalVisor.classList.remove('oculto');
+}
+
+function cerrarVisor() {
+    modalVisor.classList.add('oculto');
+    imagenVisorAmpliada.src = '';
+}
+
+if (btnCerrarVisor) btnCerrarVisor.addEventListener('click', cerrarVisor);
+if (modalVisor) {
+    modalVisor.addEventListener('click', (e) => {
+        if (e.target === modalVisor) cerrarVisor();
+    });
+}
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modalVisor && !modalVisor.classList.contains('oculto')) {
+        cerrarVisor();
+    }
+});
+
 function cerrarMenuLateral() {
     if (seccionAmigos && seccionAmigos.classList.contains('abierto')) {
         seccionAmigos.classList.remove('abierto');
@@ -266,13 +294,15 @@ function seleccionarAmigo(amigo) {
     if (btnEditarPerfil) btnEditarPerfil.classList.toggle('oculto', !esAdmin);
     if (btnEliminarPerfil) btnEliminarPerfil.classList.toggle('oculto', !esAdmin);
 
-    // Muestra todas las fotos que tenga el amigo (sin tope de 3)
     gridWaifus.innerHTML = '';
     const fotos = amigo.Fotos || [];
     fotos.forEach(src => {
         const img = document.createElement('img');
         img.src = src;
-        img.alt = 'Foto';
+        img.alt = 'Foto Galería';
+        img.title = 'Haz clic para ampliar';
+        // Abrir visor al tocar o hacer clic
+        img.addEventListener('click', () => abrirVisor(src));
         gridWaifus.appendChild(img);
     });
 
@@ -315,7 +345,7 @@ async function cargarComentarios(amigoId) {
         const comentarios = await res.json();
         listaComentariosEl.innerHTML = '';
 
-        if (comentarios.length === 0) {
+        if (!Array.isArray(comentarios) || comentarios.length === 0) {
             listaComentariosEl.innerHTML = '<p class="sin-datos">Nadie ha comentado aún. ¡Sé el primero!</p>';
             return;
         }
@@ -323,10 +353,11 @@ async function cargarComentarios(amigoId) {
         const esAdmin = usuarioSesion && usuarioSesion.RolApp === 'Admin';
 
         comentarios.forEach(c => {
-            const fecha = new Date(c.FechaPublicacion).toLocaleString('es-ES', {
+            const rawFecha = c.Fecha;
+            const fechaStr = rawFecha ? new Date(rawFecha).toLocaleString('es-ES', {
                 dateStyle: 'short',
                 timeStyle: 'short'
-            });
+            }) : '';
 
             const card = document.createElement('div');
             card.className = 'comentario-item';
@@ -334,11 +365,11 @@ async function cargarComentarios(amigoId) {
                 <div class="comentario-header" style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         <span class="comentario-autor">${c.Autor}</span>
-                        <span class="comentario-fecha">${fecha}</span>
+                        <span class="comentario-fecha">${fechaStr}</span>
                     </div>
                     ${esAdmin ? `<button class="btn-borrar-comentario" data-id="${c.Id}" title="Eliminar comentario" style="background: none; border: none; cursor: pointer; color: #ed4245; font-size: 14px; padding: 2px 6px;">🗑️</button>` : ''}
                 </div>
-                <p class="comentario-texto">${c.Contenido}</p>
+                <p class="comentario-texto">${c.Texto || ''}</p>
             `;
 
             if (esAdmin) {
@@ -442,7 +473,6 @@ formNuevoAmigo.addEventListener('submit', async (e) => {
     formData.append('descripcion', document.getElementById('nuevaDesc').value.trim());
     formData.append('rolSolicitante', usuarioSesion.RolApp);
 
-    // Avatar
     const avatarInput = document.getElementById('inputAvatarFile');
     if (avatarInput && avatarInput.files && avatarInput.files[0]) {
         formData.append('avatarFile', avatarInput.files[0]);
@@ -450,7 +480,6 @@ formNuevoAmigo.addEventListener('submit', async (e) => {
         formData.append('avatarUrlActual', amigoSeleccionado.AvatarUrl || '');
     }
 
-    // Subir todas las fotos seleccionadas (sin límite)
     const waifuInput = document.getElementById('inputWaifuFiles');
     if (waifuInput && waifuInput.files && waifuInput.files.length > 0) {
         for (let i = 0; i < waifuInput.files.length; i++) {

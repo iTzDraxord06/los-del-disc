@@ -21,7 +21,8 @@ cloudinary.config({
     api_key: process.env.CLOUDINARY_API_KEY || '421676215584541',
     api_secret: process.env.CLOUDINARY_API_SECRET || 'RBJuAR6QFd4D0EjOGvvwmBPtiGg'
 });
-// 2. Storage de Multer flexible para dispositivos móviles
+
+// 2. Storage de Multer flexible para imágenes de móvil y PC
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
@@ -32,10 +33,9 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 15 * 1024 * 1024 } // Hasta 15MB por archivo
+    limits: { fileSize: 15 * 1024 * 1024 } // Hasta 15MB
 });
 
-// Middleware para capturar errores de subida de Multer antes de que boten error 500 HTML
 const manejarSubida = (req, res, next) => {
     upload.any()(req, res, (err) => {
         if (err) {
@@ -46,7 +46,6 @@ const manejarSubida = (req, res, next) => {
     });
 };
 
-// Servir estáticos locales
 const rutaImagenes = path.join(__dirname, 'imagenes');
 if (!fs.existsSync(rutaImagenes)) {
     fs.mkdirSync(rutaImagenes, { recursive: true });
@@ -254,13 +253,13 @@ app.delete('/api/amigos/:id', async (req, res) => {
     }
 });
 
-// ================= COMENTARIOS Y AFICHES =================
+// ================= COMENTARIOS =================
 
 app.get('/api/comentarios/:amigoId', async (req, res) => {
     try {
         const result = await pool.request()
             .input('amigoId', sql.Int, req.params.amigoId)
-            .query('SELECT * FROM Comentarios WHERE AmigoId = @amigoId ORDER BY FechaPublicacion DESC');
+            .query('SELECT Id, AmigoId, Autor, Texto, Fecha FROM Comentarios WHERE AmigoId = @amigoId ORDER BY Id DESC');
         res.json(result.recordset);
     } catch (err) {
         console.error('Error en GET /api/comentarios:', err);
@@ -274,8 +273,8 @@ app.post('/api/comentarios', async (req, res) => {
         await pool.request()
             .input('amigoId', sql.Int, amigoId)
             .input('autor', sql.NVarChar, autor)
-            .input('contenido', sql.NVarChar, contenido)
-            .query('INSERT INTO Comentarios (AmigoId, Autor, Contenido) VALUES (@amigoId, @autor, @contenido)');
+            .input('texto', sql.NVarChar, contenido)
+            .query('INSERT INTO Comentarios (AmigoId, Autor, Texto, Fecha) VALUES (@amigoId, @autor, @texto, GETDATE())');
         res.json({ mensaje: 'Comentario publicado' });
     } catch (err) {
         console.error('Error en POST /api/comentarios:', err);
@@ -301,6 +300,8 @@ app.delete('/api/comentarios/:id', async (req, res) => {
         res.status(500).json({ error: 'No se pudo eliminar el comentario.' });
     }
 });
+
+// ================= ANUNCIOS =================
 
 app.get('/api/anuncio', async (req, res) => {
     try {

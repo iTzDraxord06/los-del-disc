@@ -644,6 +644,66 @@ body {
     display: block !important;
     margin: 0 auto 12px auto !important;
 }
+/* ================= VISOR MODAL (LIGHTBOX) ================= */
+.modal-visor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.88);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    padding: 1.5rem;
+    box-sizing: border-box;
+    cursor: zoom-out;
+    backdrop-filter: blur(4px);
+}
+
+.modal-visor.oculto {
+    display: none !important;
+}
+
+.modal-visor img {
+    max-width: 92%;
+    max-height: 88vh;
+    border-radius: 8px;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.8);
+    object-fit: contain;
+    cursor: default;
+    animation: lightboxZoom 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-cerrar-visor {
+    position: absolute;
+    top: 18px;
+    right: 25px;
+    font-size: 38px;
+    color: #ffffff;
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+    line-height: 1;
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.btn-cerrar-visor:hover {
+    color: #ed4245;
+    transform: scale(1.15);
+}
+
+@keyframes lightboxZoom {
+    from {
+        transform: scale(0.88);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
 /* Adaptabilidad móvil */
 @media (max-width: 768px) {
     html, body {
