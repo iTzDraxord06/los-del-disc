@@ -19,6 +19,12 @@ if (!fs.existsSync(rutaImagenes)) {
 }
 app.use('/imagenes', express.static(rutaImagenes));
 
+app.use(express.static(__dirname));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'login.html'));
+});
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, rutaImagenes),
     filename: (req, file, cb) => {
