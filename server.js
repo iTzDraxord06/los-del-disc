@@ -17,11 +17,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // 1. Configuración de Cloudinary
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 't0q7ltl',
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 't0q7ltll',
     api_key: process.env.CLOUDINARY_API_KEY || '421676215584541',
     api_secret: process.env.CLOUDINARY_API_SECRET || 'RBJuAR6QFd4D0EjOGvvwmBPtiGg'
 });
-
 // 2. Storage de Multer flexible para dispositivos móviles
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
