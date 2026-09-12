@@ -33,14 +33,14 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 const dbConfig = {
-    user: process.env.DB_USER || 'sa',
-    password: process.env.DB_PASSWORD || 'Admin1234',
-    server: process.env.DB_SERVER || '127.0.0.1',
+    user: process.env.DB_USER || 'admin_discord',                     // Tu usuario de Azure (o local)
+    password: process.env.DB_PASSWORD || 'TuPasswordSegura123',         // Tu contraseña
+    server: process.env.DB_SERVER || 'servidordiscord-eduardo.database.windows.net', // Tu servidor de Azure
     port: parseInt(process.env.DB_PORT) || 1433,
     database: process.env.DB_NAME || 'DiscordFriendsDB',
     options: {
-        encrypt: false,
-        trustServerCertificate: true
+        encrypt: true,                         // OBLIGATORIO para Azure (true)
+        trustServerCertificate: false
     }
 };
 
