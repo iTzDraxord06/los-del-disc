@@ -37,7 +37,7 @@ async function procesarImagenWebp(file, prefijo = 'img') {
     const nombreArchivo = `${prefijo}-${Date.now()}-${Math.round(Math.random() * 1E6)}.webp`;
     const rutaDestino = path.join(rutaImagenes, nombreArchivo);
 
-    // Si es un GIF, podemos guardarlo tal cual o procesarlo animado
+    // Si es un GIF, se procesa conservando la animación
     const esGif = file.mimetype === 'image/gif';
 
     if (esGif) {
@@ -46,7 +46,7 @@ async function procesarImagenWebp(file, prefijo = 'img') {
             .toFile(rutaDestino);
     } else {
         await sharp(file.buffer)
-            .resize({ width: 1200, withoutEnlargement: true }) // Evita que suban imágenes gigantescas de 4000px
+            .resize({ width: 1200, withoutEnlargement: true }) // Evita subir resoluciones gigantescas
             .webp({ quality: 80 })
             .toFile(rutaDestino);
     }
@@ -75,7 +75,10 @@ sql.connect(dbConfig)
     .catch(err => console.error('Error BD:', err.message));
 
 app.post('/api/login', async (req, res) => {
-    const { username, password } = req.body || {};
+    let { username, password } = req.body || {};
+    username = (username || '').trim().toLowerCase();
+    password = (password || '').trim();
+
     try {
         const result = await pool.request()
             .input('u', sql.NVarChar, username)
@@ -93,7 +96,24 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.post('/api/register', async (req, res) => {
-    const { username, password, nombreVisible } = req.body || {};
+    let { username, password, nombreVisible } = req.body || {};
+
+    // Sanitización: eliminar espacios inválidos
+    username = (username || '').trim().toLowerCase().replace(/\s+/g, '');
+    nombreVisible = (nombreVisible || '').trim().replace(/\s+/g, ' ');
+    password = (password || '').trim();
+
+    // Validaciones estrictas
+    if (!username || username.length < 3) {
+        return res.status(400).json({ error: 'El usuario debe tener al menos 3 caracteres y no contener espacios.' });
+    }
+    if (!nombreVisible || nombreVisible.length < 2) {
+        return res.status(400).json({ error: 'El nombre visible debe contener al menos 2 caracteres válidos.' });
+    }
+    if (!password || password.length < 4) {
+        return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres.' });
+    }
+
     try {
         await pool.request()
             .input('u', sql.NVarChar, username)
@@ -101,8 +121,12 @@ app.post('/api/register', async (req, res) => {
             .input('n', sql.NVarChar, nombreVisible)
             .input('r', sql.NVarChar, 'Lector')
             .query('INSERT INTO UsuariosWeb (Username, Password, NombreVisible, RolApp) VALUES (@u, @p, @n, @r)');
+            
         res.json({ exito: true, mensaje: 'Usuario registrado con éxito.' });
     } catch (err) {
+        if (err.number === 2627) {
+            return res.status(400).json({ error: 'Ese nombre de usuario ya se encuentra registrado.' });
+        }
         res.status(400).json({ error: 'El usuario ya existe o hubo un problema.' });
     }
 });
@@ -134,11 +158,15 @@ app.post('/api/amigos', upload.any(), async (req, res) => {
         const w2 = waifuFiles[1] ? await procesarImagenWebp(waifuFiles[1], 'waifu2') : '';
         const w3 = waifuFiles[2] ? await procesarImagenWebp(waifuFiles[2], 'waifu3') : '';
 
+        const discordUsername = (body.discordUsername || '').trim().replace(/^@/, '');
+        const apodo = (body.apodo || '').trim().replace(/\s+/g, ' ');
+        const desc = (body.descripcion || '').trim();
+
         await pool.request()
-            .input('username', sql.NVarChar, body.discordUsername || '')
-            .input('apodo', sql.NVarChar, body.apodo || '')
+            .input('username', sql.NVarChar, discordUsername)
+            .input('apodo', sql.NVarChar, apodo)
             .input('avatar', sql.NVarChar, avatarUrl)
-            .input('desc', sql.NVarChar, body.descripcion || '')
+            .input('desc', sql.NVarChar, desc)
             .input('w1', sql.NVarChar, w1)
             .input('w2', sql.NVarChar, w2)
             .input('w3', sql.NVarChar, w3)
@@ -173,12 +201,16 @@ app.put('/api/amigos/:id', upload.any(), async (req, res) => {
         const w2 = waifuFiles[1] ? await procesarImagenWebp(waifuFiles[1], 'waifu2') : (body.waifu2Actual || '');
         const w3 = waifuFiles[2] ? await procesarImagenWebp(waifuFiles[2], 'waifu3') : (body.waifu3Actual || '');
 
+        const discordUsername = (body.discordUsername || '').trim().replace(/^@/, '');
+        const apodo = (body.apodo || '').trim().replace(/\s+/g, ' ');
+        const desc = (body.descripcion || '').trim();
+
         await pool.request()
             .input('id', sql.Int, id)
-            .input('username', sql.NVarChar, body.discordUsername || '')
-            .input('apodo', sql.NVarChar, body.apodo || '')
+            .input('username', sql.NVarChar, discordUsername)
+            .input('apodo', sql.NVarChar, apodo)
             .input('avatar', sql.NVarChar, avatarUrl)
-            .input('desc', sql.NVarChar, body.descripcion || '')
+            .input('desc', sql.NVarChar, desc)
             .input('w1', sql.NVarChar, w1)
             .input('w2', sql.NVarChar, w2)
             .input('w3', sql.NVarChar, w3)
@@ -232,7 +264,14 @@ app.get('/api/comentarios/:amigoId', async (req, res) => {
 });
 
 app.post('/api/comentarios', async (req, res) => {
-    const { amigoId, autor, contenido } = req.body || {};
+    let { amigoId, autor, contenido } = req.body || {};
+    autor = (autor || '').trim();
+    contenido = (contenido || '').trim();
+
+    if (!contenido) {
+        return res.status(400).json({ error: 'El comentario no puede estar vacío.' });
+    }
+
     try {
         await pool.request()
             .input('amigoId', sql.Int, amigoId)
@@ -290,8 +329,8 @@ app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
         const imagenUrl = req.file ? await procesarImagenWebp(req.file, 'afiche') : null;
 
         await pool.request()
-            .input('t', sql.NVarChar, titulo || '')
-            .input('d', sql.NVarChar, descripcion || '')
+            .input('t', sql.NVarChar, (titulo || '').trim())
+            .input('d', sql.NVarChar, (descripcion || '').trim())
             .input('img', sql.NVarChar, imagenUrl)
             .query('INSERT INTO AnuncioGlobal (Titulo, Descripcion, ImagenUrl, Activo) VALUES (@t, @d, @img, 1)');
 
