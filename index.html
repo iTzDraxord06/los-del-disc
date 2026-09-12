@@ -22,19 +22,25 @@
             <button id="btnVolverInicio" class="btn-secundario">🏠 Inicio</button>
             <button id="btnAbrirModal" class="btn-primary oculto">+ Nuevo Amigo</button>
             <button id="btnAbrirModalAfiche" class="btn-primary oculto" style="background-color: #5865F2;">📢 Publicar Afiche</button>
-
-            <div class="sesion-info">
-                <span id="labelUsuario">Cargando...</span>
-                <button id="btnCerrarSesion" class="btn-salir">Salir</button>
-            </div>
         </div>
     </header>
 
     <main class="contenedor-principal">
         <section class="seccion-amigos">
-            <h3>Miembros del Servidor</h3>
+            <div class="amigos-header">
+                <h3>Miembros del Servidor</h3>
+            </div>
+            
             <div id="listaAmigos" class="grid-amigos">
                 <p class="cargando">Cargando amigos...</p>
+            </div>
+
+            <!-- Panel de usuario inferior estilo Discord -->
+            <div class="panel-usuario-inferior">
+                <div class="sesion-info">
+                    <span id="labelUsuario">Cargando...</span>
+                </div>
+                <button id="btnCerrarSesion" class="btn-salir" title="Cerrar sesión">Salir</button>
             </div>
         </section>
 

@@ -97,14 +97,6 @@ body {
     flex-shrink: 0;
 }
 
-.sesion-info {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    font-size: 0.85rem;
-    color: var(--text-secundario);
-}
-
 .btn-salir {
     background-color: #3f4147;
     color: var(--text-principal);
@@ -150,26 +142,64 @@ body {
     position: relative;
 }
 
+/* Contenedor vertical flexible para barra lateral */
 .seccion-amigos {
     background-color: var(--bg-lateral);
     border-right: 1px solid var(--borde);
-    padding: 1.2rem;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
     transition: transform 0.3s ease;
 }
 
-.seccion-amigos h3 {
+.amigos-header {
+    padding: 1.2rem 1.2rem 0.6rem 1.2rem;
+}
+
+.amigos-header h3 {
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-secundario);
-    margin-bottom: 0.9rem;
 }
 
 .grid-amigos {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    padding: 0 1.2rem 1.2rem 1.2rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Panel inferior tipo Discord */
+.panel-usuario-inferior {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #232428;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--borde);
+    margin-top: auto;
+    z-index: 10;
+}
+
+.panel-usuario-inferior .sesion-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-width: 170px;
+}
+
+.panel-usuario-inferior .sesion-info span {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-principal);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .amigo-card {
@@ -419,7 +449,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 2000;
+    z-index: 3000;
     padding: 1rem;
 }
 
@@ -569,18 +599,17 @@ body {
     text-align: center;
 }
 
+/* Adaptabilidad móvil */
 @media (max-width: 768px) {
-    /* Bloqueo total de desborde lateral */
     html, body {
         overflow-x: hidden;
         max-width: 100vw;
     }
 
-    /* 1. Header adaptativo de 2 filas si es necesario */
     .navbar {
         padding: 0.5rem 0.8rem;
         gap: 0.5rem;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
     }
 
     .btn-hamburguesa {
@@ -594,17 +623,16 @@ body {
     }
 
     .logo h2 {
-        display: none; /* Ahorra espacio clave en móvil */
+        display: none;
     }
 
-    /* Contenedor derecho: scroll horizontal suave para acciones si no caben */
     .nav-derecha {
         gap: 0.4rem;
-        max-width: calc(100vw - 80px);
+        max-width: calc(100vw - 70px);
         overflow-x: auto;
         white-space: nowrap;
         -webkit-overflow-scrolling: touch;
-        scrollbar-width: none; /* Oculta barra fea en móvil */
+        scrollbar-width: none;
     }
 
     .nav-derecha::-webkit-scrollbar {
@@ -617,28 +645,9 @@ body {
         flex-shrink: 0;
     }
 
-    .sesion-info {
-        gap: 0.4rem;
-        flex-shrink: 0;
-    }
-
-    .sesion-info span {
-        max-width: 90px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        font-size: 0.75rem;
-    }
-
-    .btn-salir {
-        padding: 0.4rem 0.6rem;
-        font-size: 0.75rem;
-    }
-
-    /* 2. Estructura principal y Drawer */
     .contenedor-principal {
         grid-template-columns: 1fr;
-        height: calc(100vh - 60px);
+        height: calc(100vh - 56px);
     }
 
     .seccion-amigos {
@@ -658,7 +667,6 @@ body {
         transform: translateX(0);
     }
 
-    /* 3. Muro y Contenido de Perfil */
     .seccion-muro {
         padding: 0.8rem;
         width: 100%;
@@ -688,7 +696,6 @@ body {
         font-size: 1.25rem;
     }
 
-    /* Waifus en cuadrícula responsiva sin deformar */
     .grid-waifus {
         grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
         gap: 10px;
@@ -699,7 +706,6 @@ body {
         border-radius: 8px;
     }
 
-    /* 4. Tarjeta de Afiches centrada y ajustada a pantalla chica */
     .feed-afiches {
         padding: 5px;
     }
@@ -723,7 +729,6 @@ body {
         font-size: 0.85rem;
     }
 
-    /* Modal adaptado */
     .modal-card {
         width: 95%;
         padding: 1.2rem;
