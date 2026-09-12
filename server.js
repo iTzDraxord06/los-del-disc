@@ -13,11 +13,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// 1. Configuración y entrega de imágenes subidas
 const rutaImagenes = path.join(__dirname, 'imagenes');
 if (!fs.existsSync(rutaImagenes)) {
     fs.mkdirSync(rutaImagenes, { recursive: true });
 }
 app.use('/imagenes', express.static(rutaImagenes));
+
+// 2. Servir archivos estáticos del frontend (index.html, login.html, css, js, logos, etc.)
+app.use(express.static(path.join(__dirname)));
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, rutaImagenes),
@@ -29,11 +33,11 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 const dbConfig = {
-    user: 'sa',
-    password: 'Admin1234',
-    server: '127.0.0.1',
-    port: 1433,
-    database: 'DiscordFriendsDB',
+    user: process.env.DB_USER || 'sa',
+    password: process.env.DB_PASSWORD || 'Admin1234',
+    server: process.env.DB_SERVER || '127.0.0.1',
+    port: parseInt(process.env.DB_PORT) || 1433,
+    database: process.env.DB_NAME || 'DiscordFriendsDB',
     options: {
         encrypt: false,
         trustServerCertificate: true
@@ -47,6 +51,11 @@ sql.connect(dbConfig)
         console.log('Conectado a SQL Server (DiscordFriendsDB)');
     })
     .catch(err => console.error('Error BD:', err.message));
+
+// Ruta principal por defecto: sirve index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // ================= AUTENTICACIÓN =================
 
@@ -120,7 +129,6 @@ app.post('/api/amigos', upload.any(), async (req, res) => {
 
         const avatarUrl = avatarF ? `imagenes/${avatarF.filename}` : 'imagenes/default.png';
 
-        // 1. Insertamos amigo y sacamos su ID nuevo
         const insertRes = await pool.request()
             .input('username', sql.NVarChar, body.discordUsername || '')
             .input('apodo', sql.NVarChar, body.apodo || '')
@@ -133,7 +141,6 @@ app.post('/api/amigos', upload.any(), async (req, res) => {
 
         const amigoId = insertRes.recordset[0].Id;
 
-        // 2. Guardamos todas las fotos que haya seleccionado (sin límite de 3)
         for (const file of waifuFiles) {
             await pool.request()
                 .input('amigoId', sql.Int, amigoId)
@@ -181,7 +188,6 @@ app.put('/api/amigos/:id', upload.any(), async (req, res) => {
                         Descripcion = @desc
                     WHERE Id = @id`);
 
-        // Si seleccionó fotos nuevas al editar, se agregan a la galería
         for (const file of waifuFiles) {
             await pool.request()
                 .input('amigoId', sql.Int, id)
@@ -309,6 +315,8 @@ app.delete('/api/anuncio/:id', async (req, res) => {
     }
 });
 
-app.listen(3000, () => {
-    console.log('Servidor corriendo en http://localhost:3000');
+// Puerto dinámico para Render (PORT) con respaldo a 3000
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
