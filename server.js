@@ -99,16 +99,25 @@ app.get('/api/amigos', async (req, res) => {
         const fotosResult = await pool.request().query('SELECT Id, AmigoId, FotoUrl FROM FotosAmigo ORDER BY Id ASC');
 
         const amigos = amigosResult.recordset.map(amigo => {
-            const fotos = fotosResult.recordset
+            // 1. Buscamos en la tabla nueva FotosAmigo
+            let fotos = fotosResult.recordset
                 .filter(f => f.AmigoId === amigo.Id)
                 .map(f => f.FotoUrl);
+
+            // 2. RESPALDO: Si no hay fotos en la tabla relacional, leemos las columnas antiguas
+            if (fotos.length === 0) {
+                if (amigo.Waifu1) fotos.push(amigo.Waifu1);
+                if (amigo.Waifu2) fotos.push(amigo.Waifu2);
+                if (amigo.Waifu3) fotos.push(amigo.Waifu3);
+            }
+
             return {
                 ...amigo,
-                // Traducción exacta para que app.js no reciba undefined:
                 DiscordUsername: amigo.DiscordTag || '',
                 Apodo: amigo.NombreVisible || 'Sin nombre',
                 AvatarUrl: amigo.FotoRuta || 'imagenes/default.png',
-                RolServidor: 'Miembro',
+                // Lee el rol real de la base de datos (RolServidor o Rol) si existe, si no usa 'Miembro'
+                RolServidor: amigo.RolServidor || amigo.Rol || 'Miembro',
                 Fotos: fotos
             };
         });
@@ -136,11 +145,12 @@ app.post('/api/amigos', upload.any(), async (req, res) => {
         const insertRes = await pool.request()
             .input('tag', sql.NVarChar, body.discordUsername || '')
             .input('nombre', sql.NVarChar, body.apodo || '')
+            .input('rol', sql.NVarChar, body.rol || 'Miembro')
             .input('foto', sql.NVarChar, fotoRuta)
             .input('desc', sql.NVarChar, body.descripcion || '')
-            .query(`INSERT INTO Amigos (DiscordTag, NombreVisible, FotoRuta, Descripcion) 
+            .query(`INSERT INTO Amigos (DiscordTag, NombreVisible, RolServidor, FotoRuta, Descripcion) 
                     OUTPUT INSERTED.Id
-                    VALUES (@tag, @nombre, @foto, @desc)`);
+                    VALUES (@tag, @nombre, @rol, @foto, @desc)`);
 
         const amigoId = insertRes.recordset[0].Id;
 
@@ -177,11 +187,13 @@ app.put('/api/amigos/:id', upload.any(), async (req, res) => {
             .input('id', sql.Int, id)
             .input('tag', sql.NVarChar, body.discordUsername || '')
             .input('nombre', sql.NVarChar, body.apodo || '')
+            .input('rol', sql.NVarChar, body.rol || 'Miembro')
             .input('foto', sql.NVarChar, fotoRuta)
             .input('desc', sql.NVarChar, body.descripcion || '')
             .query(`UPDATE Amigos SET 
                         DiscordTag = @tag,
                         NombreVisible = @nombre,
+                        RolServidor = @rol,
                         FotoRuta = @foto,
                         Descripcion = @desc
                     WHERE Id = @id`);
@@ -195,6 +207,7 @@ app.put('/api/amigos/:id', upload.any(), async (req, res) => {
 
         res.json({ mensaje: 'Perfil actualizado exitosamente' });
     } catch (err) {
+        console.error('Error al actualizar:', err);
         res.status(500).json({ error: 'Error interno en la base de datos.' });
     }
 });
