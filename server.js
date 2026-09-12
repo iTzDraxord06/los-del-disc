@@ -104,10 +104,10 @@ app.get('/api/amigos', async (req, res) => {
                 .map(f => f.FotoUrl);
             return {
                 ...amigo,
-                // Mapeamos los campos reales de tu BD a lo que espera el frontend
-                DiscordUsername: amigo.DiscordTag,
-                Apodo: amigo.NombreVisible,
-                AvatarUrl: amigo.FotoRuta,
+                // Traducción exacta para que app.js no reciba undefined:
+                DiscordUsername: amigo.DiscordTag || '',
+                Apodo: amigo.NombreVisible || 'Sin nombre',
+                AvatarUrl: amigo.FotoRuta || 'imagenes/default.png',
                 RolServidor: 'Miembro',
                 Fotos: fotos
             };
