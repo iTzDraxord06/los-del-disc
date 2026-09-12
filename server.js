@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const sharp = require('sharp');
 
 process.on('uncaughtException', (err) => console.error('ERROR NO CONTROLADO:', err));
 process.on('unhandledRejection', (err) => console.error('PROMESA NO CONTROLADA:', err));
@@ -17,7 +18,8 @@ const rutaImagenes = path.join(__dirname, 'imagenes');
 if (!fs.existsSync(rutaImagenes)) {
     fs.mkdirSync(rutaImagenes, { recursive: true });
 }
-app.use('/imagenes', express.static(rutaImagenes));
+// Servir imágenes con caché en el navegador por 1 día
+app.use('/imagenes', express.static(rutaImagenes, { maxAge: '1d' }));
 
 app.use(express.static(__dirname));
 
@@ -25,14 +27,32 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'login.html'));
 });
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, rutaImagenes),
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname).toLowerCase();
-        cb(null, file.fieldname + '-' + Date.now() + '-' + Math.round(Math.random() * 1E6) + ext);
-    }
-});
+// Multer almacena temporalmente en memoria para que Sharp lo procese
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
+
+// Función auxiliar para convertir a WebP y redimensionar
+async function procesarImagenWebp(file, prefijo = 'img') {
+    if (!file) return null;
+    const nombreArchivo = `${prefijo}-${Date.now()}-${Math.round(Math.random() * 1E6)}.webp`;
+    const rutaDestino = path.join(rutaImagenes, nombreArchivo);
+
+    // Si es un GIF, podemos guardarlo tal cual o procesarlo animado
+    const esGif = file.mimetype === 'image/gif';
+
+    if (esGif) {
+        await sharp(file.buffer, { animated: true })
+            .webp({ quality: 75 })
+            .toFile(rutaDestino);
+    } else {
+        await sharp(file.buffer)
+            .resize({ width: 1200, withoutEnlargement: true }) // Evita que suban imágenes gigantescas de 4000px
+            .webp({ quality: 80 })
+            .toFile(rutaDestino);
+    }
+
+    return `imagenes/${nombreArchivo}`;
+}
 
 const dbConfig = {
     user: 'admin_discord',
@@ -108,10 +128,11 @@ app.post('/api/amigos', upload.any(), async (req, res) => {
         const avatarF = files.find(f => f.fieldname === 'avatarFile');
         const waifuFiles = files.filter(f => f.fieldname === 'waifuFiles');
 
-        const avatarUrl = avatarF ? `imagenes/${avatarF.filename}` : 'imagenes/default.png';
-        const w1 = waifuFiles[0] ? `imagenes/${waifuFiles[0].filename}` : '';
-        const w2 = waifuFiles[1] ? `imagenes/${waifuFiles[1].filename}` : '';
-        const w3 = waifuFiles[2] ? `imagenes/${waifuFiles[2].filename}` : '';
+        // Convertir fotos a .webp
+        const avatarUrl = avatarF ? await procesarImagenWebp(avatarF, 'avatar') : 'imagenes/default.png';
+        const w1 = waifuFiles[0] ? await procesarImagenWebp(waifuFiles[0], 'waifu1') : '';
+        const w2 = waifuFiles[1] ? await procesarImagenWebp(waifuFiles[1], 'waifu2') : '';
+        const w3 = waifuFiles[2] ? await procesarImagenWebp(waifuFiles[2], 'waifu3') : '';
 
         await pool.request()
             .input('username', sql.NVarChar, body.discordUsername || '')
@@ -146,10 +167,11 @@ app.put('/api/amigos/:id', upload.any(), async (req, res) => {
         const avatarF = files.find(f => f.fieldname === 'avatarFile');
         const waifuFiles = files.filter(f => f.fieldname === 'waifuFiles');
 
-        const avatarUrl = avatarF ? `imagenes/${avatarF.filename}` : (body.avatarUrlActual || 'imagenes/default.png');
-        const w1 = waifuFiles[0] ? `imagenes/${waifuFiles[0].filename}` : (body.waifu1Actual || '');
-        const w2 = waifuFiles[1] ? `imagenes/${waifuFiles[1].filename}` : (body.waifu2Actual || '');
-        const w3 = waifuFiles[2] ? `imagenes/${waifuFiles[2].filename}` : (body.waifu3Actual || '');
+        // Si sube imagen nueva la convierte a webp, de lo contrario conserva la actual
+        const avatarUrl = avatarF ? await procesarImagenWebp(avatarF, 'avatar') : (body.avatarUrlActual || 'imagenes/default.png');
+        const w1 = waifuFiles[0] ? await procesarImagenWebp(waifuFiles[0], 'waifu1') : (body.waifu1Actual || '');
+        const w2 = waifuFiles[1] ? await procesarImagenWebp(waifuFiles[1], 'waifu2') : (body.waifu2Actual || '');
+        const w3 = waifuFiles[2] ? await procesarImagenWebp(waifuFiles[2], 'waifu3') : (body.waifu3Actual || '');
 
         await pool.request()
             .input('id', sql.Int, id)
@@ -264,7 +286,8 @@ app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
             return res.status(403).json({ error: 'Solo los administradores pueden subir afiches.' });
         }
 
-        const imagenUrl = req.file ? `imagenes/${req.file.filename}` : null;
+        // Convertir afiche a .webp
+        const imagenUrl = req.file ? await procesarImagenWebp(req.file, 'afiche') : null;
 
         await pool.request()
             .input('t', sql.NVarChar, titulo || '')
