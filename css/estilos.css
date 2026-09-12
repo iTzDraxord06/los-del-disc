@@ -71,6 +71,19 @@ body {
     cursor: pointer;
 }
 
+/* Logo de la aplicación en el Navbar */
+.disc-logo-img {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    display: block;
+    transition: transform 0.2s ease;
+}
+
+.logo:hover .disc-logo-img {
+    transform: rotate(-8deg) scale(1.08);
+}
+
 .disc-icon {
     font-size: 1.8rem;
 }
@@ -174,7 +187,7 @@ body {
     padding: 0 1.2rem 1.2rem 1.2rem;
     overflow-y: auto;
     flex: 1 1 auto;
-    min-height: 0; /* Impide que desplace el panel de usuario fuera de pantalla */
+    min-height: 0;
 }
 
 /* Panel inferior tipo Discord */
@@ -186,7 +199,7 @@ body {
     padding: 0.75rem 1rem;
     border-top: 1px solid var(--borde);
     margin-top: auto;
-    flex-shrink: 0; /* Asegura que el botón salir no se aplaste */
+    flex-shrink: 0;
     z-index: 10;
 }
 
@@ -445,6 +458,26 @@ body {
     white-space: pre-wrap;
 }
 
+/* Estilos de Login y Registro */
+.header-login {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.login-logo-img {
+    width: 75px;
+    height: 75px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto 12px auto;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
+    transition: transform 0.3s ease;
+}
+
+.login-logo-img:hover {
+    transform: scale(1.05);
+}
+
 .modal {
     position: fixed;
     top: 0; left: 0;
@@ -630,6 +663,11 @@ body {
         display: none;
     }
 
+    .disc-logo-img {
+        width: 30px;
+        height: 30px;
+    }
+
     .nav-derecha {
         gap: 0.4rem;
         max-width: calc(100vw - 70px);
@@ -661,7 +699,7 @@ body {
         width: 280px;
         max-width: 80vw;
         height: 100%;
-        height: 100dvh; /* Altura dinámica real para navegadores móviles */
+        height: 100dvh;
         z-index: 2500;
         transform: translateX(-100%);
         box-shadow: 6px 0 25px rgba(0, 0, 0, 0.7);

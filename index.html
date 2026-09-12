@@ -15,14 +15,15 @@
     <header class="navbar">
         <div class="logo" id="btnInicio" style="cursor: pointer;">
             <button id="btnMenu" class="btn-hamburguesa" aria-label="Abrir menú">☰</button>
-            <span class="disc-icon">💬</span>
+            <img src="imagenes/Logo Pagina Web.png" alt="Logo Los del Disc" class="disc-logo-img">
             <h2>Los del Disc</h2>
         </div>
 
         <div class="nav-derecha">
             <button id="btnVolverInicio" class="btn-secundario">🏠 Inicio</button>
             <button id="btnAbrirModal" class="btn-primary oculto">+ Nuevo Amigo</button>
-            <button id="btnAbrirModalAfiche" class="btn-primary oculto" style="background-color: #5865F2;">📢 Publicar Afiche</button>
+            <button id="btnAbrirModalAfiche" class="btn-primary oculto" style="background-color: #5865F2;">📢 Publicar
+                Afiche</button>
         </div>
     </header>
 
@@ -31,7 +32,7 @@
             <div class="amigos-header">
                 <h3>Miembros del Servidor</h3>
             </div>
-            
+
             <div id="listaAmigos" class="grid-amigos">
                 <p class="cargando">Cargando amigos...</p>
             </div>
@@ -61,7 +62,8 @@
                         <img id="muroAvatar" src="" alt="Avatar">
                     </div>
                     <div class="perfil-textos">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                             <div>
                                 <h2 id="muroApodo">Apodo</h2>
                                 <span id="muroTag" class="discord-tag">@username</span>
@@ -69,7 +71,8 @@
                             </div>
                             <div style="display: flex; gap: 8px;">
                                 <button id="btnEditarPerfil" class="btn-secundario oculto">✏️ Editar</button>
-                                <button id="btnEliminarPerfil" class="btn-secundario oculto" style="background-color: #ed4245; color: #fff; border: none;">🗑️ Eliminar</button>
+                                <button id="btnEliminarPerfil" class="btn-secundario oculto"
+                                    style="background-color: #ed4245; color: #fff; border: none;">🗑️ Eliminar</button>
                             </div>
                         </div>
                         <p id="muroDesc" class="bio-texto"></p>
@@ -88,7 +91,8 @@
 
                     <form id="formComentario" class="form-comentario">
                         <input type="text" id="inputAutor" placeholder="Tu nombre / apodo" required readonly>
-                        <textarea id="inputComentario" placeholder="Escribe un comentario en su muro..." required maxlength="500"></textarea>
+                        <textarea id="inputComentario" placeholder="Escribe un comentario en su muro..." required
+                            maxlength="500"></textarea>
                         <button type="submit" class="btn-primary">Enviar comentario</button>
                     </form>
 
