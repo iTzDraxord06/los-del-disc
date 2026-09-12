@@ -301,7 +301,6 @@ function seleccionarAmigo(amigo) {
         img.src = src;
         img.alt = 'Foto Galería';
         img.title = 'Haz clic para ampliar';
-        // Abrir visor al tocar o hacer clic
         img.addEventListener('click', () => abrirVisor(src));
         gridWaifus.appendChild(img);
     });
@@ -353,11 +352,15 @@ async function cargarComentarios(amigoId) {
         const esAdmin = usuarioSesion && usuarioSesion.RolApp === 'Admin';
 
         comentarios.forEach(c => {
-            const rawFecha = c.Fecha;
+            // Lee Fecha o FechaPublicacion de forma segura
+            const rawFecha = c.Fecha || c.FechaPublicacion;
             const fechaStr = rawFecha ? new Date(rawFecha).toLocaleString('es-ES', {
                 dateStyle: 'short',
                 timeStyle: 'short'
-            }) : '';
+            }) : 'Reciente';
+
+            // Lee Texto o Contenido sin riesgo de undefined
+            const textoComentario = c.Texto || c.Contenido || '';
 
             const card = document.createElement('div');
             card.className = 'comentario-item';
@@ -369,7 +372,7 @@ async function cargarComentarios(amigoId) {
                     </div>
                     ${esAdmin ? `<button class="btn-borrar-comentario" data-id="${c.Id}" title="Eliminar comentario" style="background: none; border: none; cursor: pointer; color: #ed4245; font-size: 14px; padding: 2px 6px;">🗑️</button>` : ''}
                 </div>
-                <p class="comentario-texto">${c.Texto || ''}</p>
+                <p class="comentario-texto">${textoComentario}</p>
             `;
 
             if (esAdmin) {
@@ -399,6 +402,7 @@ async function cargarComentarios(amigoId) {
             listaComentariosEl.appendChild(card);
         });
     } catch (err) {
+        console.error('Error al cargar comentarios:', err);
         listaComentariosEl.innerHTML = '<p class="sin-datos">Error al cargar comentarios.</p>';
     }
 }
