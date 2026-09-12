@@ -20,7 +20,7 @@ if (!fs.existsSync(rutaImagenes)) {
 }
 app.use('/imagenes', express.static(rutaImagenes));
 
-// 2. Servir archivos estáticos del frontend (index.html, login.html, css, js, logos, etc.)
+// 2. Servir archivos estáticos del frontend
 app.use(express.static(path.join(__dirname)));
 
 const storage = multer.diskStorage({
@@ -33,16 +33,17 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 const dbConfig = {
-    user: 'admin_discord',       // Tu usuario real aquí
-    password: 'ClaveFuerte.2026!',    // Tu contraseña real aquí
+    user: 'admin_discord',
+    password: 'ClaveFuerte.2026!',
     server: 'servidor-discord-eduardo.database.windows.net',
     port: 1433,
     database: 'DiscordFriendsDB',
     options: {
-        encrypt: true,                 // OBLIGATORIO para Azure
+        encrypt: true,
         trustServerCertificate: false
     }
 };
+
 let pool;
 sql.connect(dbConfig)
     .then(p => {
@@ -51,7 +52,6 @@ sql.connect(dbConfig)
     })
     .catch(err => console.error('Error BD:', err.message));
 
-// Ruta principal por defecto: sirve index.html
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -104,6 +104,11 @@ app.get('/api/amigos', async (req, res) => {
                 .map(f => f.FotoUrl);
             return {
                 ...amigo,
+                // Mapeamos los campos reales de tu BD a lo que espera el frontend
+                DiscordUsername: amigo.DiscordTag,
+                Apodo: amigo.NombreVisible,
+                AvatarUrl: amigo.FotoRuta,
+                RolServidor: 'Miembro',
                 Fotos: fotos
             };
         });
@@ -126,17 +131,16 @@ app.post('/api/amigos', upload.any(), async (req, res) => {
         const avatarF = files.find(f => f.fieldname === 'avatarFile');
         const waifuFiles = files.filter(f => f.fieldname === 'waifuFiles');
 
-        const avatarUrl = avatarF ? `imagenes/${avatarF.filename}` : 'imagenes/default.png';
+        const fotoRuta = avatarF ? `imagenes/${avatarF.filename}` : 'imagenes/default.png';
 
         const insertRes = await pool.request()
-            .input('username', sql.NVarChar, body.discordUsername || '')
-            .input('apodo', sql.NVarChar, body.apodo || '')
-            .input('rol', sql.NVarChar, body.rol || 'Miembro')
-            .input('avatar', sql.NVarChar, avatarUrl)
+            .input('tag', sql.NVarChar, body.discordUsername || '')
+            .input('nombre', sql.NVarChar, body.apodo || '')
+            .input('foto', sql.NVarChar, fotoRuta)
             .input('desc', sql.NVarChar, body.descripcion || '')
-            .query(`INSERT INTO Amigos (DiscordUsername, Apodo, RolServidor, AvatarUrl, Descripcion) 
+            .query(`INSERT INTO Amigos (DiscordTag, NombreVisible, FotoRuta, Descripcion) 
                     OUTPUT INSERTED.Id
-                    VALUES (@username, @apodo, @rol, @avatar, @desc)`);
+                    VALUES (@tag, @nombre, @foto, @desc)`);
 
         const amigoId = insertRes.recordset[0].Id;
 
@@ -149,9 +153,6 @@ app.post('/api/amigos', upload.any(), async (req, res) => {
 
         res.json({ mensaje: 'Amigo agregado exitosamente' });
     } catch (err) {
-        if (err.number === 2627) {
-            return res.status(400).json({ error: 'Ese usuario de Discord (@) ya se encuentra registrado.' });
-        }
         console.error('Error al insertar:', err);
         res.status(500).json({ error: 'Error interno en la base de datos.' });
     }
@@ -170,20 +171,18 @@ app.put('/api/amigos/:id', upload.any(), async (req, res) => {
         const avatarF = files.find(f => f.fieldname === 'avatarFile');
         const waifuFiles = files.filter(f => f.fieldname === 'waifuFiles');
 
-        const avatarUrl = avatarF ? `imagenes/${avatarF.filename}` : (body.avatarUrlActual || 'imagenes/default.png');
+        const fotoRuta = avatarF ? `imagenes/${avatarF.filename}` : (body.avatarUrlActual || 'imagenes/default.png');
 
         await pool.request()
             .input('id', sql.Int, id)
-            .input('username', sql.NVarChar, body.discordUsername || '')
-            .input('apodo', sql.NVarChar, body.apodo || '')
-            .input('rol', sql.NVarChar, body.rol || 'Miembro')
-            .input('avatar', sql.NVarChar, avatarUrl)
+            .input('tag', sql.NVarChar, body.discordUsername || '')
+            .input('nombre', sql.NVarChar, body.apodo || '')
+            .input('foto', sql.NVarChar, fotoRuta)
             .input('desc', sql.NVarChar, body.descripcion || '')
             .query(`UPDATE Amigos SET 
-                        DiscordUsername = @username,
-                        Apodo = @apodo,
-                        RolServidor = @rol,
-                        AvatarUrl = @avatar,
+                        DiscordTag = @tag,
+                        NombreVisible = @nombre,
+                        FotoRuta = @foto,
                         Descripcion = @desc
                     WHERE Id = @id`);
 
@@ -196,9 +195,6 @@ app.put('/api/amigos/:id', upload.any(), async (req, res) => {
 
         res.json({ mensaje: 'Perfil actualizado exitosamente' });
     } catch (err) {
-        if (err.number === 2627) {
-            return res.status(400).json({ error: 'Ese usuario de Discord (@) ya pertenece a otro miembro.' });
-        }
         res.status(500).json({ error: 'Error interno en la base de datos.' });
     }
 });
@@ -222,7 +218,7 @@ app.delete('/api/amigos/:id', async (req, res) => {
     }
 });
 
-// ================= COMENTARIOS =================
+// ================= COMENTARIOS Y AFICHES =================
 
 app.get('/api/comentarios/:amigoId', async (req, res) => {
     try {
@@ -261,15 +257,11 @@ app.delete('/api/comentarios/:id', async (req, res) => {
         await pool.request()
             .input('id', sql.Int, id)
             .query('DELETE FROM Comentarios WHERE Id = @id');
-
         res.json({ mensaje: 'Comentario eliminado correctamente' });
     } catch (err) {
-        console.error('Error al eliminar comentario:', err);
         res.status(500).json({ error: 'No se pudo eliminar el comentario.' });
     }
 });
-
-// ================= AFICHES / ANUNCIOS =================
 
 app.get('/api/anuncio', async (req, res) => {
     try {
@@ -314,7 +306,6 @@ app.delete('/api/anuncio/:id', async (req, res) => {
     }
 });
 
-// Puerto dinámico para Render (PORT) con respaldo a 3000
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
