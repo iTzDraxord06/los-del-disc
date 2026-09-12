@@ -1,4 +1,5 @@
 const API_URL = '/api';
+
 // Elementos de la interfaz de login
 const tabLogin = document.getElementById('tabLogin');
 const tabRegister = document.getElementById('tabRegister');
@@ -47,11 +48,11 @@ formLogin.addEventListener('submit', async (e) => {
             // Redirigir al muro principal
             window.location.href = 'index.html';
         } else {
-            loginError.textContent = data.mensaje || 'Error al iniciar sesión';
+            loginError.textContent = data.mensaje || 'Usuario o contraseña incorrectos';
             loginError.classList.remove('oculto');
         }
     } catch (err) {
-        loginError.textContent = 'No se pudo conectar con el servidor (¿node server.js está corriendo?)';
+        loginError.textContent = 'No se pudo conectar con el servidor.';
         loginError.classList.remove('oculto');
     }
 });
@@ -66,10 +67,11 @@ formRegister.addEventListener('submit', async (e) => {
     const password = document.getElementById('regPass').value.trim();
 
     try {
-        const respuesta = await fetch('/api/login', {
+        // Corregido el endpoint a /api/register y la variable 'res'
+        const res = await fetch(`${API_URL}/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ username, password, nombreVisible })
         });
 
         const data = await res.json();
@@ -80,12 +82,12 @@ formRegister.addEventListener('submit', async (e) => {
             tabLogin.click(); // Volver a la pestaña de login
         } else {
             regMsg.textContent = data.error || 'No se pudo registrar el usuario';
-            regMsg.style.color = 'var(--error)';
+            regMsg.style.color = '#ed4245';
             regMsg.classList.remove('oculto');
         }
     } catch (err) {
         regMsg.textContent = 'Error de conexión con el servidor.';
-        regMsg.style.color = 'var(--error)';
+        regMsg.style.color = '#ed4245';
         regMsg.classList.remove('oculto');
     }
 });
