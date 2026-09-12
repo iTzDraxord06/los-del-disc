@@ -34,7 +34,7 @@ const upload = multer({ storage });
 
 const dbConfig = {
     user: process.env.DB_USER || 'admin_discord',                     // Tu usuario de Azure (o local)
-    password: process.env.DB_PASSWORD || 'TuPasswordSegura123',         // Tu contraseña
+    password: process.env.DB_PASSWORD || 'ClaveFuerte.2026!',         // Tu contraseña
     server: process.env.DB_SERVER || 'servidordiscord-eduardo.database.windows.net', // Tu servidor de Azure
     port: parseInt(process.env.DB_PORT) || 1433,
     database: process.env.DB_NAME || 'DiscordFriendsDB',
