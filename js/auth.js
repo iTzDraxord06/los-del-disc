@@ -66,10 +66,10 @@ formRegister.addEventListener('submit', async (e) => {
     const password = document.getElementById('regPass').value.trim();
 
     try {
-        const res = await fetch(`${API_URL}/register`, {
+        const respuesta = await fetch('/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nombreVisible, username, password })
+            body: JSON.stringify({ username, password })
         });
 
         const data = await res.json();

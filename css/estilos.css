@@ -635,7 +635,15 @@ body {
     font-size: 0.95rem;
     text-align: center;
 }
-
+.logo-login-img {
+    width: 75px !important;
+    height: 75px !important;
+    max-width: 75px !important;
+    max-height: 75px !important;
+    object-fit: contain !important;
+    display: block !important;
+    margin: 0 auto 12px auto !important;
+}
 /* Adaptabilidad móvil */
 @media (max-width: 768px) {
     html, body {
