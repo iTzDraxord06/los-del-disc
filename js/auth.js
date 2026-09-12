@@ -1,5 +1,4 @@
 const API_URL = '/api';
-
 // Elementos de la interfaz de login
 const tabLogin = document.getElementById('tabLogin');
 const tabRegister = document.getElementById('tabRegister');
