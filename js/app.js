@@ -5,6 +5,31 @@ if (!usuarioSesion) {
     window.location.href = 'login.html';
 }
 
+// --- CONTROL DE INACTIVIDAD (AUTO LOGOUT) ---
+const TIEMPO_INACTIVIDAD = 15 * 60 * 1000; // 15 minutos en milisegundos
+let temporizadorInactividad;
+
+function cerrarSesionPorInactividad() {
+    alert('Tu sesión ha expirado por inactividad.');
+    localStorage.removeItem('disc_user');
+    window.location.href = 'login.html';
+}
+
+function reiniciarTemporizadorInactividad() {
+    clearTimeout(temporizadorInactividad);
+    temporizadorInactividad = setTimeout(cerrarSesionPorInactividad, TIEMPO_INACTIVIDAD);
+}
+
+// Eventos que detectan actividad real del usuario
+const eventosActividad = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
+eventosActividad.forEach(evento => {
+    window.addEventListener(evento, reiniciarTemporizadorInactividad, { passive: true });
+});
+
+// Arranca el temporizador apenas carga la aplicación
+reiniciarTemporizadorInactividad();
+// --------------------------------------------
+
 let listaAmigosMemoria = [];
 let amigoSeleccionado = null;
 let amigoSeleccionadoId = null;
