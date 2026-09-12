@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Los del Disc - Muro</title>
+    <link rel="stylesheet" href="css/estilos.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <header class="navbar">
+        <div class="logo" id="btnInicio" style="cursor: pointer;">
+            <button id="btnMenu" class="btn-hamburguesa" aria-label="Abrir menú">☰</button>
+            <span class="disc-icon">💬</span>
+            <h2>Los del Disc</h2>
+        </div>
+
+        <div class="nav-derecha">
+            <button id="btnVolverInicio" class="btn-secundario">🏠 Inicio</button>
+            <button id="btnAbrirModal" class="btn-primary oculto">+ Nuevo Amigo</button>
+            <button id="btnAbrirModalAfiche" class="btn-primary oculto" style="background-color: #5865F2;">📢 Publicar Afiche</button>
+
+            <div class="sesion-info">
+                <span id="labelUsuario">Cargando...</span>
+                <button id="btnCerrarSesion" class="btn-salir">Salir</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="contenedor-principal">
+        <section class="seccion-amigos">
+            <h3>Miembros del Servidor</h3>
+            <div id="listaAmigos" class="grid-amigos">
+                <p class="cargando">Cargando amigos...</p>
+            </div>
+        </section>
+
+        <section class="seccion-muro" id="seccionMuro">
+            <div class="muro-placeholder" id="muroVacio">
+                <div id="feedAfiches" class="feed-afiches"></div>
+
+                <div id="aficheDefault" class="oculto">
+                    <p>👈 Selecciona un amigo para ver su perfil y dejarle un comentario.</p>
+                </div>
+            </div>
+
+            <div class="muro-contenido oculto" id="muroDetalle">
+                <div class="perfil-banner"></div>
+                <div class="perfil-info">
+                    <div class="perfil-avatar-wrapper">
+                        <img id="muroAvatar" src="" alt="Avatar">
+                    </div>
+                    <div class="perfil-textos">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                                <h2 id="muroApodo">Apodo</h2>
+                                <span id="muroTag" class="discord-tag">@username</span>
+                                <span id="muroRol" class="badge-rol">Rol</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button id="btnEditarPerfil" class="btn-secundario oculto">✏️ Editar</button>
+                                <button id="btnEliminarPerfil" class="btn-secundario oculto" style="background-color: #ed4245; color: #fff; border: none;">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                        <p id="muroDesc" class="bio-texto"></p>
+                    </div>
+
+                    <div class="galeria-waifus">
+                        <h4>Waifu Shrine / Galería</h4>
+                        <div id="gridWaifus" class="grid-waifus"></div>
+                    </div>
+                </div>
+
+                <hr class="divisor">
+
+                <div class="contenedor-comentarios">
+                    <h4>Muro de comentarios</h4>
+
+                    <form id="formComentario" class="form-comentario">
+                        <input type="text" id="inputAutor" placeholder="Tu nombre / apodo" required readonly>
+                        <textarea id="inputComentario" placeholder="Escribe un comentario en su muro..." required maxlength="500"></textarea>
+                        <button type="submit" class="btn-primary">Enviar comentario</button>
+                    </form>
+
+                    <div id="listaComentarios" class="lista-comentarios"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="modalAmigo" class="modal oculto">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modalTitulo">Agregar Amigo</h3>
+                <button id="btnCerrarModal" class="btn-close">&times;</button>
+            </div>
+            <form id="formNuevoAmigo">
+                <input type="hidden" id="amigoEditId">
+
+                <div class="campo">
+                    <label>Usuario de Discord (@):</label>
+                    <input type="text" id="nuevoUsername" required>
+                </div>
+                <div class="campo">
+                    <label>Apodo:</label>
+                    <input type="text" id="nuevoApodo" required>
+                </div>
+                <div class="campo">
+                    <label>Rol en el servidor:</label>
+                    <input type="text" id="nuevoRol" required placeholder="Mod, Admin, Rango G1...">
+                </div>
+
+                <div class="campo">
+                    <label>Foto de Perfil / Logo:</label>
+                    <input type="file" id="inputAvatarFile" accept="image/*">
+                </div>
+
+                <div class="campo">
+                    <label>Fotos Waifu Shrine (hasta 3):</label>
+                    <input type="file" id="inputWaifuFiles" accept="image/*" multiple>
+                </div>
+
+                <div class="campo">
+                    <label>Descripción / Bio:</label>
+                    <textarea id="nuevaDesc"></textarea>
+                </div>
+                <button type="submit" id="btnGuardarAmigo" class="btn-primary btn-block">Guardar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalAfiche" class="modal oculto">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>📢 Publicar Afiche / Anuncio</h3>
+                <button id="btnCerrarModalAfiche" class="btn-close">&times;</button>
+            </div>
+            <form id="formAfiche">
+                <div class="campo">
+                    <label>Título del anuncio (opcional):</label>
+                    <input type="text" id="aficheInputTitulo" placeholder="Ej: ¡Torneo este fin de semana!">
+                </div>
+                <div class="campo">
+                    <label>Descripción / Aviso:</label>
+                    <textarea id="aficheInputDesc" rows="3" placeholder="Detalles, horarios, avisos..."></textarea>
+                </div>
+                <div class="campo">
+                    <label>Imagen del afiche:</label>
+                    <input type="file" id="aficheInputFile" accept="image/*">
+                </div>
+                <button type="submit" id="btnGuardarAfiche" class="btn-primary btn-block">Publicar Afiche</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+
+</html>

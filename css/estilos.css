@@ -1,0 +1,665 @@
+:root {
+    --bg-base: #1e1f22;
+    --bg-lateral: #2b2d31;
+    --bg-tarjeta: #313338;
+    --bg-input: #1e1f22;
+    --discord-blurple: #5865f2;
+    --discord-blurple-hover: #4752c4;
+    --text-principal: #f2f3f5;
+    --text-secundario: #949ba4;
+    --borde: #3f4147;
+    --badge-admin: #f0b232;
+    --badge-default: #5865f2;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+    background-color: var(--bg-base);
+    color: var(--text-principal);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--bg-lateral);
+    padding: 0.8rem 1.5rem;
+    border-bottom: 1px solid var(--borde);
+    position: relative;
+    z-index: 100;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.disc-icon {
+    font-size: 1.8rem;
+}
+
+.btn-hamburguesa {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text-principal);
+    font-size: 1.6rem;
+    cursor: pointer;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+.btn-hamburguesa:hover {
+    background-color: var(--bg-tarjeta);
+}
+
+.nav-derecha {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.sesion-info {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-size: 0.85rem;
+    color: var(--text-secundario);
+}
+
+.btn-salir {
+    background-color: #3f4147;
+    color: var(--text-principal);
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background-color 0.2s;
+}
+
+.btn-salir:hover {
+    background-color: #ed4245;
+}
+
+.btn-primary {
+    background-color: var(--discord-blurple);
+    color: white;
+    border: none;
+    padding: 0.55rem 1.1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease;
+}
+
+.btn-primary:hover {
+    background-color: var(--discord-blurple-hover);
+}
+
+.btn-block {
+    width: 100%;
+}
+
+.contenedor-principal {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    height: calc(100vh - 65px);
+    overflow: hidden;
+    position: relative;
+}
+
+.seccion-amigos {
+    background-color: var(--bg-lateral);
+    border-right: 1px solid var(--borde);
+    padding: 1.2rem;
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+}
+
+.seccion-amigos h3 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secundario);
+    margin-bottom: 0.9rem;
+}
+
+.grid-amigos {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.amigo-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.8rem;
+    background-color: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.amigo-card:hover, .amigo-card.activo {
+    background-color: var(--bg-tarjeta);
+}
+
+.amigo-card img {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    background-color: #4e5058;
+}
+
+.amigo-info h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.amigo-info span {
+    font-size: 0.8rem;
+    color: var(--text-secundario);
+}
+
+.seccion-muro {
+    padding: 1.8rem;
+    overflow-y: auto;
+    background-color: var(--bg-tarjeta);
+}
+
+.muro-placeholder {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secundario);
+    font-size: 1.05rem;
+    text-align: center;
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+.feed-afiches {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 10px 15px;
+    box-sizing: border-box;
+}
+
+.perfil-banner {
+    height: 120px;
+    background: linear-gradient(135deg, #5865f2 0%, #eb459e 100%);
+    border-radius: 12px 12px 0 0;
+}
+
+.perfil-info {
+    background-color: var(--bg-lateral);
+    padding: 1rem 1.5rem 1.5rem 1.5rem;
+    border-radius: 0 0 12px 12px;
+    position: relative;
+}
+
+.perfil-avatar-wrapper {
+    position: absolute;
+    top: -45px;
+    left: 20px;
+}
+
+.perfil-avatar-wrapper img {
+    width: 85px;
+    height: 85px;
+    border-radius: 50%;
+    border: 5px solid var(--bg-lateral);
+    object-fit: cover;
+    background-color: #4e5058;
+}
+
+.perfil-textos {
+    margin-top: 45px;
+}
+
+.perfil-textos h2 {
+    font-size: 1.4rem;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+.discord-tag {
+    color: var(--text-secundario);
+    font-size: 0.9rem;
+}
+
+.badge-rol {
+    display: inline-block;
+    background-color: var(--badge-default);
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+}
+
+.bio-texto {
+    margin-top: 0.6rem;
+    color: #dbdee1;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.galeria-waifus {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--borde);
+}
+
+.galeria-waifus h4 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: var(--text-secundario);
+    margin-bottom: 0.8rem;
+    letter-spacing: 0.05em;
+}
+
+.grid-waifus {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 240px));
+    gap: 16px;
+    justify-content: start; 
+}
+
+.grid-waifus img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    height: auto;
+    object-fit: cover;
+    object-position: center top;
+    border-radius: 10px;
+    border: 2px solid var(--borde);
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.grid-waifus img:hover {
+    transform: translateY(-4px) scale(1.02);
+    border-color: var(--discord-blurple);
+}
+
+.divisor {
+    border: none;
+    border-top: 1px solid var(--borde);
+    margin: 1.8rem 0;
+}
+
+.contenedor-comentarios h4 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+.form-comentario {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-comentario input, .form-comentario textarea, .campo input, .campo textarea, .campo select {
+    background-color: var(--bg-input);
+    border: 1px solid var(--borde);
+    color: var(--text-principal);
+    padding: 0.75rem;
+    border-radius: 6px;
+    outline: none;
+    font-size: 0.95rem;
+    width: 100%;
+}
+
+.form-comentario input:focus, .form-comentario textarea:focus {
+    border-color: var(--discord-blurple);
+}
+
+.form-comentario textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.lista-comentarios {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.comentario-item {
+    background-color: var(--bg-lateral);
+    padding: 0.9rem;
+    border-radius: 8px;
+    border-left: 4px solid var(--discord-blurple);
+}
+
+.comentario-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.4rem;
+    gap: 0.5rem;
+}
+
+.comentario-autor {
+    font-weight: bold;
+    color: var(--text-principal);
+    font-size: 0.9rem;
+}
+
+.comentario-fecha {
+    font-size: 0.75rem;
+    color: var(--text-secundario);
+}
+
+.comentario-texto {
+    color: #dbdee1;
+    line-height: 1.4;
+    font-size: 0.9rem;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+.modal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modal-card {
+    background-color: var(--bg-lateral);
+    width: 100%;
+    max-width: 450px;
+    padding: 1.8rem;
+    border-radius: 10px;
+    border: 1px solid var(--borde);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.2rem;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    color: var(--text-secundario);
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 0.9rem;
+}
+
+.campo label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--text-secundario);
+}
+
+.oculto {
+    display: none !important;
+}
+
+.cargando, .sin-datos {
+    color: var(--text-secundario);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 1rem 0;
+}
+
+.btn-secundario {
+    background-color: #35373c;
+    color: var(--text-principal);
+    border: 1px solid var(--borde);
+    padding: 0.55rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.88rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-secundario:hover {
+    background-color: #404249;
+    border-color: #5865f2;
+}
+
+.campo input[type="file"] {
+    background-color: #1e1f22;
+    border: 1px dashed #4e5058;
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    color: #dbdee1;
+    font-size: 0.85rem;
+    cursor: pointer;
+    width: 100%;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.campo input[type="file"]:hover {
+    border-color: #5865f2;
+    background-color: #2b2d31;
+}
+
+.campo input[type="file"]::file-selector-button {
+    background-color: #5865f2;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    padding: 0.45rem 0.9rem;
+    margin-right: 0.8rem;
+    font-weight: 600;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.campo input[type="file"]::file-selector-button:hover {
+    background-color: #4752c4;
+}
+
+.tarjeta-afiche {
+    background: #2f3136;
+    border: 1px solid #40444b;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    display: inline-block;
+    max-width: 580px;
+    width: 100%;
+    box-sizing: border-box;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.tarjeta-afiche:hover {
+    border-color: #5865F2;
+    transform: translateY(-2px);
+}
+
+.tarjeta-afiche img {
+    display: block;
+    margin: 0 auto 14px auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 520px;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tarjeta-afiche h2 {
+    color: #ffffff;
+    margin-top: 14px;
+    font-size: 1.4rem;
+    text-align: center;
+}
+
+.tarjeta-afiche p {
+    color: #dcddde;
+    font-size: 0.95rem;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .btn-hamburguesa {
+        display: block;
+    }
+
+    .navbar {
+        padding: 0.7rem 1rem;
+    }
+
+    .btn-secundario {
+        padding: 0.45rem 0.65rem;
+        font-size: 0.8rem;
+    }
+
+    .btn-secundario span.txt-btn {
+        display: none;
+    }
+
+    .logo h2 {
+        font-size: 1.2rem;
+    }
+
+    .nav-derecha {
+        gap: 0.5rem;
+    }
+
+    .sesion-info span {
+        max-width: 110px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.75rem;
+    }
+
+    .contenedor-principal {
+        grid-template-columns: 1fr;
+        height: calc(100vh - 58px);
+    }
+
+    .seccion-amigos {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 270px;
+        height: 100%;
+        z-index: 50;
+        transform: translateX(-100%);
+        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
+    }
+
+    .seccion-amigos.abierto {
+        transform: translateX(0);
+    }
+
+    .seccion-muro {
+        padding: 1rem;
+    }
+
+    .perfil-avatar-wrapper img {
+        width: 70px;
+        height: 70px;
+    }
+
+    .perfil-textos {
+        margin-top: 35px;
+    }
+
+    .perfil-textos h2 {
+        font-size: 1.2rem;
+    }
+
+    .grid-waifus {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .grid-waifus img {
+        height: 120px;
+    }
+
+    .modal-card {
+        width: 92%;
+        max-width: 100%;
+        padding: 1.2rem;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .campo input[type="file"] {
+        padding: 0.5rem;
+        font-size: 0.78rem;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    .campo input[type="file"]::file-selector-button {
+        width: 100%;
+        margin-right: 0;
+        padding: 0.6rem;
+        text-align: center;
+    }
+
+    .tarjeta-afiche {
+        padding: 12px;
+        max-width: 100%;
+    }
+
+    .tarjeta-afiche img {
+        display: block;
+        margin: 0 auto 10px auto;
+        max-height: 380px;
+        width: auto;
+    }
+
+    .tarjeta-afiche h2 {
+        font-size: 1.15rem;
+    }
+
+    .tarjeta-afiche p {
+        font-size: 0.85rem;
+    }
+}

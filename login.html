@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso - Los del Disc</title>
+    <link rel="stylesheet" href="css/login.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="login-container">
+        <div class="login-box">
+            <div class="header-login">
+                <span class="discord-logo">💬</span>
+                <h2>Los del Disc</h2>
+                <p>Ingresa para acceder al muro del servidor</p>
+            </div>
+
+            <div class="tabs">
+                <button id="tabLogin" class="tab-btn active">Iniciar Sesión</button>
+                <button id="tabRegister" class="tab-btn">Registrarse</button>
+            </div>
+
+            <!-- Formulario de Login -->
+            <form id="formLogin" class="auth-form">
+                <div class="form-group">
+                    <label>Usuario</label>
+                    <input type="text" id="loginUser" placeholder="Tu usuario" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="loginPass" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-submit">Entrar</button>
+                <p id="loginError" class="msg-error oculto"></p>
+            </form>
+
+            <!-- Formulario de Registro (Siempre crea perfil Lector) -->
+            <form id="formRegister" class="auth-form oculto">
+                <div class="form-group">
+                    <label>Nombre a mostrar</label>
+                    <input type="text" id="regNombre" placeholder="Tu apodo visible" required>
+                </div>
+                <div class="form-group">
+                    <label>Usuario de acceso</label>
+                    <input type="text" id="regUser" placeholder="ej: usuario99" required>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="regPass" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-submit btn-secundario">Crear Cuenta (Lector)</button>
+                <p id="regMsg" class="msg-info oculto"></p>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+</body>
+</html>
