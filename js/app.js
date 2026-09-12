@@ -72,7 +72,6 @@ const formAfiche = document.getElementById('formAfiche');
 const feedAfiches = document.getElementById('feedAfiches');
 const aficheDefault = document.getElementById('aficheDefault');
 
-// Función utilitaria para cerrar el drawer en móviles
 function cerrarMenuLateral() {
     if (seccionAmigos && seccionAmigos.classList.contains('abierto')) {
         seccionAmigos.classList.remove('abierto');
@@ -103,7 +102,6 @@ if (btnMenu) {
     });
 }
 
-// Cerrar drawer al tocar el muro principal en pantallas móviles
 if (seccionMuro) {
     seccionMuro.addEventListener('click', () => {
         cerrarMenuLateral();
@@ -268,12 +266,13 @@ function seleccionarAmigo(amigo) {
     if (btnEditarPerfil) btnEditarPerfil.classList.toggle('oculto', !esAdmin);
     if (btnEliminarPerfil) btnEliminarPerfil.classList.toggle('oculto', !esAdmin);
 
+    // Muestra todas las fotos que tenga el amigo (sin tope de 3)
     gridWaifus.innerHTML = '';
-    const fotos = [amigo.Waifu1, amigo.Waifu2, amigo.Waifu3].filter(Boolean);
+    const fotos = amigo.Fotos || [];
     fotos.forEach(src => {
         const img = document.createElement('img');
         img.src = src;
-        img.alt = 'Waifu';
+        img.alt = 'Foto';
         gridWaifus.appendChild(img);
     });
 
@@ -443,6 +442,7 @@ formNuevoAmigo.addEventListener('submit', async (e) => {
     formData.append('descripcion', document.getElementById('nuevaDesc').value.trim());
     formData.append('rolSolicitante', usuarioSesion.RolApp);
 
+    // Avatar
     const avatarInput = document.getElementById('inputAvatarFile');
     if (avatarInput && avatarInput.files && avatarInput.files[0]) {
         formData.append('avatarFile', avatarInput.files[0]);
@@ -450,15 +450,12 @@ formNuevoAmigo.addEventListener('submit', async (e) => {
         formData.append('avatarUrlActual', amigoSeleccionado.AvatarUrl || '');
     }
 
+    // Subir todas las fotos seleccionadas (sin límite)
     const waifuInput = document.getElementById('inputWaifuFiles');
     if (waifuInput && waifuInput.files && waifuInput.files.length > 0) {
-        for (let i = 0; i < Math.min(waifuInput.files.length, 3); i++) {
+        for (let i = 0; i < waifuInput.files.length; i++) {
             formData.append('waifuFiles', waifuInput.files[i]);
         }
-    } else if (id && amigoSeleccionado) {
-        formData.append('waifu1Actual', amigoSeleccionado.Waifu1 || '');
-        formData.append('waifu2Actual', amigoSeleccionado.Waifu2 || '');
-        formData.append('waifu3Actual', amigoSeleccionado.Waifu3 || '');
     }
 
     const url = id ? `${API_URL}/amigos/${id}` : `${API_URL}/amigos`;

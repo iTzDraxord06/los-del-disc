@@ -4,7 +4,6 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const sharp = require('sharp');
 
 process.on('uncaughtException', (err) => console.error('ERROR NO CONTROLADO:', err));
 process.on('unhandledRejection', (err) => console.error('PROMESA NO CONTROLADA:', err));
@@ -18,51 +17,26 @@ const rutaImagenes = path.join(__dirname, 'imagenes');
 if (!fs.existsSync(rutaImagenes)) {
     fs.mkdirSync(rutaImagenes, { recursive: true });
 }
-// Servir imágenes con caché en el navegador por 1 día
-app.use('/imagenes', express.static(rutaImagenes, { maxAge: '1d' }));
+app.use('/imagenes', express.static(rutaImagenes));
 
-app.use(express.static(__dirname));
-
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'login.html'));
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, rutaImagenes),
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        cb(null, file.fieldname + '-' + Date.now() + '-' + Math.round(Math.random() * 1E6) + ext);
+    }
 });
-
-// Multer almacena temporalmente en memoria para que Sharp lo procese
-const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// Función auxiliar para convertir a WebP y redimensionar
-async function procesarImagenWebp(file, prefijo = 'img') {
-    if (!file) return null;
-    const nombreArchivo = `${prefijo}-${Date.now()}-${Math.round(Math.random() * 1E6)}.webp`;
-    const rutaDestino = path.join(rutaImagenes, nombreArchivo);
-
-    // Si es un GIF, se procesa conservando la animación
-    const esGif = file.mimetype === 'image/gif';
-
-    if (esGif) {
-        await sharp(file.buffer, { animated: true })
-            .webp({ quality: 75 })
-            .toFile(rutaDestino);
-    } else {
-        await sharp(file.buffer)
-            .resize({ width: 1200, withoutEnlargement: true }) // Evita subir resoluciones gigantescas
-            .webp({ quality: 80 })
-            .toFile(rutaDestino);
-    }
-
-    return `imagenes/${nombreArchivo}`;
-}
-
 const dbConfig = {
-    user: 'admin_discord',
-    password: 'ClaveFuerte.2026!',
-    server: 'servidor-discord-eduardo.database.windows.net',
+    user: 'sa',
+    password: 'Admin1234',
+    server: '127.0.0.1',
     port: 1433,
     database: 'DiscordFriendsDB',
     options: {
-        encrypt: true,
-        trustServerCertificate: false
+        encrypt: false,
+        trustServerCertificate: true
     }
 };
 
@@ -70,15 +44,14 @@ let pool;
 sql.connect(dbConfig)
     .then(p => {
         pool = p;
-        console.log('Conectado a Azure SQL (DiscordFriendsDB)');
+        console.log('Conectado a SQL Server (DiscordFriendsDB)');
     })
     .catch(err => console.error('Error BD:', err.message));
 
-app.post('/api/login', async (req, res) => {
-    let { username, password } = req.body || {};
-    username = (username || '').trim().toLowerCase();
-    password = (password || '').trim();
+// ================= AUTENTICACIÓN =================
 
+app.post('/api/login', async (req, res) => {
+    const { username, password } = req.body || {};
     try {
         const result = await pool.request()
             .input('u', sql.NVarChar, username)
@@ -96,24 +69,7 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.post('/api/register', async (req, res) => {
-    let { username, password, nombreVisible } = req.body || {};
-
-    // Sanitización: eliminar espacios inválidos
-    username = (username || '').trim().toLowerCase().replace(/\s+/g, '');
-    nombreVisible = (nombreVisible || '').trim().replace(/\s+/g, ' ');
-    password = (password || '').trim();
-
-    // Validaciones estrictas
-    if (!username || username.length < 3) {
-        return res.status(400).json({ error: 'El usuario debe tener al menos 3 caracteres y no contener espacios.' });
-    }
-    if (!nombreVisible || nombreVisible.length < 2) {
-        return res.status(400).json({ error: 'El nombre visible debe contener al menos 2 caracteres válidos.' });
-    }
-    if (!password || password.length < 4) {
-        return res.status(400).json({ error: 'La contraseña debe tener al menos 4 caracteres.' });
-    }
-
+    const { username, password, nombreVisible } = req.body || {};
     try {
         await pool.request()
             .input('u', sql.NVarChar, username)
@@ -121,20 +77,30 @@ app.post('/api/register', async (req, res) => {
             .input('n', sql.NVarChar, nombreVisible)
             .input('r', sql.NVarChar, 'Lector')
             .query('INSERT INTO UsuariosWeb (Username, Password, NombreVisible, RolApp) VALUES (@u, @p, @n, @r)');
-            
         res.json({ exito: true, mensaje: 'Usuario registrado con éxito.' });
     } catch (err) {
-        if (err.number === 2627) {
-            return res.status(400).json({ error: 'Ese nombre de usuario ya se encuentra registrado.' });
-        }
         res.status(400).json({ error: 'El usuario ya existe o hubo un problema.' });
     }
 });
 
+// ================= AMIGOS Y FOTOS ILIMITADAS =================
+
 app.get('/api/amigos', async (req, res) => {
     try {
-        const result = await pool.request().query('SELECT Id, DiscordTag AS DiscordUsername, NombreVisible AS Apodo, FotoRuta AS AvatarUrl, Descripcion, Waifu1, Waifu2, Waifu3 FROM Amigos ORDER BY Id ASC');
-        res.json(result.recordset);
+        const amigosResult = await pool.request().query('SELECT * FROM Amigos ORDER BY Id ASC');
+        const fotosResult = await pool.request().query('SELECT Id, AmigoId, FotoUrl FROM FotosAmigo ORDER BY Id ASC');
+
+        const amigos = amigosResult.recordset.map(amigo => {
+            const fotos = fotosResult.recordset
+                .filter(f => f.AmigoId === amigo.Id)
+                .map(f => f.FotoUrl);
+            return {
+                ...amigo,
+                Fotos: fotos
+            };
+        });
+
+        res.json(amigos);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -152,32 +118,35 @@ app.post('/api/amigos', upload.any(), async (req, res) => {
         const avatarF = files.find(f => f.fieldname === 'avatarFile');
         const waifuFiles = files.filter(f => f.fieldname === 'waifuFiles');
 
-        // Convertir fotos a .webp
-        const avatarUrl = avatarF ? await procesarImagenWebp(avatarF, 'avatar') : 'imagenes/default.png';
-        const w1 = waifuFiles[0] ? await procesarImagenWebp(waifuFiles[0], 'waifu1') : '';
-        const w2 = waifuFiles[1] ? await procesarImagenWebp(waifuFiles[1], 'waifu2') : '';
-        const w3 = waifuFiles[2] ? await procesarImagenWebp(waifuFiles[2], 'waifu3') : '';
+        const avatarUrl = avatarF ? `imagenes/${avatarF.filename}` : 'imagenes/default.png';
 
-        const discordUsername = (body.discordUsername || '').trim().replace(/^@/, '');
-        const apodo = (body.apodo || '').trim().replace(/\s+/g, ' ');
-        const desc = (body.descripcion || '').trim();
-
-        await pool.request()
-            .input('username', sql.NVarChar, discordUsername)
-            .input('apodo', sql.NVarChar, apodo)
+        // 1. Insertamos amigo y sacamos su ID nuevo
+        const insertRes = await pool.request()
+            .input('username', sql.NVarChar, body.discordUsername || '')
+            .input('apodo', sql.NVarChar, body.apodo || '')
+            .input('rol', sql.NVarChar, body.rol || 'Miembro')
             .input('avatar', sql.NVarChar, avatarUrl)
-            .input('desc', sql.NVarChar, desc)
-            .input('w1', sql.NVarChar, w1)
-            .input('w2', sql.NVarChar, w2)
-            .input('w3', sql.NVarChar, w3)
-            .query(`INSERT INTO Amigos (DiscordTag, NombreVisible, FotoRuta, Descripcion, Waifu1, Waifu2, Waifu3) 
-                    VALUES (@username, @apodo, @avatar, @desc, @w1, @w2, @w3)`);
+            .input('desc', sql.NVarChar, body.descripcion || '')
+            .query(`INSERT INTO Amigos (DiscordUsername, Apodo, RolServidor, AvatarUrl, Descripcion) 
+                    OUTPUT INSERTED.Id
+                    VALUES (@username, @apodo, @rol, @avatar, @desc)`);
+
+        const amigoId = insertRes.recordset[0].Id;
+
+        // 2. Guardamos todas las fotos que haya seleccionado (sin límite de 3)
+        for (const file of waifuFiles) {
+            await pool.request()
+                .input('amigoId', sql.Int, amigoId)
+                .input('fotoUrl', sql.NVarChar, `imagenes/${file.filename}`)
+                .query('INSERT INTO FotosAmigo (AmigoId, FotoUrl) VALUES (@amigoId, @fotoUrl)');
+        }
 
         res.json({ mensaje: 'Amigo agregado exitosamente' });
     } catch (err) {
         if (err.number === 2627) {
             return res.status(400).json({ error: 'Ese usuario de Discord (@) ya se encuentra registrado.' });
         }
+        console.error('Error al insertar:', err);
         res.status(500).json({ error: 'Error interno en la base de datos.' });
     }
 });
@@ -195,34 +164,30 @@ app.put('/api/amigos/:id', upload.any(), async (req, res) => {
         const avatarF = files.find(f => f.fieldname === 'avatarFile');
         const waifuFiles = files.filter(f => f.fieldname === 'waifuFiles');
 
-        // Si sube imagen nueva la convierte a webp, de lo contrario conserva la actual
-        const avatarUrl = avatarF ? await procesarImagenWebp(avatarF, 'avatar') : (body.avatarUrlActual || 'imagenes/default.png');
-        const w1 = waifuFiles[0] ? await procesarImagenWebp(waifuFiles[0], 'waifu1') : (body.waifu1Actual || '');
-        const w2 = waifuFiles[1] ? await procesarImagenWebp(waifuFiles[1], 'waifu2') : (body.waifu2Actual || '');
-        const w3 = waifuFiles[2] ? await procesarImagenWebp(waifuFiles[2], 'waifu3') : (body.waifu3Actual || '');
-
-        const discordUsername = (body.discordUsername || '').trim().replace(/^@/, '');
-        const apodo = (body.apodo || '').trim().replace(/\s+/g, ' ');
-        const desc = (body.descripcion || '').trim();
+        const avatarUrl = avatarF ? `imagenes/${avatarF.filename}` : (body.avatarUrlActual || 'imagenes/default.png');
 
         await pool.request()
             .input('id', sql.Int, id)
-            .input('username', sql.NVarChar, discordUsername)
-            .input('apodo', sql.NVarChar, apodo)
+            .input('username', sql.NVarChar, body.discordUsername || '')
+            .input('apodo', sql.NVarChar, body.apodo || '')
+            .input('rol', sql.NVarChar, body.rol || 'Miembro')
             .input('avatar', sql.NVarChar, avatarUrl)
-            .input('desc', sql.NVarChar, desc)
-            .input('w1', sql.NVarChar, w1)
-            .input('w2', sql.NVarChar, w2)
-            .input('w3', sql.NVarChar, w3)
+            .input('desc', sql.NVarChar, body.descripcion || '')
             .query(`UPDATE Amigos SET 
-                        DiscordTag = @username,
-                        NombreVisible = @apodo,
-                        FotoRuta = @avatar,
-                        Descripcion = @desc,
-                        Waifu1 = @w1,
-                        Waifu2 = @w2,
-                        Waifu3 = @w3
+                        DiscordUsername = @username,
+                        Apodo = @apodo,
+                        RolServidor = @rol,
+                        AvatarUrl = @avatar,
+                        Descripcion = @desc
                     WHERE Id = @id`);
+
+        // Si seleccionó fotos nuevas al editar, se agregan a la galería
+        for (const file of waifuFiles) {
+            await pool.request()
+                .input('amigoId', sql.Int, id)
+                .input('fotoUrl', sql.NVarChar, `imagenes/${file.filename}`)
+                .query('INSERT INTO FotosAmigo (AmigoId, FotoUrl) VALUES (@amigoId, @fotoUrl)');
+        }
 
         res.json({ mensaje: 'Perfil actualizado exitosamente' });
     } catch (err) {
@@ -252,11 +217,13 @@ app.delete('/api/amigos/:id', async (req, res) => {
     }
 });
 
+// ================= COMENTARIOS =================
+
 app.get('/api/comentarios/:amigoId', async (req, res) => {
     try {
         const result = await pool.request()
             .input('amigoId', sql.Int, req.params.amigoId)
-            .query('SELECT Id, AmigoId, Autor, Texto AS Contenido, Fecha AS FechaPublicacion FROM Comentarios WHERE AmigoId = @amigoId ORDER BY Fecha DESC');
+            .query('SELECT * FROM Comentarios WHERE AmigoId = @amigoId ORDER BY FechaPublicacion DESC');
         res.json(result.recordset);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -264,20 +231,13 @@ app.get('/api/comentarios/:amigoId', async (req, res) => {
 });
 
 app.post('/api/comentarios', async (req, res) => {
-    let { amigoId, autor, contenido } = req.body || {};
-    autor = (autor || '').trim();
-    contenido = (contenido || '').trim();
-
-    if (!contenido) {
-        return res.status(400).json({ error: 'El comentario no puede estar vacío.' });
-    }
-
+    const { amigoId, autor, contenido } = req.body || {};
     try {
         await pool.request()
             .input('amigoId', sql.Int, amigoId)
             .input('autor', sql.NVarChar, autor)
-            .input('texto', sql.NVarChar, contenido)
-            .query('INSERT INTO Comentarios (AmigoId, Autor, Texto) VALUES (@amigoId, @autor, @texto)');
+            .input('contenido', sql.NVarChar, contenido)
+            .query('INSERT INTO Comentarios (AmigoId, Autor, Contenido) VALUES (@amigoId, @autor, @contenido)');
         res.json({ mensaje: 'Comentario publicado' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -299,18 +259,16 @@ app.delete('/api/comentarios/:id', async (req, res) => {
 
         res.json({ mensaje: 'Comentario eliminado correctamente' });
     } catch (err) {
+        console.error('Error al eliminar comentario:', err);
         res.status(500).json({ error: 'No se pudo eliminar el comentario.' });
     }
 });
 
+// ================= AFICHES / ANUNCIOS =================
+
 app.get('/api/anuncio', async (req, res) => {
     try {
-        const result = await pool.request().query(`
-            SELECT Id, Titulo, Descripcion, ImagenUrl, FechaCreacion 
-            FROM AnuncioGlobal 
-            WHERE Activo = 1 
-            ORDER BY FechaCreacion DESC
-        `);
+        const result = await pool.request().query('SELECT * FROM Afiches ORDER BY Id DESC');
         res.json(result.recordset);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -320,45 +278,37 @@ app.get('/api/anuncio', async (req, res) => {
 app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
     try {
         const { titulo, descripcion, rolSolicitante } = req.body || {};
-
         if (rolSolicitante !== 'Admin') {
-            return res.status(403).json({ error: 'Solo los administradores pueden subir afiches.' });
+            return res.status(403).json({ error: 'Acceso denegado: Solo Admin.' });
         }
-
-        // Convertir afiche a .webp
-        const imagenUrl = req.file ? await procesarImagenWebp(req.file, 'afiche') : null;
-
+        const imgUrl = req.file ? `imagenes/${req.file.filename}` : '';
         await pool.request()
-            .input('t', sql.NVarChar, (titulo || '').trim())
-            .input('d', sql.NVarChar, (descripcion || '').trim())
-            .input('img', sql.NVarChar, imagenUrl)
-            .query('INSERT INTO AnuncioGlobal (Titulo, Descripcion, ImagenUrl, Activo) VALUES (@t, @d, @img, 1)');
-
-        res.json({ mensaje: 'Afiche guardado exitosamente' });
+            .input('t', sql.NVarChar, titulo || '')
+            .input('d', sql.NVarChar, descripcion || '')
+            .input('img', sql.NVarChar, imgUrl)
+            .query('INSERT INTO Afiches (Titulo, Descripcion, ImagenUrl) VALUES (@t, @d, @img)');
+        res.json({ mensaje: 'Afiche publicado' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
 app.delete('/api/anuncio/:id', async (req, res) => {
-    const { id } = req.params;
-    const { rolSolicitante } = req.query;
-
-    if (rolSolicitante !== 'Admin') {
-        return res.status(403).json({ error: 'Solo los administradores pueden quitar el afiche.' });
-    }
-
     try {
+        const { id } = req.params;
+        const { rolSolicitante } = req.query;
+        if (rolSolicitante !== 'Admin') {
+            return res.status(403).json({ error: 'Acceso denegado: Solo Admin.' });
+        }
         await pool.request()
             .input('id', sql.Int, id)
-            .query('UPDATE AnuncioGlobal SET Activo = 0 WHERE Id = @id');
-        res.json({ mensaje: 'Afiche desactivado' });
+            .query('DELETE FROM Afiches WHERE Id = @id');
+        res.json({ mensaje: 'Afiche eliminado' });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Servidor corriendo en el puerto ${PORT}`);
+app.listen(3000, () => {
+    console.log('Servidor corriendo en http://localhost:3000');
 });
