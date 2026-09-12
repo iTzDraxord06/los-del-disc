@@ -34,7 +34,7 @@ formLogin.addEventListener('submit', async (e) => {
     const password = document.getElementById('loginPass').value.trim();
 
     try {
-        const res = await fetch(`${API_AUTH}/login`, {
+        const res = await fetch(`${API_URL}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
@@ -67,7 +67,7 @@ formRegister.addEventListener('submit', async (e) => {
     const password = document.getElementById('regPass').value.trim();
 
     try {
-        const res = await fetch(`${API_AUTH}/register`, {
+        const res = await fetch(`${API_URL}/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ nombreVisible, username, password })
