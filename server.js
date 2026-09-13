@@ -133,6 +133,7 @@ app.put('/api/usuarios/perfil', async (req, res) => {
         }
 
         const usuarioDB = userCheck.recordset[0];
+        const oldNombre = usuarioDB.NombreVisible;
 
         // 2. Validación de Username (Mínimo 4 caracteres y sin duplicados)
         let usernameFinal = usuarioDB.Username;
@@ -142,7 +143,6 @@ app.put('/api/usuarios/perfil', async (req, res) => {
                 return res.status(400).json({ error: 'El usuario de inicio de sesión debe tener al menos 4 caracteres.' });
             }
 
-            // Si cambió su username, verificar que otro no lo tenga
             if (cleanUser.toLowerCase() !== usuarioDB.Username.toLowerCase()) {
                 const existe = await pool.request()
                     .input('u', sql.NVarChar, cleanUser)
@@ -177,13 +177,21 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             passwordFinal = nuevoPassword.trim();
         }
 
-        // 5. Guardar cambios en Azure SQL
+        // 5. Actualizar en UsuariosWeb
         await pool.request()
             .input('id', sql.Int, userId)
             .input('u', sql.NVarChar, usernameFinal)
             .input('nombre', sql.NVarChar, nombreFinal)
             .input('pass', sql.NVarChar, passwordFinal)
             .query('UPDATE UsuariosWeb SET Username = @u, NombreVisible = @nombre, Password = @pass WHERE Id = @id');
+
+        // 6. ACTUALIZAR COMENTARIOS ANTERIORES
+        if (oldNombre !== nombreFinal) {
+            await pool.request()
+                .input('nuevoAutor', sql.NVarChar, nombreFinal)
+                .input('viejoAutor', sql.NVarChar, oldNombre)
+                .query('UPDATE Comentarios SET Autor = @nuevoAutor WHERE Autor = @viejoAutor');
+        }
 
         res.json({
             exito: true,
