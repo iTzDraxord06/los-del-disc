@@ -128,7 +128,6 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             return res.status(400).json({ error: 'Falta el identificador del usuario.' });
         }
 
-        // 1. Obtener los datos actuales del usuario antes de modificarlos
         const userCheck = await pool.request()
             .input('id', sql.Int, userId)
             .query('SELECT Id, Username, Password, RolApp, NombreVisible FROM UsuariosWeb WHERE Id = @id');
@@ -140,7 +139,6 @@ app.put('/api/usuarios/perfil', async (req, res) => {
         const usuarioDB = userCheck.recordset[0];
         const oldNombreVisible = usuarioDB.NombreVisible;
 
-        // 2. Validación de Username (Mínimo 4 caracteres y no duplicado)
         let usernameFinal = usuarioDB.Username;
         if (newUsername && newUsername.trim() !== '') {
             const cleanUser = newUsername.trim();
@@ -161,7 +159,6 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             usernameFinal = cleanUser;
         }
 
-        // 3. Validación de Nombre Visible (Mínimo 3 caracteres)
         const nombreFinal = (nombreVisible && nombreVisible.trim() !== '') 
             ? nombreVisible.trim() 
             : usuarioDB.NombreVisible;
@@ -170,7 +167,6 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             return res.status(400).json({ error: 'El apodo visible debe tener al menos 3 caracteres.' });
         }
 
-        // 4. Validación de Contraseña
         let passwordFinal = usuarioDB.Password;
         if (nuevoPassword && nuevoPassword.trim() !== '') {
             if (nuevoPassword.trim().length < 6) {
@@ -182,7 +178,6 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             passwordFinal = nuevoPassword.trim();
         }
 
-        // 5. Actualizar la cuenta en UsuariosWeb
         await pool.request()
             .input('id', sql.Int, userId)
             .input('u', sql.NVarChar, usernameFinal)
@@ -190,7 +185,6 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             .input('pass', sql.NVarChar, passwordFinal)
             .query('UPDATE UsuariosWeb SET Username = @u, NombreVisible = @nombre, Password = @pass WHERE Id = @id');
 
-        // 6. DETECCIÓN AUTOMÁTICA EN COMENTARIOS:
         if (oldNombreVisible && oldNombreVisible !== nombreFinal) {
             await pool.request()
                 .input('nuevoAutor', sql.NVarChar, nombreFinal)
@@ -376,13 +370,13 @@ app.delete('/api/fotos/:id', async (req, res) => {
     }
 });
 
-// ================= COMENTARIOS =================
+// ================= COMENTARIOS (CON IMAGEN OPCIONAL) =================
 
 app.get('/api/comentarios/:amigoId', async (req, res) => {
     try {
         const result = await pool.request()
             .input('amigoId', sql.Int, req.params.amigoId)
-            .query('SELECT Id, AmigoId, Autor, Texto, Fecha FROM Comentarios WHERE AmigoId = @amigoId ORDER BY Id DESC');
+            .query('SELECT Id, AmigoId, Autor, Texto, Fecha, ImagenUrl FROM Comentarios WHERE AmigoId = @amigoId ORDER BY Id DESC');
         res.json(result.recordset);
     } catch (err) {
         console.error('Error en GET /api/comentarios:', err);
@@ -390,15 +384,19 @@ app.get('/api/comentarios/:amigoId', async (req, res) => {
     }
 });
 
-app.post('/api/comentarios', async (req, res) => {
+app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res) => {
     const { amigoId, autor, contenido } = req.body || {};
     try {
+        const imgUrl = req.file ? req.file.path : null;
+
         await pool.request()
             .input('amigoId', sql.Int, amigoId)
             .input('autor', sql.NVarChar, autor)
-            .input('texto', sql.NVarChar, contenido)
-            .query('INSERT INTO Comentarios (AmigoId, Autor, Texto, Fecha) VALUES (@amigoId, @autor, @texto, GETDATE())');
-        res.json({ mensaje: 'Comentario publicado' });
+            .input('texto', sql.NVarChar, contenido || '')
+            .input('img', sql.NVarChar, imgUrl)
+            .query('INSERT INTO Comentarios (AmigoId, Autor, Texto, Fecha, ImagenUrl) VALUES (@amigoId, @autor, @texto, GETDATE(), @img)');
+        
+        res.json({ mensaje: 'Comentario publicado exitosamente' });
     } catch (err) {
         console.error('Error en POST /api/comentarios:', err);
         res.status(500).json({ error: err.message });
@@ -477,7 +475,6 @@ app.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
 
     // ================= AUTO-PING DE PREVENCIÓN DE SUSPENSIÓN =================
-    // Intervalo seguro de 10 minutos (600,000 ms, muy lejos del desbordamiento de 2,147,483,647 ms)
     const INTERVALO_PING = 10 * 60 * 1000;
     const URL_SERVICIO = process.env.RENDER_EXTERNAL_URL;
 

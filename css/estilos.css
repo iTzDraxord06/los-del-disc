@@ -571,6 +571,54 @@ body {
     min-height: 80px;
 }
 
+/* Barra de adjunto para comentarios */
+.barra-adjuntos-comentario {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-adjuntar-img {
+    background-color: #2b2d31;
+    color: #dbdee1;
+    border: 1px solid var(--borde);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    user-select: none;
+}
+
+.btn-adjuntar-img:hover {
+    background-color: #35373c;
+    border-color: var(--discord-blurple);
+    color: #ffffff;
+}
+
+.nombre-foto-adjunta {
+    font-size: 0.8rem;
+    color: #23a55a;
+    font-weight: 600;
+    max-width: 250px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.btn-quitar-adjunto {
+    background: none;
+    border: none;
+    color: #ed4245;
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+}
+
 .lista-comentarios {
     display: flex;
     flex-direction: column;
@@ -608,6 +656,25 @@ body {
     font-size: 0.9rem;
     word-break: break-word;
     white-space: pre-wrap;
+}
+
+/* Imagen dentro de comentario */
+.comentario-imagen {
+    display: block;
+    margin-top: 10px;
+    max-width: 320px;
+    max-height: 300px;
+    width: auto;
+    height: auto;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--borde);
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.comentario-imagen:hover {
+    transform: scale(1.02);
 }
 
 /* Estilos de Login y Registro */

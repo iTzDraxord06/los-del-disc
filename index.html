@@ -104,7 +104,18 @@
                     <form id="formComentario" class="form-comentario">
                         <input type="text" id="inputAutor" placeholder="Tu nombre / apodo" required readonly>
                         <textarea id="inputComentario" placeholder="Escribe un comentario en su muro..." required maxlength="500"></textarea>
-                        <button type="submit" class="btn-primary">Enviar comentario</button>
+                        
+                        <!-- Barra de adjunto para 1 imagen opcional -->
+                        <div class="barra-adjuntos-comentario">
+                            <label for="inputFotoComentario" class="btn-adjuntar-img" title="Subir una imagen">
+                                📷 <span>Adjuntar imagen</span>
+                            </label>
+                            <input type="file" id="inputFotoComentario" accept="image/*" class="oculto">
+                            <span id="labelNombreFotoComentario" class="nombre-foto-adjunta oculto"></span>
+                            <button type="button" id="btnQuitarFotoComentario" class="btn-quitar-adjunto oculto" title="Quitar imagen">&times;</button>
+                        </div>
+
+                        <button type="submit" id="btnEnviarComentario" class="btn-primary">Enviar comentario</button>
                     </form>
 
                     <div id="listaComentarios" class="lista-comentarios"></div>

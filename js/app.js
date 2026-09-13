@@ -62,6 +62,10 @@ const listaComentariosEl = document.getElementById('listaComentarios');
 const formComentario = document.getElementById('formComentario');
 const inputAutor = document.getElementById('inputAutor');
 const inputComentario = document.getElementById('inputComentario');
+const inputFotoComentario = document.getElementById('inputFotoComentario');
+const labelNombreFotoComentario = document.getElementById('labelNombreFotoComentario');
+const btnQuitarFotoComentario = document.getElementById('btnQuitarFotoComentario');
+const btnEnviarComentario = document.getElementById('btnEnviarComentario');
 
 const modalAmigo = document.getElementById('modalAmigo');
 const btnCerrarModal = document.getElementById('btnCerrarModal');
@@ -121,14 +125,12 @@ if (usuarioSesion) {
     }
 }
 
-// Al hacer clic en el usuario, alternar el menú hacia arriba
 if (btnToggleMenuUsuario && menuDesplegableUsuario) {
     btnToggleMenuUsuario.addEventListener('click', (e) => {
         e.stopPropagation();
         menuDesplegableUsuario.classList.toggle('oculto');
     });
 
-    // Cerrar el popup al hacer clic en cualquier otra parte
     document.addEventListener('click', (e) => {
         if (!menuDesplegableUsuario.classList.contains('oculto') && !menuDesplegableUsuario.contains(e.target)) {
             menuDesplegableUsuario.classList.add('oculto');
@@ -331,7 +333,6 @@ function seleccionarAmigo(amigo) {
         img.addEventListener('click', () => abrirVisor(urlFoto));
         contenedor.appendChild(img);
 
-        // Si el usuario es Admin y la foto tiene Id en la BD
         if (esAdmin && idFoto) {
             const btnBorrar = document.createElement('button');
             btnBorrar.className = 'btn-eliminar-foto';
@@ -396,6 +397,31 @@ if (btnEliminarPerfil) {
     });
 }
 
+// ================= GESTIÓN DE LA FOTO ADJUNTA EN COMENTARIO =================
+
+if (inputFotoComentario) {
+    inputFotoComentario.addEventListener('change', () => {
+        if (inputFotoComentario.files && inputFotoComentario.files[0]) {
+            labelNombreFotoComentario.textContent = `📎 ${inputFotoComentario.files[0].name}`;
+            labelNombreFotoComentario.classList.remove('oculto');
+            btnQuitarFotoComentario.classList.remove('oculto');
+        }
+    });
+}
+
+function limpiarAdjuntoComentario() {
+    if (inputFotoComentario) inputFotoComentario.value = '';
+    if (labelNombreFotoComentario) {
+        labelNombreFotoComentario.textContent = '';
+        labelNombreFotoComentario.classList.add('oculto');
+    }
+    if (btnQuitarFotoComentario) btnQuitarFotoComentario.classList.add('oculto');
+}
+
+if (btnQuitarFotoComentario) {
+    btnQuitarFotoComentario.addEventListener('click', limpiarAdjuntoComentario);
+}
+
 // ================= COMENTARIOS =================
 
 async function cargarComentarios(amigoId) {
@@ -423,6 +449,12 @@ async function cargarComentarios(amigoId) {
 
             const card = document.createElement('div');
             card.className = 'comentario-item';
+            
+            let imagenHtml = '';
+            if (c.ImagenUrl) {
+                imagenHtml = `<img src="${c.ImagenUrl}" alt="Imagen de comentario" class="comentario-imagen" title="Clic para ampliar">`;
+            }
+
             card.innerHTML = `
                 <div class="comentario-header" style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
@@ -432,7 +464,14 @@ async function cargarComentarios(amigoId) {
                     ${esAdmin ? `<button class="btn-borrar-comentario" data-id="${c.Id}" title="Eliminar comentario" style="background: none; border: none; cursor: pointer; color: #ed4245; font-size: 14px; padding: 2px 6px;">🗑️</button>` : ''}
                 </div>
                 <p class="comentario-texto">${textoComentario}</p>
+                ${imagenHtml}
             `;
+
+            // Si tiene imagen, permitir ver en lightbox
+            const imgEl = card.querySelector('.comentario-imagen');
+            if (imgEl) {
+                imgEl.addEventListener('click', () => abrirVisor(c.ImagenUrl));
+            }
 
             if (esAdmin) {
                 const btnBorrar = card.querySelector('.btn-borrar-comentario');
@@ -473,23 +512,42 @@ formComentario.addEventListener('submit', async (e) => {
     const contenido = inputComentario.value.trim();
     if (!contenido) return;
 
+    const formData = new FormData();
+    formData.append('amigoId', amigoSeleccionadoId);
+    formData.append('autor', usuarioSesion.NombreVisible);
+    formData.append('contenido', contenido);
+
+    if (inputFotoComentario && inputFotoComentario.files && inputFotoComentario.files[0]) {
+        formData.append('imagenComentario', inputFotoComentario.files[0]);
+    }
+
+    if (btnEnviarComentario) {
+        btnEnviarComentario.disabled = true;
+        btnEnviarComentario.textContent = 'Enviando...';
+    }
+
     try {
         const res = await fetch(`${API_URL}/comentarios`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                amigoId: amigoSeleccionadoId,
-                autor: usuarioSesion.NombreVisible,
-                contenido: contenido
-            })
+            body: formData
         });
 
         if (res.ok) {
             inputComentario.value = '';
+            limpiarAdjuntoComentario();
             cargarComentarios(amigoSeleccionadoId);
+        } else {
+            const errData = await res.json().catch(() => ({}));
+            alert(errData.error || 'No se pudo publicar el comentario.');
         }
     } catch (err) {
         console.error('Error al enviar comentario:', err);
+        alert('Error de conexión al enviar comentario.');
+    } finally {
+        if (btnEnviarComentario) {
+            btnEnviarComentario.disabled = false;
+            btnEnviarComentario.textContent = 'Enviar comentario';
+        }
     }
 });
 
