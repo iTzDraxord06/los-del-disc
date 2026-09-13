@@ -77,7 +77,7 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// ================= AUTENTICACIÓN =================
+// ================= AUTENTICACIÓN Y PERFIL DE USUARIO =================
 
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body || {};
@@ -114,6 +114,93 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
+// Actualizar perfil de usuario (Username, NombreVisible y/o Contraseña)
+app.put('/api/usuarios/perfil', async (req, res) => {
+    try {
+        const { userId, newUsername, nombreVisible, passwordActual, nuevoPassword } = req.body || {};
+
+        if (!userId) {
+            return res.status(400).json({ error: 'Falta el identificador del usuario.' });
+        }
+
+        // 1. Obtener datos actuales del usuario
+        const userCheck = await pool.request()
+            .input('id', sql.Int, userId)
+            .query('SELECT Id, Username, Password, RolApp, NombreVisible FROM UsuariosWeb WHERE Id = @id');
+
+        if (userCheck.recordset.length === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado.' });
+        }
+
+        const usuarioDB = userCheck.recordset[0];
+
+        // 2. Validación de Username (Mínimo 4 caracteres y sin duplicados)
+        let usernameFinal = usuarioDB.Username;
+        if (newUsername && newUsername.trim() !== '') {
+            const cleanUser = newUsername.trim();
+            if (cleanUser.length < 4) {
+                return res.status(400).json({ error: 'El usuario de inicio de sesión debe tener al menos 4 caracteres.' });
+            }
+
+            // Si cambió su username, verificar que otro no lo tenga
+            if (cleanUser.toLowerCase() !== usuarioDB.Username.toLowerCase()) {
+                const existe = await pool.request()
+                    .input('u', sql.NVarChar, cleanUser)
+                    .input('id', sql.Int, userId)
+                    .query('SELECT Id FROM UsuariosWeb WHERE LOWER(Username) = LOWER(@u) AND Id <> @id');
+
+                if (existe.recordset.length > 0) {
+                    return res.status(400).json({ error: 'Ese nombre de usuario ya está en uso por otra persona.' });
+                }
+            }
+            usernameFinal = cleanUser;
+        }
+
+        // 3. Validación de Nombre Visible (Mínimo 3 caracteres)
+        const nombreFinal = (nombreVisible && nombreVisible.trim() !== '') 
+            ? nombreVisible.trim() 
+            : usuarioDB.NombreVisible;
+
+        if (nombreFinal.length < 3) {
+            return res.status(400).json({ error: 'El apodo visible debe tener al menos 3 caracteres.' });
+        }
+
+        // 4. Validación de Contraseña
+        let passwordFinal = usuarioDB.Password;
+        if (nuevoPassword && nuevoPassword.trim() !== '') {
+            if (nuevoPassword.trim().length < 6) {
+                return res.status(400).json({ error: 'La nueva contraseña debe tener mínimo 6 caracteres.' });
+            }
+            if (!passwordActual || passwordActual !== usuarioDB.Password) {
+                return res.status(400).json({ error: 'La contraseña actual no es correcta.' });
+            }
+            passwordFinal = nuevoPassword.trim();
+        }
+
+        // 5. Guardar cambios en Azure SQL
+        await pool.request()
+            .input('id', sql.Int, userId)
+            .input('u', sql.NVarChar, usernameFinal)
+            .input('nombre', sql.NVarChar, nombreFinal)
+            .input('pass', sql.NVarChar, passwordFinal)
+            .query('UPDATE UsuariosWeb SET Username = @u, NombreVisible = @nombre, Password = @pass WHERE Id = @id');
+
+        res.json({
+            exito: true,
+            mensaje: 'Datos actualizados correctamente.',
+            usuario: {
+                Id: usuarioDB.Id,
+                Username: usernameFinal,
+                NombreVisible: nombreFinal,
+                RolApp: usuarioDB.RolApp
+            }
+        });
+    } catch (err) {
+        console.error('Error al actualizar perfil de usuario:', err);
+        res.status(500).json({ error: 'Error interno en la base de datos.' });
+    }
+});
+
 // ================= AMIGOS Y FOTOS ILIMITADAS =================
 
 app.get('/api/amigos', async (req, res) => {
@@ -122,14 +209,16 @@ app.get('/api/amigos', async (req, res) => {
         const fotosResult = await pool.request().query('SELECT Id, AmigoId, FotoUrl FROM FotosAmigo ORDER BY Id ASC');
 
         const amigos = amigosResult.recordset.map(amigo => {
+            // Guardamos el Id y la URL de cada foto
             let fotos = fotosResult.recordset
                 .filter(f => f.AmigoId === amigo.Id)
-                .map(f => f.FotoUrl);
+                .map(f => ({ id: f.Id, url: f.FotoUrl }));
 
+            // Respaldo por si quedaron waifus antiguas en columnas fijas
             if (fotos.length === 0) {
-                if (amigo.Waifu1) fotos.push(amigo.Waifu1);
-                if (amigo.Waifu2) fotos.push(amigo.Waifu2);
-                if (amigo.Waifu3) fotos.push(amigo.Waifu3);
+                if (amigo.Waifu1) fotos.push({ id: null, url: amigo.Waifu1 });
+                if (amigo.Waifu2) fotos.push({ id: null, url: amigo.Waifu2 });
+                if (amigo.Waifu3) fotos.push({ id: null, url: amigo.Waifu3 });
             }
 
             return {
@@ -250,6 +339,27 @@ app.delete('/api/amigos/:id', async (req, res) => {
     } catch (err) {
         console.error('Error en DELETE /api/amigos:', err);
         res.status(500).json({ error: 'No se pudo eliminar el registro.' });
+    }
+});
+
+// Eliminar foto individual de la galería
+app.delete('/api/fotos/:id', async (req, res) => {
+    const { id } = req.params;
+    const { rolSolicitante } = req.query;
+
+    if (rolSolicitante !== 'Admin') {
+        return res.status(403).json({ error: 'Acceso denegado: Solo Admin puede borrar fotos.' });
+    }
+
+    try {
+        await pool.request()
+            .input('id', sql.Int, id)
+            .query('DELETE FROM FotosAmigo WHERE Id = @id');
+
+        res.json({ mensaje: 'Foto eliminada correctamente' });
+    } catch (err) {
+        console.error('Error al borrar foto:', err);
+        res.status(500).json({ error: 'No se pudo eliminar la foto de la base de datos.' });
     }
 });
 

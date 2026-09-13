@@ -32,8 +32,12 @@ let listaAmigosMemoria = [];
 let amigoSeleccionado = null;
 let amigoSeleccionadoId = null;
 
+// Elementos de Usuario y Menú Desplegable
 const labelUsuario = document.getElementById('labelUsuario');
+const btnToggleMenuUsuario = document.getElementById('btnToggleMenuUsuario');
+const menuDesplegableUsuario = document.getElementById('menuDesplegableUsuario');
 const btnCerrarSesion = document.getElementById('btnCerrarSesion');
+
 const btnAbrirModal = document.getElementById('btnAbrirModal');
 const btnAbrirModalAfiche = document.getElementById('btnAbrirModalAfiche');
 const btnMenu = document.getElementById('btnMenu');
@@ -106,6 +110,7 @@ function cerrarMenuLateral() {
     }
 }
 
+// ================= GESTIÓN DEL MENÚ POPUP DE USUARIO =================
 if (usuarioSesion) {
     labelUsuario.textContent = `${usuarioSesion.NombreVisible} [${usuarioSesion.RolApp}]`;
     if (inputAutor) inputAutor.value = usuarioSesion.NombreVisible;
@@ -114,6 +119,21 @@ if (usuarioSesion) {
         if (btnAbrirModal) btnAbrirModal.classList.remove('oculto');
         if (btnAbrirModalAfiche) btnAbrirModalAfiche.classList.remove('oculto');
     }
+}
+
+// Al hacer clic en el usuario, alternar el menú hacia arriba
+if (btnToggleMenuUsuario && menuDesplegableUsuario) {
+    btnToggleMenuUsuario.addEventListener('click', (e) => {
+        e.stopPropagation();
+        menuDesplegableUsuario.classList.toggle('oculto');
+    });
+
+    // Cerrar el popup al hacer clic en cualquier otra parte
+    document.addEventListener('click', (e) => {
+        if (!menuDesplegableUsuario.classList.contains('oculto') && !menuDesplegableUsuario.contains(e.target)) {
+            menuDesplegableUsuario.classList.add('oculto');
+        }
+    });
 }
 
 if (btnCerrarSesion) {
@@ -296,13 +316,54 @@ function seleccionarAmigo(amigo) {
 
     gridWaifus.innerHTML = '';
     const fotos = amigo.Fotos || [];
-    fotos.forEach(src => {
+
+    fotos.forEach(item => {
+        const urlFoto = typeof item === 'string' ? item : item.url;
+        const idFoto = typeof item === 'object' ? item.id : null;
+
+        const contenedor = document.createElement('div');
+        contenedor.className = 'item-foto-galeria';
+
         const img = document.createElement('img');
-        img.src = src;
+        img.src = urlFoto;
         img.alt = 'Foto Galería';
         img.title = 'Haz clic para ampliar';
-        img.addEventListener('click', () => abrirVisor(src));
-        gridWaifus.appendChild(img);
+        img.addEventListener('click', () => abrirVisor(urlFoto));
+        contenedor.appendChild(img);
+
+        // Si el usuario es Admin y la foto tiene Id en la BD
+        if (esAdmin && idFoto) {
+            const btnBorrar = document.createElement('button');
+            btnBorrar.className = 'btn-eliminar-foto';
+            btnBorrar.innerHTML = '🗑️';
+            btnBorrar.title = 'Eliminar esta foto de la galería';
+
+            btnBorrar.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const confirmar = confirm('¿Estás seguro de que deseas eliminar esta imagen de la galería?');
+                if (!confirmar) return;
+
+                try {
+                    const res = await fetch(`${API_URL}/fotos/${idFoto}?rolSolicitante=${encodeURIComponent(usuarioSesion.RolApp)}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (res.ok) {
+                        await cargarAmigos();
+                    } else {
+                        const errData = await res.json().catch(() => ({}));
+                        alert(errData.error || 'No se pudo eliminar la foto.');
+                    }
+                } catch (err) {
+                    console.error('Error al borrar foto:', err);
+                    alert('Error de conexión al eliminar la imagen.');
+                }
+            });
+
+            contenedor.appendChild(btnBorrar);
+        }
+
+        gridWaifus.appendChild(contenedor);
     });
 
     document.querySelectorAll('.amigo-card').forEach(c => c.classList.remove('activo'));
@@ -352,14 +413,12 @@ async function cargarComentarios(amigoId) {
         const esAdmin = usuarioSesion && usuarioSesion.RolApp === 'Admin';
 
         comentarios.forEach(c => {
-            // Lee Fecha o FechaPublicacion de forma segura
             const rawFecha = c.Fecha || c.FechaPublicacion;
             const fechaStr = rawFecha ? new Date(rawFecha).toLocaleString('es-ES', {
                 dateStyle: 'short',
                 timeStyle: 'short'
             }) : 'Reciente';
 
-            // Lee Texto o Contenido sin riesgo de undefined
             const textoComentario = c.Texto || c.Contenido || '';
 
             const card = document.createElement('div');

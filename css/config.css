@@ -1,0 +1,206 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+body {
+    background-color: #1e1f22;
+    color: #f2f3f5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.config-navbar {
+    background-color: #2b2d31;
+    border-bottom: 1px solid #3f4147;
+    padding: 0.8rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.config-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+
+.config-logo img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+.config-logo h2 {
+    font-size: 1.15rem;
+}
+
+.btn-regresar {
+    background-color: #35373c;
+    border: 1px solid #3f4147;
+    color: #ffffff;
+    padding: 0.5rem 0.9rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: background-color 0.2s;
+}
+
+.btn-regresar:hover {
+    background-color: #404249;
+}
+
+.config-main {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1.5rem;
+}
+
+.config-card {
+    background-color: #2b2d31;
+    border: 1px solid #3f4147;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 540px;
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+.config-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid #3f4147;
+}
+
+.badge-rol {
+    background-color: #5865f2;
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.grupo-campo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 1.1rem;
+}
+
+.grupo-campo label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #b5bac1;
+    text-transform: uppercase;
+}
+
+.grupo-campo input {
+    background-color: #1e1f22;
+    border: 1px solid #3f4147;
+    border-radius: 6px;
+    padding: 0.75rem;
+    color: #ffffff;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.grupo-campo input:focus {
+    border-color: #5865f2;
+}
+
+.input-bloqueado {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.grupo-campo small {
+    font-size: 0.75rem;
+    color: #949ba4;
+}
+
+.divisor-config {
+    border: none;
+    border-top: 1px solid #3f4147;
+    margin: 1.5rem 0;
+}
+
+.seccion-pass h3 {
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+.seccion-pass p {
+    font-size: 0.82rem;
+    color: #949ba4;
+    margin-bottom: 1rem;
+}
+
+.acciones-form {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 1.5rem;
+}
+
+.btn-cancelar {
+    background-color: transparent;
+    color: #ffffff;
+    border: 1px solid #3f4147;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-cancelar:hover {
+    background-color: #35373c;
+}
+
+.btn-guardar {
+    background-color: #5865f2;
+    color: #ffffff;
+    border: none;
+    padding: 0.6rem 1.4rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.btn-guardar:hover {
+    background-color: #4752c4;
+}
+
+.alerta {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    margin-bottom: 1.2rem;
+}
+
+.alerta.exito {
+    background-color: rgba(87, 242, 135, 0.15);
+    border: 1px solid #57f287;
+    color: #57f287;
+}
+
+.alerta.error {
+    background-color: rgba(237, 66, 69, 0.15);
+    border: 1px solid #ed4245;
+    color: #ed4245;
+}
+
+.oculto {
+    display: none !important;
+}

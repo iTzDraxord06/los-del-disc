@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Los del Disc - Ajustes de Cuenta</title>
+    <link rel="icon" type="image/png" href="imagenes/Logo Pagina Web.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/config.css">
+</head>
+
+<body>
+    <header class="config-navbar">
+        <div class="config-logo" onclick="window.location.href='index.html'">
+            <img src="imagenes/Logo Pagina Web.png" alt="Logo">
+            <h2>Los del Disc</h2>
+        </div>
+        <button onclick="window.location.href='index.html'" class="btn-regresar">⬅️ Volver al Muro</button>
+    </header>
+
+    <main class="config-main">
+        <div class="config-card">
+            <div class="config-card-header">
+                <h2>⚙️ Ajustes de Cuenta</h2>
+                <span id="badgeRol" class="badge-rol">Rol</span>
+            </div>
+
+            <div id="alerta" class="alerta oculto"></div>
+
+            <form id="formAjustes">
+                <div class="grupo-campo">
+                    <label>Usuario de Inicio de Sesión (Mínimo 4 caracteres):</label>
+                    <input type="text" id="inputUsername" required minlength="4" maxlength="25" placeholder="Tu usuario para loguearte">
+                    <small>Este es el nombre con el que inicias sesión.</small>
+                </div>
+
+                <div class="grupo-campo">
+                    <label>Nombre Visible / Apodo (Mínimo 3 caracteres):</label>
+                    <input type="text" id="inputNombreVisible" required minlength="3" maxlength="30" placeholder="Tu apodo público en la web">
+                </div>
+
+                <hr class="divisor-config">
+
+                <div class="seccion-pass">
+                    <h3>Cambiar Contraseña</h3>
+                    <p>Déjalo en blanco si solo quieres cambiar tu nombre o usuario.</p>
+
+                    <div class="grupo-campo">
+                        <label>Contraseña Actual:</label>
+                        <input type="password" id="inputPassActual" placeholder="Ingresa tu clave actual para autorizar">
+                    </div>
+
+                    <div class="grupo-campo">
+                        <label>Nueva Contraseña (Mínimo 6 caracteres):</label>
+                        <input type="password" id="inputPassNuevo" minlength="6" placeholder="Mínimo 6 caracteres">
+                    </div>
+                </div>
+
+                <div class="acciones-form">
+                    <button type="button" onclick="window.location.href='index.html'" class="btn-cancelar">Cancelar</button>
+                    <button type="submit" id="btnGuardar" class="btn-guardar">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="js/config.js"></script>
+</body>
+
+</html>

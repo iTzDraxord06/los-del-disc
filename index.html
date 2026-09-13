@@ -36,12 +36,27 @@
                 <p class="cargando">Cargando amigos...</p>
             </div>
 
-            <!-- Panel de usuario inferior estilo Discord -->
-            <div class="panel-usuario-inferior">
-                <div class="sesion-info">
-                    <span id="labelUsuario">Cargando...</span>
+            <!-- Panel de usuario inferior estilo Discord con menú desplegable hacia arriba -->
+            <div class="panel-usuario-inferior" id="panelUsuarioInferior">
+                <!-- Menú emergente hacia arriba -->
+                <div id="menuDesplegableUsuario" class="menu-popup-usuario oculto">
+                    <a href="configuracion.html" class="item-popup">
+                        <span class="icono-item-popup">⚙️</span> Ajustes de Cuenta
+                    </a>
+                    <div class="separador-popup"></div>
+                    <button id="btnCerrarSesion" class="item-popup item-popup-rojo">
+                        <span class="icono-item-popup">🚪</span> Cerrar Sesión
+                    </button>
                 </div>
-                <button id="btnCerrarSesion" class="btn-salir" title="Cerrar sesión">Salir</button>
+
+                <!-- Cuerpo completo clicable del usuario -->
+                <div class="cuerpo-usuario" id="btnToggleMenuUsuario" title="Opciones de cuenta">
+                    <div class="sesion-info">
+                        <span id="labelUsuario" class="nombre-usuario-texto">Cargando...</span>
+                        <span class="subtexto-estado">🟢 En línea</span>
+                    </div>
+                    <span class="icono-flecha">▲</span>
+                </div>
             </div>
         </section>
 
