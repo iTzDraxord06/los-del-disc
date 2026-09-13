@@ -114,7 +114,7 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// Actualizar perfil de usuario (Username, NombreVisible y/o Contraseña)
+// Actualizar perfil de usuario y sincronizar comentarios automáticamente
 app.put('/api/usuarios/perfil', async (req, res) => {
     try {
         const { userId, newUsername, nombreVisible, passwordActual, nuevoPassword } = req.body || {};
@@ -123,7 +123,7 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             return res.status(400).json({ error: 'Falta el identificador del usuario.' });
         }
 
-        // 1. Obtener datos actuales del usuario
+        // 1. Obtener los datos actuales del usuario antes de modificarlos
         const userCheck = await pool.request()
             .input('id', sql.Int, userId)
             .query('SELECT Id, Username, Password, RolApp, NombreVisible FROM UsuariosWeb WHERE Id = @id');
@@ -133,9 +133,9 @@ app.put('/api/usuarios/perfil', async (req, res) => {
         }
 
         const usuarioDB = userCheck.recordset[0];
-        const oldNombre = usuarioDB.NombreVisible;
+        const oldNombreVisible = usuarioDB.NombreVisible; // Nombre antes del cambio
 
-        // 2. Validación de Username (Mínimo 4 caracteres y sin duplicados)
+        // 2. Validación de Username (Mínimo 4 caracteres y no duplicado)
         let usernameFinal = usuarioDB.Username;
         if (newUsername && newUsername.trim() !== '') {
             const cleanUser = newUsername.trim();
@@ -177,7 +177,7 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             passwordFinal = nuevoPassword.trim();
         }
 
-        // 5. Actualizar en UsuariosWeb
+        // 5. Actualizar la cuenta en UsuariosWeb
         await pool.request()
             .input('id', sql.Int, userId)
             .input('u', sql.NVarChar, usernameFinal)
@@ -185,17 +185,20 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             .input('pass', sql.NVarChar, passwordFinal)
             .query('UPDATE UsuariosWeb SET Username = @u, NombreVisible = @nombre, Password = @pass WHERE Id = @id');
 
-        // 6. ACTUALIZAR COMENTARIOS ANTERIORES
-        if (oldNombre !== nombreFinal) {
+        // 6. DETECCIÓN AUTOMÁTICA EN COMENTARIOS:
+        // Si el usuario modificó su nombre visible, renombramos todos sus comentarios anteriores
+        if (oldNombreVisible && oldNombreVisible !== nombreFinal) {
             await pool.request()
                 .input('nuevoAutor', sql.NVarChar, nombreFinal)
-                .input('viejoAutor', sql.NVarChar, oldNombre)
+                .input('viejoAutor', sql.NVarChar, oldNombreVisible)
                 .query('UPDATE Comentarios SET Autor = @nuevoAutor WHERE Autor = @viejoAutor');
+            
+            console.log(`[SYNC] Comentarios de "${oldNombreVisible}" actualizados a "${nombreFinal}"`);
         }
 
         res.json({
             exito: true,
-            mensaje: 'Datos actualizados correctamente.',
+            mensaje: 'Datos y comentarios actualizados correctamente.',
             usuario: {
                 Id: usuarioDB.Id,
                 Username: usernameFinal,
