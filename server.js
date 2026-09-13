@@ -77,6 +77,11 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Endpoint ultraliviano para ping (no gasta consultas a la base de datos)
+app.get('/ping', (req, res) => {
+    res.status(200).send('pong');
+});
+
 // ================= AUTENTICACIÓN Y PERFIL DE USUARIO =================
 
 app.post('/api/login', async (req, res) => {
@@ -133,7 +138,7 @@ app.put('/api/usuarios/perfil', async (req, res) => {
         }
 
         const usuarioDB = userCheck.recordset[0];
-        const oldNombreVisible = usuarioDB.NombreVisible; // Nombre antes del cambio
+        const oldNombreVisible = usuarioDB.NombreVisible;
 
         // 2. Validación de Username (Mínimo 4 caracteres y no duplicado)
         let usernameFinal = usuarioDB.Username;
@@ -186,7 +191,6 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             .query('UPDATE UsuariosWeb SET Username = @u, NombreVisible = @nombre, Password = @pass WHERE Id = @id');
 
         // 6. DETECCIÓN AUTOMÁTICA EN COMENTARIOS:
-        // Si el usuario modificó su nombre visible, renombramos todos sus comentarios anteriores
         if (oldNombreVisible && oldNombreVisible !== nombreFinal) {
             await pool.request()
                 .input('nuevoAutor', sql.NVarChar, nombreFinal)
@@ -220,12 +224,10 @@ app.get('/api/amigos', async (req, res) => {
         const fotosResult = await pool.request().query('SELECT Id, AmigoId, FotoUrl FROM FotosAmigo ORDER BY Id ASC');
 
         const amigos = amigosResult.recordset.map(amigo => {
-            // Guardamos el Id y la URL de cada foto
             let fotos = fotosResult.recordset
                 .filter(f => f.AmigoId === amigo.Id)
                 .map(f => ({ id: f.Id, url: f.FotoUrl }));
 
-            // Respaldo por si quedaron waifus antiguas en columnas fijas
             if (fotos.length === 0) {
                 if (amigo.Waifu1) fotos.push({ id: null, url: amigo.Waifu1 });
                 if (amigo.Waifu2) fotos.push({ id: null, url: amigo.Waifu2 });
@@ -473,4 +475,23 @@ app.delete('/api/anuncio/:id', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
+
+    // ================= AUTO-PING DE PREVENCIÓN DE SUSPENSIÓN =================
+    // Intervalo seguro de 10 minutos (600,000 ms, muy lejos del desbordamiento de 2,147,483,647 ms)
+    const INTERVALO_PING = 10 * 60 * 1000;
+    const URL_SERVICIO = process.env.RENDER_EXTERNAL_URL;
+
+    if (URL_SERVICIO) {
+        setInterval(async () => {
+            try {
+                const respuesta = await fetch(`${URL_SERVICIO}/ping`);
+                console.log(`[KEEP-ALIVE] Ping exitoso: ${respuesta.status} - ${new Date().toLocaleTimeString()}`);
+            } catch (err) {
+                console.warn('[KEEP-ALIVE] Ping fallido temporalmente:', err.message);
+            }
+        }, INTERVALO_PING);
+        console.log(`[KEEP-ALIVE] Auto-ping activo hacia ${URL_SERVICIO}/ping cada 10 minutos.`);
+    } else {
+        console.log('[KEEP-ALIVE] Modo local detectado, auto-ping externo no requerido.');
+    }
 });
