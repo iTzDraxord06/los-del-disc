@@ -58,6 +58,7 @@ const btnEditarPerfil = document.getElementById('btnEditarPerfil');
 const btnEliminarPerfil = document.getElementById('btnEliminarPerfil');
 const gridWaifus = document.getElementById('gridWaifus');
 
+// Elementos de Comentarios en Perfiles
 const listaComentariosEl = document.getElementById('listaComentarios');
 const formComentario = document.getElementById('formComentario');
 const inputAutor = document.getElementById('inputAutor');
@@ -67,6 +68,16 @@ const labelNombreFotoComentario = document.getElementById('labelNombreFotoComent
 const btnQuitarFotoComentario = document.getElementById('btnQuitarFotoComentario');
 const btnEnviarComentario = document.getElementById('btnEnviarComentario');
 
+// Elementos de Publicaciones Globales (Inicio)
+const formPostGlobal = document.getElementById('formPostGlobal');
+const inputPostGlobal = document.getElementById('inputPostGlobal');
+const inputFotoPostGlobal = document.getElementById('inputFotoPostGlobal');
+const labelFotoPostGlobal = document.getElementById('labelFotoPostGlobal');
+const btnQuitarFotoPostGlobal = document.getElementById('btnQuitarFotoPostGlobal');
+const feedGlobalPosts = document.getElementById('feedGlobalPosts');
+const btnEnviarPostGlobal = document.getElementById('btnEnviarPostGlobal');
+
+// Modales
 const modalAmigo = document.getElementById('modalAmigo');
 const btnCerrarModal = document.getElementById('btnCerrarModal');
 const formNuevoAmigo = document.getElementById('formNuevoAmigo');
@@ -172,6 +183,7 @@ function volverAlInicio() {
     if (btnEliminarPerfil) btnEliminarPerfil.classList.add('oculto');
 
     cargarAfiche();
+    cargarPostsGlobales();
 }
 
 if (btnInicio) {
@@ -208,21 +220,24 @@ async function cargarAfiche() {
                 let botonBorrar = '';
                 if (esAdmin) {
                     botonBorrar = `
-                        <div style="text-align: right; margin-bottom: 10px;">
-                            <button class="btn-borrar-afiche" data-id="${item.Id}" style="background-color: #ed4245; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">🗑️ Quitar</button>
+                        <div style="text-align: right; margin-bottom: 8px;">
+                            <button class="btn-borrar-afiche" data-id="${item.Id}" style="background-color: #ed4245; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.78rem;">🗑️ Quitar</button>
                         </div>
                     `;
                 }
 
                 let imgHtml = '';
                 if (item.ImagenUrl) {
-                    imgHtml = `<img src="${item.ImagenUrl}" alt="Afiche" />`;
+                    imgHtml = `<img src="${item.ImagenUrl}" alt="Afiche" style="cursor: pointer;" />`;
                 }
 
                 let tituloHtml = item.Titulo ? `<h2>${item.Titulo}</h2>` : '';
                 let descHtml = item.Descripcion ? `<p>${item.Descripcion}</p>` : '';
 
                 tarjeta.innerHTML = `${botonBorrar}${imgHtml}${tituloHtml}${descHtml}`;
+
+                const imgEl = tarjeta.querySelector('img');
+                if (imgEl) imgEl.addEventListener('click', () => abrirVisor(item.ImagenUrl));
 
                 if (esAdmin) {
                     const btn = tarjeta.querySelector('.btn-borrar-afiche');
@@ -422,7 +437,7 @@ if (btnQuitarFotoComentario) {
     btnQuitarFotoComentario.addEventListener('click', limpiarAdjuntoComentario);
 }
 
-// ================= COMENTARIOS =================
+// ================= COMENTARIOS EN PERFILES =================
 
 async function cargarComentarios(amigoId) {
     listaComentariosEl.innerHTML = '<p class="cargando">Cargando comentarios...</p>';
@@ -436,8 +451,6 @@ async function cargarComentarios(amigoId) {
             return;
         }
 
-        const esAdmin = usuarioSesion && usuarioSesion.RolApp === 'Admin';
-
         comentarios.forEach(c => {
             const rawFecha = c.Fecha || c.FechaPublicacion;
             const fechaStr = rawFecha ? new Date(rawFecha).toLocaleString('es-ES', {
@@ -446,6 +459,9 @@ async function cargarComentarios(amigoId) {
             }) : 'Reciente';
 
             const textoComentario = c.Texto || c.Contenido || '';
+            const esAdmin = usuarioSesion && usuarioSesion.RolApp === 'Admin';
+            const esAutor = usuarioSesion && usuarioSesion.NombreVisible === c.Autor;
+            const puedeBorrar = esAdmin || esAutor;
 
             const card = document.createElement('div');
             card.className = 'comentario-item';
@@ -461,26 +477,25 @@ async function cargarComentarios(amigoId) {
                         <span class="comentario-autor">${c.Autor}</span>
                         <span class="comentario-fecha">${fechaStr}</span>
                     </div>
-                    ${esAdmin ? `<button class="btn-borrar-comentario" data-id="${c.Id}" title="Eliminar comentario" style="background: none; border: none; cursor: pointer; color: #ed4245; font-size: 14px; padding: 2px 6px;">🗑️</button>` : ''}
+                    ${puedeBorrar ? `<button class="btn-borrar-comentario" data-id="${c.Id}" title="Eliminar comentario" style="background: none; border: none; cursor: pointer; color: #ed4245; font-size: 14px; padding: 2px 6px;">🗑️</button>` : ''}
                 </div>
                 <p class="comentario-texto">${textoComentario}</p>
                 ${imagenHtml}
             `;
 
-            // Si tiene imagen, permitir ver en lightbox
             const imgEl = card.querySelector('.comentario-imagen');
             if (imgEl) {
                 imgEl.addEventListener('click', () => abrirVisor(c.ImagenUrl));
             }
 
-            if (esAdmin) {
+            if (puedeBorrar) {
                 const btnBorrar = card.querySelector('.btn-borrar-comentario');
                 btnBorrar.addEventListener('click', async () => {
                     const confirmar = confirm('¿Deseas eliminar este comentario?');
                     if (!confirmar) return;
 
                     try {
-                        const deleteRes = await fetch(`${API_URL}/comentarios/${c.Id}?rolSolicitante=${encodeURIComponent(usuarioSesion.RolApp)}`, {
+                        const deleteRes = await fetch(`${API_URL}/comentarios/${c.Id}?rolSolicitante=${encodeURIComponent(usuarioSesion.RolApp)}&solicitanteNombre=${encodeURIComponent(usuarioSesion.NombreVisible)}`, {
                             method: 'DELETE'
                         });
                         const data = await deleteRes.json().catch(() => ({}));
@@ -550,6 +565,126 @@ formComentario.addEventListener('submit', async (e) => {
         }
     }
 });
+
+// ================= GESTIÓN DEL MURO GLOBAL (INICIO) =================
+
+if (inputFotoPostGlobal) {
+    inputFotoPostGlobal.addEventListener('change', () => {
+        if (inputFotoPostGlobal.files && inputFotoPostGlobal.files[0]) {
+            labelFotoPostGlobal.textContent = `📎 ${inputFotoPostGlobal.files[0].name}`;
+            labelFotoPostGlobal.classList.remove('oculto');
+            btnQuitarFotoPostGlobal.classList.remove('oculto');
+        }
+    });
+}
+
+if (btnQuitarFotoPostGlobal) {
+    btnQuitarFotoPostGlobal.addEventListener('click', () => {
+        inputFotoPostGlobal.value = '';
+        labelFotoPostGlobal.textContent = '';
+        labelFotoPostGlobal.classList.add('oculto');
+        btnQuitarFotoPostGlobal.classList.add('oculto');
+    });
+}
+
+async function cargarPostsGlobales() {
+    if (!feedGlobalPosts) return;
+    feedGlobalPosts.innerHTML = '<p class="cargando">Cargando publicaciones...</p>';
+    try {
+        const res = await fetch(`${API_URL}/publicaciones-globales`);
+        const posts = await res.json();
+        feedGlobalPosts.innerHTML = '';
+
+        if (!Array.isArray(posts) || posts.length === 0) {
+            feedGlobalPosts.innerHTML = '<p class="sin-datos">No hay publicaciones aún. ¡Sé el primero en escribir!</p>';
+            return;
+        }
+
+        posts.forEach(p => {
+            const esAdmin = usuarioSesion && usuarioSesion.RolApp === 'Admin';
+            const esAutor = usuarioSesion && usuarioSesion.NombreVisible === p.Autor;
+            const puedeBorrar = esAdmin || esAutor;
+
+            const card = document.createElement('div');
+            card.className = 'comentario-item';
+            
+            let imgHtml = p.ImagenUrl ? `<img src="${p.ImagenUrl}" class="comentario-imagen" alt="Foto post">` : '';
+            
+            card.innerHTML = `
+                <div class="comentario-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span class="comentario-autor">${p.Autor}</span>
+                        <span class="comentario-fecha">${new Date(p.Fecha).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                    </div>
+                    ${puedeBorrar ? `<button class="btn-borrar-post-global" data-id="${p.Id}" title="Eliminar publicación" style="background: none; border: none; cursor: pointer; color: #ed4245; font-size: 14px;">🗑️</button>` : ''}
+                </div>
+                <p class="comentario-texto">${p.Texto}</p>
+                ${imgHtml}
+            `;
+
+            const imgEl = card.querySelector('.comentario-imagen');
+            if (imgEl) imgEl.addEventListener('click', () => abrirVisor(p.ImagenUrl));
+
+            if (puedeBorrar) {
+                const btnB = card.querySelector('.btn-borrar-post-global');
+                btnB.addEventListener('click', async () => {
+                    if (!confirm('¿Deseas eliminar esta publicación?')) return;
+                    await fetch(`${API_URL}/publicaciones-globales/${p.Id}?rolSolicitante=${encodeURIComponent(usuarioSesion.RolApp)}&solicitanteNombre=${encodeURIComponent(usuarioSesion.NombreVisible)}`, {
+                        method: 'DELETE'
+                    });
+                    cargarPostsGlobales();
+                });
+            }
+
+            feedGlobalPosts.appendChild(card);
+        });
+    } catch (err) {
+        console.error(err);
+        feedGlobalPosts.innerHTML = '<p class="sin-datos">Error al cargar publicaciones.</p>';
+    }
+}
+
+if (formPostGlobal) {
+    formPostGlobal.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const texto = inputPostGlobal.value.trim();
+        if (!texto) return;
+
+        const formData = new FormData();
+        formData.append('autor', usuarioSesion.NombreVisible);
+        formData.append('contenido', texto);
+        if (inputFotoPostGlobal.files && inputFotoPostGlobal.files[0]) {
+            formData.append('imagenPost', inputFotoPostGlobal.files[0]);
+        }
+
+        if (btnEnviarPostGlobal) {
+            btnEnviarPostGlobal.disabled = true;
+            btnEnviarPostGlobal.textContent = 'Publicando...';
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/publicaciones-globales`, {
+                method: 'POST',
+                body: formData
+            });
+            if (res.ok) {
+                inputPostGlobal.value = '';
+                if (btnQuitarFotoPostGlobal) btnQuitarFotoPostGlobal.click();
+                cargarPostsGlobales();
+            } else {
+                alert('No se pudo enviar la publicación.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error de conexión al publicar.');
+        } finally {
+            if (btnEnviarPostGlobal) {
+                btnEnviarPostGlobal.disabled = false;
+                btnEnviarPostGlobal.textContent = 'Publicar';
+            }
+        }
+    });
+}
 
 // ================= MODAL AMIGO (AGREGAR / EDITAR) =================
 
@@ -693,4 +828,5 @@ formAfiche.addEventListener('submit', async (e) => {
 window.addEventListener('DOMContentLoaded', () => {
     cargarAmigos();
     cargarAfiche();
+    cargarPostsGlobales();
 });

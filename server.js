@@ -185,13 +185,17 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             .input('pass', sql.NVarChar, passwordFinal)
             .query('UPDATE UsuariosWeb SET Username = @u, NombreVisible = @nombre, Password = @pass WHERE Id = @id');
 
+        // Sincronizar autor tanto en comentarios de perfiles como en posts globales
         if (oldNombreVisible && oldNombreVisible !== nombreFinal) {
             await pool.request()
                 .input('nuevoAutor', sql.NVarChar, nombreFinal)
                 .input('viejoAutor', sql.NVarChar, oldNombreVisible)
-                .query('UPDATE Comentarios SET Autor = @nuevoAutor WHERE Autor = @viejoAutor');
+                .query(`
+                    UPDATE Comentarios SET Autor = @nuevoAutor WHERE Autor = @viejoAutor;
+                    UPDATE PublicacionesGlobales SET Autor = @nuevoAutor WHERE Autor = @viejoAutor;
+                `);
             
-            console.log(`[SYNC] Comentarios de "${oldNombreVisible}" actualizados a "${nombreFinal}"`);
+            console.log(`[SYNC] Contenidos de "${oldNombreVisible}" actualizados a "${nombreFinal}"`);
         }
 
         res.json({
@@ -370,7 +374,62 @@ app.delete('/api/fotos/:id', async (req, res) => {
     }
 });
 
-// ================= COMENTARIOS (CON IMAGEN OPCIONAL) =================
+// ================= MURO GLOBAL (PUBLICACIONES DE INICIO) =================
+
+app.get('/api/publicaciones-globales', async (req, res) => {
+    try {
+        const result = await pool.request().query('SELECT * FROM PublicacionesGlobales ORDER BY Id DESC');
+        res.json(result.recordset);
+    } catch (err) {
+        console.error('Error en GET /api/publicaciones-globales:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req, res) => {
+    const { autor, contenido } = req.body || {};
+    try {
+        const imgUrl = req.file ? req.file.path : null;
+        await pool.request()
+            .input('autor', sql.NVarChar, autor)
+            .input('texto', sql.NVarChar, contenido || '')
+            .input('img', sql.NVarChar, imgUrl)
+            .query('INSERT INTO PublicacionesGlobales (Autor, Texto, Fecha, ImagenUrl) VALUES (@autor, @texto, GETDATE(), @img)');
+        res.json({ mensaje: 'Publicación enviada' });
+    } catch (err) {
+        console.error('Error en POST /api/publicaciones-globales:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/publicaciones-globales/:id', async (req, res) => {
+    const { id } = req.params;
+    const { rolSolicitante, solicitanteNombre } = req.query;
+
+    try {
+        const check = await pool.request()
+            .input('id', sql.Int, id)
+            .query('SELECT Autor FROM PublicacionesGlobales WHERE Id = @id');
+
+        if (check.recordset.length === 0) {
+            return res.status(404).json({ error: 'Publicación no encontrada.' });
+        }
+
+        const autor = check.recordset[0].Autor;
+        // Permite borrar al Admin O al propio dueño
+        if (rolSolicitante !== 'Admin' && solicitanteNombre !== autor) {
+            return res.status(403).json({ error: 'No tienes permiso para borrar esta publicación.' });
+        }
+
+        await pool.request().input('id', sql.Int, id).query('DELETE FROM PublicacionesGlobales WHERE Id = @id');
+        res.json({ mensaje: 'Publicación eliminada' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Error al eliminar publicación.' });
+    }
+});
+
+// ================= COMENTARIOS (EN PERFILES) =================
 
 app.get('/api/comentarios/:amigoId', async (req, res) => {
     try {
@@ -405,16 +464,24 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
 
 app.delete('/api/comentarios/:id', async (req, res) => {
     const { id } = req.params;
-    const { rolSolicitante } = req.query;
-
-    if (rolSolicitante !== 'Admin') {
-        return res.status(403).json({ error: 'Solo los administradores pueden eliminar comentarios.' });
-    }
+    const { rolSolicitante, solicitanteNombre } = req.query;
 
     try {
-        await pool.request()
+        const check = await pool.request()
             .input('id', sql.Int, id)
-            .query('DELETE FROM Comentarios WHERE Id = @id');
+            .query('SELECT Autor FROM Comentarios WHERE Id = @id');
+
+        if (check.recordset.length === 0) {
+            return res.status(404).json({ error: 'Comentario no encontrado.' });
+        }
+
+        const autor = check.recordset[0].Autor;
+        // Permite borrar al Admin O al propio dueño
+        if (rolSolicitante !== 'Admin' && solicitanteNombre !== autor) {
+            return res.status(403).json({ error: 'No tienes permiso para borrar este comentario.' });
+        }
+
+        await pool.request().input('id', sql.Int, id).query('DELETE FROM Comentarios WHERE Id = @id');
         res.json({ mensaje: 'Comentario eliminado correctamente' });
     } catch (err) {
         console.error('Error al eliminar comentario:', err);

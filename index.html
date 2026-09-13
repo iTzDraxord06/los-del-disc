@@ -61,14 +61,44 @@
         </section>
 
         <section class="seccion-muro" id="seccionMuro">
-            <div class="muro-placeholder" id="muroVacio">
-                <div id="feedAfiches" class="feed-afiches"></div>
+            <!-- VISTA DE INICIO (FEED + AFICHES A LA DERECHA) -->
+            <div class="contenedor-inicio" id="muroVacio">
+                <!-- Columna Izquierda: Muro Comunitario -->
+                <div class="columna-feed-global">
+                    <div class="caja-crear-post">
+                        <h3>💬 Tablón de la Comunidad</h3>
+                        <form id="formPostGlobal" class="form-comentario">
+                            <textarea id="inputPostGlobal" placeholder="¿Qué está pasando en el server? Escribe algo para todos..." required maxlength="600"></textarea>
+                            <div class="barra-adjuntos-comentario">
+                                <label for="inputFotoPostGlobal" class="btn-adjuntar-img">
+                                    📷 <span>Subir foto</span>
+                                </label>
+                                <input type="file" id="inputFotoPostGlobal" accept="image/*" class="oculto">
+                                <span id="labelFotoPostGlobal" class="nombre-foto-adjunta oculto"></span>
+                                <button type="button" id="btnQuitarFotoPostGlobal" class="btn-quitar-adjunto oculto">&times;</button>
+                            </div>
+                            <button type="submit" id="btnEnviarPostGlobal" class="btn-primary" style="align-self: flex-end;">Publicar</button>
+                        </form>
+                    </div>
 
-                <div id="aficheDefault" class="oculto">
-                    <p>👈 Selecciona un amigo para ver su perfil y dejarle un comentario.</p>
+                    <div id="feedGlobalPosts" class="lista-comentarios" style="margin-top: 20px;">
+                        <p class="cargando">Cargando publicaciones...</p>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Afiches / Eventos -->
+                <div class="columna-afiches-lateral">
+                    <div class="header-afiches-lateral">
+                        <h3>📢 Anuncios & Afiches</h3>
+                    </div>
+                    <div id="feedAfiches" class="feed-afiches"></div>
+                    <div id="aficheDefault" class="oculto sin-datos">
+                        <p>No hay afiches activos por el momento.</p>
+                    </div>
                 </div>
             </div>
 
+            <!-- VISTA DETALLE DE AMIGO (CUANDO SELECCIONAS A ALGUIEN) -->
             <div class="muro-contenido oculto" id="muroDetalle">
                 <div class="perfil-banner"></div>
                 <div class="perfil-info">
@@ -105,7 +135,6 @@
                         <input type="text" id="inputAutor" placeholder="Tu nombre / apodo" required readonly>
                         <textarea id="inputComentario" placeholder="Escribe un comentario en su muro..." required maxlength="500"></textarea>
                         
-                        <!-- Barra de adjunto para 1 imagen opcional -->
                         <div class="barra-adjuntos-comentario">
                             <label for="inputFotoComentario" class="btn-adjuntar-img" title="Subir una imagen">
                                 📷 <span>Adjuntar imagen</span>
