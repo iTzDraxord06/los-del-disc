@@ -44,7 +44,7 @@ function renderizarMultimediaMuro(url, alt = 'Multimedia') {
                 gif.src = '';
                 gif.src = src;
             }
-        }, 3000);
+        }, 1100);
 
         return `
         <img
