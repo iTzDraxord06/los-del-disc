@@ -6,23 +6,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const badgeNotis = document.getElementById('badgeNotis');
     const listaNotis = document.getElementById('listaNotis');
 
-    const usuarioSesion = JSON.parse(localStorage.getItem('disc_user'));
+    if (!btnNotis || !dropdownNotis) return;
 
-    if (btnNotis && dropdownNotis) {
-        btnNotis.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dropdownNotis.classList.toggle('oculto');
-            if (!dropdownNotis.classList.contains('oculto') && usuarioSesion) {
-                cargarNotificaciones(usuarioSesion.Id);
-            }
-        });
+    btnNotis.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdownNotis.classList.toggle('oculto');
+        
+        if (!dropdownNotis.classList.contains('oculto')) {
+            const usuarioSesion = JSON.parse(localStorage.getItem('disc_user'));
+            const uId = usuarioSesion ? (usuarioSesion.Id || usuarioSesion.id) : null;
+            
+            console.log('DEBUG - Usuario en sesión para notificaciones:', uId);
 
-        document.addEventListener('click', (e) => {
-            if (!dropdownNotis.contains(e.target) && !btnNotis.contains(e.target)) {
-                dropdownNotis.classList.add('oculto');
+            if (!uId) {
+                listaNotis.innerHTML = `<div class="dropdown-notificaciones-vacio">🔒 Inicia sesión para ver notificaciones</div>`;
+                if (badgeNotis) badgeNotis.classList.add('oculto');
+                return;
             }
-        });
-    }
+            cargarNotificaciones(uId);
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!dropdownNotis.contains(e.target) && !btnNotis.contains(e.target)) {
+            dropdownNotis.classList.add('oculto');
+        }
+    });
 
     async function cargarNotificaciones(usuarioId) {
         if (!listaNotis) return;
@@ -30,6 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             const res = await fetch(`${API_URL}/notificaciones/${usuarioId}`);
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
             const data = await res.json();
             
             listaNotis.innerHTML = '';
