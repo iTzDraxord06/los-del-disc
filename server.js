@@ -61,11 +61,11 @@ app.use('/imagenes', express.static(rutaImagenes));
 app.use(express.static(path.join(__dirname)));
 
 const dbConfig = {
-    user: 'admin_discord',
-    password: 'ClaveFuerte.2026!',
-    server: 'servidor-discord-eduardo.database.windows.net',
-    port: 1433,
-    database: 'DiscordFriendsDB',
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    server: process.env.DB_SERVER,
+    port: Number(process.env.DB_PORT || 1433),
+    database: process.env.DB_DATABASE || 'DiscordFriendsDB',
     options: {
         encrypt: true,
         trustServerCertificate: false
@@ -276,6 +276,18 @@ app.post('/api/amigos', manejarSubida, async (req, res) => {
                 .input('fotoUrl', sql.NVarChar, file.path)
                 .query('INSERT INTO FotosAmigo (AmigoId, FotoUrl) VALUES (@amigoId, @fotoUrl)');
         }
+
+        const waifuUrlDirectas = Array.isArray(body.waifuUrlDirectas)
+            ? body.waifuUrlDirectas
+            : (body.waifuUrlDirectas ? [body.waifuUrlDirectas] : []);
+        for (const url of waifuUrlDirectas) {
+            if (url) {
+                await pool.request()
+                    .input('amigoId', sql.Int, amigoId)
+                    .input('fotoUrl', sql.NVarChar, url)
+                    .query('INSERT INTO FotosAmigo (AmigoId, FotoUrl) VALUES (@amigoId, @fotoUrl)');
+            }
+        }
         res.json({ mensaje: 'Amigo agregado exitosamente' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -320,6 +332,18 @@ app.put('/api/amigos/:id', manejarSubida, async (req, res) => {
                 .input('amigoId', sql.Int, id)
                 .input('fotoUrl', sql.NVarChar, file.path)
                 .query('INSERT INTO FotosAmigo (AmigoId, FotoUrl) VALUES (@amigoId, @fotoUrl)');
+        }
+
+        const waifuUrlDirectas = Array.isArray(body.waifuUrlDirectas)
+            ? body.waifuUrlDirectas
+            : (body.waifuUrlDirectas ? [body.waifuUrlDirectas] : []);
+        for (const url of waifuUrlDirectas) {
+            if (url) {
+                await pool.request()
+                    .input('amigoId', sql.Int, id)
+                    .input('fotoUrl', sql.NVarChar, url)
+                    .query('INSERT INTO FotosAmigo (AmigoId, FotoUrl) VALUES (@amigoId, @fotoUrl)');
+            }
         }
         res.json({ mensaje: 'Perfil actualizado exitosamente' });
     } catch (err) {
@@ -382,9 +406,10 @@ app.get('/api/publicaciones-globales', async (req, res) => {
 });
 
 app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req, res) => {
-    const { autor, contenido, respuestaAId } = req.body || {};
+    const { autor, contenido, respuestaAId, imagenUrlDirecta } = req.body || {};
     try {
-        const imgUrl = req.file ? req.file.path : null;
+        // Las imágenes pasan por Cloudinary; los videos llegan previamente desde Google Drive.
+        const imgUrl = req.file ? req.file.path : (imagenUrlDirecta || null);
         const insertRes = await pool.request()
             .input('autor', sql.NVarChar, autor)
             .input('texto', sql.NVarChar, contenido || '')
@@ -479,18 +504,17 @@ app.get('/api/comentarios/:amigoId', async (req, res) => {
 });
 
 app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res) => {
-    const { amigoId, autor, contenido, respuestaAId } = req.body || {};
+    const { amigoId, autor, contenido, respuestaAId, imagenUrlDirecta } = req.body || {};
     try {
-        if (!contenido || !contenido.trim()) {
+        const imgUrl = req.file ? req.file.path : (imagenUrlDirecta || null);
+        if ((!contenido || !contenido.trim()) && !imgUrl) {
             return res.status(400).json({ error: 'El comentario no puede estar vacío.' });
         }
-
-        const imgUrl = req.file ? req.file.path : null;
 
         const insertRes = await pool.request()
             .input('amigoId', sql.Int, amigoId)
             .input('autor', sql.NVarChar, autor)
-            .input('texto', sql.NVarChar, contenido.trim())
+            .input('texto', sql.NVarChar, (contenido || '').trim())
             .input('parent', sql.Int, respuestaAId ? parseInt(respuestaAId) : null)
             .input('img', sql.NVarChar, imgUrl)
             .query('INSERT INTO Comentarios (AmigoId, Autor, Texto, Fecha, RespuestaAId, ImagenUrl) OUTPUT INSERTED.Id VALUES (@amigoId, @autor, @texto, GETDATE(), @parent, @img)');
@@ -650,28 +674,17 @@ app.get('/api/anuncio', async (req, res) => {
 
 app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
     try {
-        const { titulo, descripcion, rolSolicitante, imagenUrl } = req.body || {};
+        const { titulo, descripcion, rolSolicitante } = req.body || {};
+        if (rolSolicitante !== 'Admin') return res.status(403).json({ error: 'Solo Admin.' });
 
-        if (rolSolicitante !== 'Admin') {
-            return res.status(403).json({ error: 'Solo Admin.' });
-        }
-
-        // Para imágenes: req.file.path viene de Cloudinary.
-        // Para videos: el frontend envía la URL que devolvió Google Drive.
-        const imgUrl = req.file ? req.file.path : (imagenUrl || '');
-
+        const imgUrl = req.file ? req.file.path : '';
         await pool.request()
             .input('t', sql.NVarChar, titulo || '')
             .input('d', sql.NVarChar, descripcion || '')
             .input('img', sql.NVarChar, imgUrl)
-            .query(`
-                INSERT INTO AnuncioGlobal (Titulo, Descripcion, ImagenUrl, Activo)
-                VALUES (@t, @d, @img, 1)
-            `);
-
-        res.json({ mensaje: 'Anuncio publicado correctamente.' });
+            .query('INSERT INTO AnuncioGlobal (Titulo, Descripcion, ImagenUrl, Activo) VALUES (@t, @d, @img, 1)');
+        res.json({ mensaje: 'Afiche publicado' });
     } catch (err) {
-        console.error('Error en /api/anuncio:', err);
         res.status(500).json({ error: err.message });
     }
 });
