@@ -1,72 +1,127 @@
 const { google } = require('googleapis');
 const stream = require('stream');
 
-const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
+const SCOPES = ['https://www.googleapis.com/auth/drive'];
 const FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID || '1oRs20DVKv7xbG2Ey9PNjTXL4zOz3CgYb';
 
-function crearAuthDrive() {
-    // Opción recomendada para Render: guardar el JSON completo en una variable.
-    if (process.env.GOOGLE_SERVICE_ACCOUNT_JSON) {
-        const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
-        return new google.auth.GoogleAuth({ credentials, scopes: SCOPES });
+let oauth2Client = null;
+
+function crearOAuthClient() {
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+        throw new Error(
+            'Faltan GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET en las variables de entorno.'
+        );
     }
 
-    // Opción alternativa: variables separadas.
-    if (process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
-        const credentials = {
-            type: 'service_account',
-            project_id: process.env.GOOGLE_PROJECT_ID,
-            private_key_id: process.env.GOOGLE_PRIVATE_KEY_ID,
-            private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-            client_email: process.env.GOOGLE_CLIENT_EMAIL,
-            token_uri: 'https://oauth2.googleapis.com/token'
-        };
-        return new google.auth.GoogleAuth({ credentials, scopes: SCOPES });
+    if (!process.env.GOOGLE_REDIRECT_URI) {
+        throw new Error(
+            'Falta GOOGLE_REDIRECT_URI en las variables de entorno.'
+        );
     }
 
-    // Desarrollo local: permite usar drive-key.json si existe.
-    const fs = require('fs');
-    const path = require('path');
-    const keyPath = path.join(__dirname, 'drive-key.json');
-    if (fs.existsSync(keyPath)) {
-        return new google.auth.GoogleAuth({ keyFile: keyPath, scopes: SCOPES });
+    if (!oauth2Client) {
+        oauth2Client = new google.auth.OAuth2(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET,
+            process.env.GOOGLE_REDIRECT_URI
+        );
     }
 
-    throw new Error('No hay credenciales de Google Drive. Configura GOOGLE_SERVICE_ACCOUNT_JSON o GOOGLE_CLIENT_EMAIL + GOOGLE_PRIVATE_KEY en Render.');
+    return oauth2Client;
 }
 
-const auth = crearAuthDrive();
-const drive = google.drive({ version: 'v3', auth });
+// ================= OBTENER URL DE AUTORIZACIÓN =================
+function obtenerUrlAutorizacion() {
+    const client = crearOAuthClient();
 
+    return client.generateAuthUrl({
+        access_type: 'offline',
+        scope: SCOPES,
+        prompt: 'consent'
+    });
+}
+
+// ================= PROCESAR CALLBACK DE GOOGLE =================
+async function procesarCallback(codigo) {
+    if (!codigo) {
+        throw new Error('Google no devolvió ningún código de autorización.');
+    }
+
+    const client = crearOAuthClient();
+
+    const { tokens } = await client.getToken(codigo);
+
+    if (!tokens.refresh_token) {
+        throw new Error(
+            'Google no devolvió GOOGLE_REFRESH_TOKEN. Vuelve a autorizar usando prompt=consent.'
+        );
+    }
+
+    client.setCredentials(tokens);
+
+    return tokens;
+}
+
+// ================= CONFIGURAR AUTENTICACIÓN PARA DRIVE =================
+function obtenerClienteDrive() {
+    const client = crearOAuthClient();
+
+    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+
+    if (!refreshToken) {
+        throw new Error(
+            'Falta GOOGLE_REFRESH_TOKEN. Primero autoriza Google mediante /api/drive/auth y agrega el token obtenido en Render.'
+        );
+    }
+
+    client.setCredentials({
+        refresh_token: refreshToken
+    });
+
+    return client;
+}
+
+// ================= SUBIR ARCHIVO A GOOGLE DRIVE =================
 async function subirADrive(fileBuffer, fileName, mimeType) {
+    const auth = obtenerClienteDrive();
+
+    const drive = google.drive({
+        version: 'v3',
+        auth
+    });
+
     const bufferStream = new stream.PassThrough();
     bufferStream.end(fileBuffer);
 
     const fileMetadata = {
         name: fileName,
-        parents: [FOLDER_ID],
+        parents: [FOLDER_ID]
     };
 
     const media = {
         mimeType,
-        body: bufferStream,
+        body: bufferStream
     };
 
     const response = await drive.files.create({
         resource: fileMetadata,
         media,
-        fields: 'id, webContentLink, webViewLink',
+        fields: 'id, webContentLink, webViewLink'
     });
 
     await drive.permissions.create({
         fileId: response.data.id,
         requestBody: {
             role: 'reader',
-            type: 'anyone',
-        },
+            type: 'anyone'
+        }
     });
 
     return `https://drive.google.com/uc?id=${response.data.id}`;
 }
 
-module.exports = { subirADrive };
+module.exports = {
+    subirADrive,
+    obtenerUrlAutorizacion,
+    procesarCallback
+};

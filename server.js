@@ -6,7 +6,11 @@ const fs = require('fs');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const { subirADrive } = require('./driveStorage');
+const {
+    subirADrive,
+    obtenerUrlAutorizacion,
+    procesarCallback
+} = require('./driveStorage');
 
 process.on('uncaughtException', (err) => console.error('ERROR NO CONTROLADO:', err));
 process.on('unhandledRejection', (err) => console.error('PROMESA NO CONTROLADA:', err));
@@ -89,6 +93,123 @@ app.get('/configuracion', (req, res) => res.sendFile(path.join(__dirname, 'confi
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
 
 app.get('/ping', (req, res) => res.status(200).send('pong'));
+
+// ================= GOOGLE DRIVE OAUTH =================
+
+// Paso 1: iniciar autorización con Google
+app.get('/api/drive/auth', (req, res) => {
+    try {
+        const url = obtenerUrlAutorizacion();
+
+        res.redirect(url);
+    } catch (err) {
+        console.error('Error iniciando OAuth de Google Drive:', err);
+        res.status(500).send(`
+            <h1>Error iniciando autorización</h1>
+            <p>${err.message}</p>
+        `);
+    }
+});
+
+// Paso 2: Google devuelve el código de autorización
+app.get('/api/drive/callback', async (req, res) => {
+    try {
+        const { code } = req.query;
+
+        if (!code) {
+            return res.status(400).send(`
+                <h1>Error de autorización</h1>
+                <p>Google no devolvió el código de autorización.</p>
+            `);
+        }
+
+        const tokens = await procesarCallback(code);
+
+        if (!tokens.refresh_token) {
+            return res.status(500).send(`
+                <h1>No se obtuvo el Refresh Token</h1>
+                <p>
+                    Google no devolvió un refresh token.
+                    Vuelve a iniciar el proceso de autorización.
+                </p>
+            `);
+        }
+
+        res.send(`
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <title>Google Drive autorizado</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        background: #111;
+                        color: white;
+                        padding: 40px;
+                    }
+
+                    .contenedor {
+                        max-width: 800px;
+                        margin: auto;
+                        background: #222;
+                        padding: 30px;
+                        border-radius: 12px;
+                    }
+
+                    code {
+                        display: block;
+                        background: #000;
+                        padding: 15px;
+                        margin-top: 15px;
+                        word-break: break-all;
+                        border-radius: 8px;
+                    }
+
+                    .advertencia {
+                        color: #ffcc00;
+                    }
+                </style>
+            </head>
+
+            <body>
+                <div class="contenedor">
+                    <h1>✅ Google Drive autorizado</h1>
+
+                    <p>
+                        Google autorizó correctamente el acceso a tu Drive.
+                    </p>
+
+                    <p>
+                        Copia el siguiente valor y agrégalo en Render como:
+                    </p>
+
+                    <h2>GOOGLE_REFRESH_TOKEN</h2>
+
+                    <code>${tokens.refresh_token}</code>
+
+                    <p class="advertencia">
+                        ⚠️ No compartas este token con nadie.
+                    </p>
+
+                    <p>
+                        Después de agregarlo en Render, haz un nuevo deploy
+                        y prueba subir un video.
+                    </p>
+                </div>
+            </body>
+            </html>
+        `);
+
+    } catch (err) {
+        console.error('Error en callback OAuth de Google Drive:', err);
+
+        res.status(500).send(`
+            <h1>Error durante la autorización</h1>
+            <p>${err.message}</p>
+        `);
+    }
+});
 
 // ================= AUTENTICACIÓN Y PERFIL =================
 app.post('/api/login', async (req, res) => {
