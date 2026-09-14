@@ -9,7 +9,8 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const {
     subirADrive,
     obtenerUrlAutorizacion,
-    procesarCallback
+    procesarCallback,
+    obtenerVideoDrive
 } = require('./driveStorage');
 
 process.on('uncaughtException', (err) => console.error('ERROR NO CONTROLADO:', err));
@@ -758,6 +759,26 @@ app.post('/api/media-drive', uploadMemory.single('archivo'), async (req, res) =>
         res.status(500).json({ error: err.message });
     }
 });
+
+app.get('/api/media-drive/:id', async (req, res) => {
+    try {
+        const fileId = req.params.id;
+
+        const videoStream = await obtenerVideoDrive(fileId);
+
+        res.setHeader('Content-Type', 'video/mp4');
+        res.setHeader('Accept-Ranges', 'bytes');
+
+        videoStream.pipe(res);
+
+    } catch (err) {
+        console.error('Error reproduciendo video de Drive:', err);
+        res.status(500).json({
+            error: 'No se pudo reproducir el video.'
+        });
+    }
+});
+
 // ================= NOTIFICACIONES =================
 app.get('/api/notificaciones/:usuarioId', async (req, res) => {
     try {

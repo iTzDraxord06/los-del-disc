@@ -39,7 +39,14 @@ if (modalVisor) {
 // Helper local para renderizar imagen o video de anuncio
 function renderizarMultimediaAnuncio(url) {
     if (!url) return '';
+
     if (url.includes('drive.google.com')) {
+        const match = url.match(/[?&]id=([^&]+)/);
+
+        if (!match) return '';
+
+        const fileId = match[1];
+
         return `
             <video class="media-reproductor" controls preload="metadata" style="
                 max-width: 100%;
@@ -50,14 +57,14 @@ function renderizarMultimediaAnuncio(url) {
                 display: block;
                 background: #000;
             ">
-                <source src="${url}" type="video/mp4">
+                <source src="/api/media-drive/${fileId}" type="video/mp4">
                 Tu navegador no soporta reproducción de video.
             </video>
         `;
     }
+
     return `<img src="${url}" alt="Afiche" style="cursor: pointer; max-width: 100%; border-radius: 8px;" />`;
 }
-
 // Botón para Admin
 if (usuarioSesion && usuarioSesion.RolApp === 'Admin' && btnAbrirModalAfiche) {
     btnAbrirModalAfiche.classList.remove('oculto');
