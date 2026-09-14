@@ -20,6 +20,20 @@
         </div>
 
         <div class="nav-derecha">
+            <div class="nav-notificaciones" style="position: relative;">
+                <button id="btnNotis" class="btn-secundario" style="padding: 5px 10px; position: relative;"
+                    title="Notificaciones">
+                    🔔 <span id="badgeNotis" class="badge-rol oculto"
+                        style="background:#ff3366; position:absolute; top:-5px; right:-5px; padding:2px 5px; font-size:0.65rem;">0</span>
+                </button>
+                <div id="dropdownNotis" class="menu-popup-usuario oculto"
+                    style="width: 280px; max-height: 320px; overflow-y: auto; right: 0; left: auto; position: absolute; top: calc(100% + 8px); background: #0d0f14; border: 1px solid var(--borde); border-radius: 8px; z-index: 4000;">
+                    <div
+                        style="padding: 10px 12px; font-weight: 700; border-bottom: 1px solid var(--borde); font-size: 0.85rem;">
+                        Notificaciones</div>
+                    <div id="listaNotis" style="padding: 4px;"></div>
+                </div>
+            </div>
             <button id="btnAbrirModal" class="btn-primary oculto">+ Nuevo Amigo</button>
         </div>
     </header>
@@ -59,7 +73,7 @@
 
         <!-- SECCIÓN PRINCIPAL CENTRAL -->
         <section class="seccion-muro" id="seccionMuro">
-            
+
             <!-- 1. VISTA CUADRÍCULA DE MIEMBROS -->
             <div id="vistaGridMiembros" class="contenedor-miembros-central">
                 <div class="header-miembros-central">
@@ -84,7 +98,8 @@
                         <img id="muroAvatar" src="" alt="Avatar">
                     </div>
                     <div class="perfil-textos">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                             <div>
                                 <h2 id="muroApodo">Apodo</h2>
                                 <span id="muroTag" class="discord-tag">@username</span>
@@ -92,7 +107,8 @@
                             </div>
                             <div style="display: flex; gap: 8px;">
                                 <button id="btnEditarPerfil" class="btn-secundario oculto">✏️ Editar Perfil</button>
-                                <button id="btnEliminarPerfil" class="btn-secundario oculto" style="background-color: #ff3366; color: #fff; border: none;">🗑️ Eliminar</button>
+                                <button id="btnEliminarPerfil" class="btn-secundario oculto"
+                                    style="background-color: #ff3366; color: #fff; border: none;">🗑️ Eliminar</button>
                             </div>
                         </div>
                         <p id="muroDesc" class="bio-texto"></p>
@@ -120,19 +136,25 @@
 
                     <form id="formComentario" class="form-comentario">
                         <input type="text" id="inputAutor" placeholder="Tu nombre / apodo" required readonly>
-                        <textarea id="inputComentario" placeholder="Escribe un comentario en este muro..." required maxlength="500"></textarea>
-                        
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; flex-wrap: wrap; gap: 8px;">
+                        <textarea id="inputComentario" placeholder="Escribe un comentario en este muro..." required
+                            maxlength="500"></textarea>
+
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; flex-wrap: wrap; gap: 8px;">
                             <div style="display: flex; align-items: center; gap: 8px;">
-                                <label for="inputFotoComentario" class="btn-secundario" style="cursor: pointer; padding: 5px 10px; font-size: 0.82rem;">
+                                <label for="inputFotoComentario" class="btn-secundario"
+                                    style="cursor: pointer; padding: 5px 10px; font-size: 0.82rem;">
                                     📷 <span>Subir foto</span>
                                 </label>
                                 <input type="file" id="inputFotoComentario" accept="image/*" class="oculto">
-                                <span id="labelNombreFotoComentario" class="nombre-foto-adjunta oculto" style="font-size: 0.8rem; color: #00e5ff;"></span>
-                                <button type="button" id="btnQuitarFotoComentario" class="btn-close oculto" style="font-size: 1rem; color: #ff3366; background: none; border: none; cursor: pointer;">&times;</button>
+                                <span id="labelNombreFotoComentario" class="nombre-foto-adjunta oculto"
+                                    style="font-size: 0.8rem; color: #00e5ff;"></span>
+                                <button type="button" id="btnQuitarFotoComentario" class="btn-close oculto"
+                                    style="font-size: 1rem; color: #ff3366; background: none; border: none; cursor: pointer;">&times;</button>
                             </div>
 
-                            <button type="submit" id="btnEnviarComentario" class="btn-primary">Enviar comentario</button>
+                            <button type="submit" id="btnEnviarComentario" class="btn-primary">Enviar
+                                comentario</button>
                         </div>
                     </form>
 
@@ -191,6 +213,7 @@
     </div>
 
     <script src="js/session.js"></script>
+    <script src="js/notificacion.js"></script>
     <script src="js/miembros.js"></script>
 </body>
 

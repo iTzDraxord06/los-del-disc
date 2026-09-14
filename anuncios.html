@@ -24,7 +24,24 @@
             <a href="miembros.html" class="btn-secundario">👥 Miembros</a>
             <a href="muro.html" class="btn-secundario">💬 Muro</a>
             <a href="anuncios.html" class="btn-secundario activo-nav">📢 Anuncios</a>
-            <button id="btnAbrirModalAfiche" class="btn-primary oculto" style="background-color: #5865F2;">+ Publicar Anuncio</button>
+
+            <div class="nav-notificaciones" style="position: relative;">
+                <button id="btnNotis" class="btn-secundario" style="padding: 5px 10px; position: relative;"
+                    title="Notificaciones">
+                    🔔 <span id="badgeNotis" class="badge-rol oculto"
+                        style="background:#ff3366; position:absolute; top:-5px; right:-5px; padding:2px 5px; font-size:0.65rem;">0</span>
+                </button>
+                <div id="dropdownNotis" class="menu-popup-usuario oculto"
+                    style="width: 280px; max-height: 320px; overflow-y: auto; right: 0; left: auto; position: absolute; top: calc(100% + 8px); background: #0d0f14; border: 1px solid var(--borde); border-radius: 8px; z-index: 4000;">
+                    <div
+                        style="padding: 10px 12px; font-weight: 700; border-bottom: 1px solid var(--borde); font-size: 0.85rem;">
+                        Notificaciones</div>
+                    <div id="listaNotis" style="padding: 4px;"></div>
+                </div>
+            </div>
+
+            <button id="btnAbrirModalAfiche" class="btn-primary oculto" style="background-color: #5865F2;">+ Publicar
+                Anuncio</button>
         </div>
     </header>
 
@@ -66,7 +83,8 @@
             <div style="max-width: 700px; margin: 0 auto; width: 100%;">
                 <div style="margin-bottom: 25px; text-align: center;">
                     <h2 style="font-size: 1.8rem; color: #ffffff;">📢 Tablón de Anuncios Oficiales</h2>
-                    <p style="color: #949ba4; font-size: 0.95rem; margin-top: 5px;">Avisos importantes, torneos y actualizaciones de Los del Disc.</p>
+                    <p style="color: #949ba4; font-size: 0.95rem; margin-top: 5px;">Avisos importantes, torneos y
+                        actualizaciones de Los del Disc.</p>
                 </div>
 
                 <div id="feedAfiches" class="feed-afiches">
@@ -94,7 +112,8 @@
                 </div>
                 <div class="campo">
                     <label>Descripción / Mensaje:</label>
-                    <textarea id="aficheInputDesc" rows="3" placeholder="Escribe aquí los detalles del aviso..."></textarea>
+                    <textarea id="aficheInputDesc" rows="3"
+                        placeholder="Escribe aquí los detalles del aviso..."></textarea>
                 </div>
                 <div class="campo">
                     <label>Imagen del afiche / clip:</label>
@@ -112,6 +131,7 @@
     </div>
 
     <script src="js/session.js"></script>
+    <script src="js/notificacion.js"></script>
     <script src="js/anuncios.js"></script>
 </body>
 

@@ -330,7 +330,6 @@ app.delete('/api/amigos/:id', async (req, res) => {
     }
 });
 
-// Borrar foto individual: Permitido a Admin O al dueño de la tarjeta de Amigo
 app.delete('/api/fotos/:id', async (req, res) => {
     const { id } = req.params;
     const { rolSolicitante, solicitanteId } = req.query;
@@ -379,12 +378,37 @@ app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req,
     const { autor, contenido, respuestaAId } = req.body || {};
     try {
         const imgUrl = req.file ? req.file.path : null;
-        await pool.request()
+        const insertRes = await pool.request()
             .input('autor', sql.NVarChar, autor)
             .input('texto', sql.NVarChar, contenido || '')
             .input('img', sql.NVarChar, imgUrl)
             .input('parent', sql.Int, respuestaAId ? parseInt(respuestaAId) : null)
-            .query('INSERT INTO PublicacionesGlobales (Autor, Texto, Fecha, ImagenUrl, RespuestaAId) VALUES (@autor, @texto, GETDATE(), @img, @parent)');
+            .query('INSERT INTO PublicacionesGlobales (Autor, Texto, Fecha, ImagenUrl, RespuestaAId) OUTPUT INSERTED.Id VALUES (@autor, @texto, GETDATE(), @img, @parent)');
+        
+        const newPostId = insertRes.recordset[0].Id;
+
+        // Notificar si es respuesta global
+        if (respuestaAId) {
+            const padreInfo = await pool.request()
+                .input('pId', sql.Int, respuestaAId)
+                .query('SELECT Autor FROM PublicacionesGlobales WHERE Id = @pId');
+            if (padreInfo.recordset.length > 0) {
+                const nombrePadre = padreInfo.recordset[0].Autor;
+                const destCheck = await pool.request()
+                    .input('nom', sql.NVarChar, nombrePadre)
+                    .query('SELECT TOP 1 UsuarioId FROM Amigos WHERE NombreVisible = @nom AND UsuarioId IS NOT NULL');
+                if (destCheck.recordset.length > 0 && destCheck.recordset[0].UsuarioId) {
+                    await pool.request()
+                        .input('uDest', sql.Int, destCheck.recordset[0].UsuarioId)
+                        .input('autor', sql.NVarChar, autor || 'Alguien')
+                        .input('comId', sql.Int, newPostId)
+                        .input('txt', sql.NVarChar, (contenido || '').substring(0, 100))
+                        .query(`INSERT INTO Notificaciones (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
+                                VALUES (@uDest, @autor, 'MURO', @comId, @comId, @txt)`);
+                }
+            }
+        }
+
         res.json({ mensaje: 'Publicación enviada' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -457,14 +481,39 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
 
         const imgUrl = req.file ? req.file.path : null;
 
-        await pool.request()
+        const insertRes = await pool.request()
             .input('amigoId', sql.Int, amigoId)
             .input('autor', sql.NVarChar, autor)
             .input('texto', sql.NVarChar, contenido.trim())
             .input('parent', sql.Int, respuestaAId ? parseInt(respuestaAId) : null)
             .input('img', sql.NVarChar, imgUrl)
-            .query('INSERT INTO Comentarios (AmigoId, Autor, Texto, Fecha, RespuestaAId, ImagenUrl) VALUES (@amigoId, @autor, @texto, GETDATE(), @parent, @img)');
+            .query('INSERT INTO Comentarios (AmigoId, Autor, Texto, Fecha, RespuestaAId, ImagenUrl) OUTPUT INSERTED.Id VALUES (@amigoId, @autor, @texto, GETDATE(), @parent, @img)');
         
+        const newComId = insertRes.recordset[0].Id;
+
+        // Notificar si es respuesta a otro comentario
+        if (respuestaAId) {
+            const padreInfo = await pool.request()
+                .input('pId', sql.Int, respuestaAId)
+                .query('SELECT Autor FROM Comentarios WHERE Id = @pId');
+            if (padreInfo.recordset.length > 0) {
+                const nombrePadre = padreInfo.recordset[0].Autor;
+                const destCheck = await pool.request()
+                    .input('nom', sql.NVarChar, nombrePadre)
+                    .query('SELECT TOP 1 UsuarioId FROM Amigos WHERE NombreVisible = @nom AND UsuarioId IS NOT NULL');
+                if (destCheck.recordset.length > 0 && destCheck.recordset[0].UsuarioId) {
+                    await pool.request()
+                        .input('uDest', sql.Int, destCheck.recordset[0].UsuarioId)
+                        .input('autor', sql.NVarChar, autor || 'Alguien')
+                        .input('destId', sql.Int, amigoId)
+                        .input('comId', sql.Int, newComId)
+                        .input('txt', sql.NVarChar, (contenido || '').substring(0, 100))
+                        .query(`INSERT INTO Notificaciones (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
+                                VALUES (@uDest, @autor, 'PERFIL', @destId, @comId, @txt)`);
+                }
+            }
+        }
+
         res.json({ mensaje: 'Comentario publicado exitosamente' });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -513,6 +562,31 @@ app.delete('/api/comentarios/:id', async (req, res) => {
         res.json({ mensaje: 'Comentario eliminado' });
     } catch (err) {
         res.status(500).json({ error: 'No se pudo eliminar el comentario.' });
+    }
+});
+
+// ================= NOTIFICACIONES =================
+app.get('/api/notificaciones/:usuarioId', async (req, res) => {
+    try {
+        const result = await pool.request()
+            .input('uId', sql.Int, req.params.usuarioId)
+            .query('SELECT TOP 30 * FROM Notificaciones WHERE UsuarioDestinoId = @uId ORDER BY Fecha DESC');
+        res.json(result.recordset);
+    } catch (err) {
+        console.error('Error GET /api/notificaciones:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/notificaciones/:id/leer', async (req, res) => {
+    try {
+        await pool.request()
+            .input('id', sql.Int, req.params.id)
+            .query('UPDATE Notificaciones SET Leido = 1 WHERE Id = @id');
+        res.json({ mensaje: 'Notificación leída' });
+    } catch (err) {
+        console.error('Error PUT /api/notificaciones/leer:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 

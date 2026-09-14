@@ -24,6 +24,22 @@
             <a href="miembros.html" class="btn-secundario">👥 Miembros</a>
             <a href="muro.html" class="btn-secundario">💬 Muro</a>
             <a href="anuncios.html" class="btn-secundario">📢 Anuncios</a>
+
+            <!-- Notificaciones -->
+            <div class="nav-notificaciones" style="position: relative;">
+                <button id="btnNotis" class="btn-secundario" style="padding: 5px 10px; position: relative;"
+                    title="Notificaciones">
+                    🔔 <span id="badgeNotis" class="badge-rol oculto"
+                        style="background:#ff3366; position:absolute; top:-5px; right:-5px; padding:2px 5px; font-size:0.65rem;">0</span>
+                </button>
+                <div id="dropdownNotis" class="menu-popup-usuario oculto"
+                    style="width: 280px; max-height: 320px; overflow-y: auto; right: 0; left: auto; position: absolute; top: calc(100% + 8px); background: #0d0f14; border: 1px solid var(--borde); border-radius: 8px; z-index: 4000;">
+                    <div
+                        style="padding: 10px 12px; font-weight: 700; border-bottom: 1px solid var(--borde); font-size: 0.85rem;">
+                        Notificaciones</div>
+                    <div id="listaNotis" style="padding: 4px;"></div>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -74,7 +90,8 @@
                         <div class="hub-card-icon">👥</div>
                         <div class="hub-card-text">
                             <h3>Directorio de Miembros</h3>
-                            <p>Explora a los integrantes, mira sus perfiles, sus waifus/galería y coméntales en su muro personal.</p>
+                            <p>Explora a los integrantes, mira sus perfiles, sus waifus/galería y coméntales en su muro
+                                personal.</p>
                         </div>
                         <span class="hub-card-btn">Entrar a Miembros →</span>
                     </a>
@@ -84,7 +101,8 @@
                         <div class="hub-card-icon">💬</div>
                         <div class="hub-card-text">
                             <h3>Muro General de la Comunidad</h3>
-                            <p>El chat público del servidor. Deja comentarios, responde hilos a tus amigos y debate en comunidad.</p>
+                            <p>El chat público del servidor. Deja comentarios, responde hilos a tus amigos y debate en
+                                comunidad.</p>
                         </div>
                         <span class="hub-card-btn">Ir al Muro →</span>
                     </a>
@@ -94,7 +112,8 @@
                         <div class="hub-card-icon">📢</div>
                         <div class="hub-card-text">
                             <h3>Tablón de Anuncios</h3>
-                            <p>Avisos importantes, torneos, afiches del servidor y novedades publicadas por los administradores.</p>
+                            <p>Avisos importantes, torneos, afiches del servidor y novedades publicadas por los
+                                administradores.</p>
                         </div>
                         <span class="hub-card-btn">Ver Anuncios →</span>
                     </a>
@@ -104,6 +123,7 @@
     </main>
 
     <script src="js/app.js"></script>
+    <script src="js/notificacion.js"></script>
 </body>
 
 </html>

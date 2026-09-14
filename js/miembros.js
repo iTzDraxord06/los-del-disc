@@ -675,4 +675,32 @@ if (btnEliminarPerfil) {
     });
 }
 
-window.addEventListener('DOMContentLoaded', cargarAmigos);
+window.addEventListener('DOMContentLoaded', async () => {
+    await cargarAmigos();
+    
+    // Auto-scroll y highlight desde notificación de perfil
+    const params = new URLSearchParams(window.location.search);
+    const amigoQueryId = params.get('amigoId');
+    const scrollComentarioId = params.get('scrollComentario');
+
+    if (amigoQueryId) {
+        const target = listaAmigosMemoria.find(a => a.Id === parseInt(amigoQueryId));
+        if (target) seleccionarAmigo(target);
+    }
+
+    if (scrollComentarioId) {
+        setTimeout(() => {
+            const el = document.getElementById(`comentario-${scrollComentarioId}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.style.transition = 'background-color 0.5s ease, box-shadow 0.5s ease';
+                el.style.backgroundColor = 'rgba(0, 229, 255, 0.22)';
+                el.style.boxShadow = '0 0 18px rgba(0, 229, 255, 0.4)';
+                setTimeout(() => {
+                    el.style.backgroundColor = '';
+                    el.style.boxShadow = '';
+                }, 3000);
+            }
+        }, 900);
+    }
+});

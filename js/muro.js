@@ -212,6 +212,25 @@ async function cargarPostsGlobales() {
             feedGlobalPosts.appendChild(wrapper);
         });
 
+        // Auto-scroll y highlight si viene desde una notificación del muro global
+        const params = new URLSearchParams(window.location.search);
+        const scrollPostId = params.get('scrollPost');
+        if (scrollPostId) {
+            setTimeout(() => {
+                const el = document.getElementById(`post-${scrollPostId}`);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.style.transition = 'background-color 0.5s ease, box-shadow 0.5s ease';
+                    el.style.backgroundColor = 'rgba(0, 229, 255, 0.22)';
+                    el.style.boxShadow = '0 0 18px rgba(0, 229, 255, 0.4)';
+                    setTimeout(() => {
+                        el.style.backgroundColor = '';
+                        el.style.boxShadow = '';
+                    }, 3000);
+                }
+            }, 600);
+        }
+
     } catch (err) {
         console.error('Error en muro.js:', err);
         feedGlobalPosts.innerHTML = '<p class="sin-datos">Error al cargar publicaciones.</p>';
@@ -220,7 +239,6 @@ async function cargarPostsGlobales() {
 
 // Función para abrir la caja de texto directamente en la respuesta
 function abrirCajaRespuestaDirecta(padreId, autorMencion) {
-    // Cerrar cualquier otra caja inline abierta previamente
     document.querySelectorAll('[id^="inline-reply-container-"]').forEach(c => {
         c.innerHTML = '';
         c.classList.add('oculto');

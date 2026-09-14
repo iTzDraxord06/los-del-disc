@@ -24,6 +24,21 @@
             <a href="miembros.html" class="btn-secundario">👥 Miembros</a>
             <a href="muro.html" class="btn-secundario activo-nav">💬 Muro</a>
             <a href="anuncios.html" class="btn-secundario">📢 Anuncios</a>
+
+            <div class="nav-notificaciones" style="position: relative;">
+                <button id="btnNotis" class="btn-secundario" style="padding: 5px 10px; position: relative;"
+                    title="Notificaciones">
+                    🔔 <span id="badgeNotis" class="badge-rol oculto"
+                        style="background:#ff3366; position:absolute; top:-5px; right:-5px; padding:2px 5px; font-size:0.65rem;">0</span>
+                </button>
+                <div id="dropdownNotis" class="menu-popup-usuario oculto"
+                    style="width: 280px; max-height: 320px; overflow-y: auto; right: 0; left: auto; position: absolute; top: calc(100% + 8px); background: #0d0f14; border: 1px solid var(--borde); border-radius: 8px; z-index: 4000;">
+                    <div
+                        style="padding: 10px 12px; font-weight: 700; border-bottom: 1px solid var(--borde); font-size: 0.85rem;">
+                        Notificaciones</div>
+                    <div id="listaNotis" style="padding: 4px;"></div>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -63,28 +78,34 @@
         <!-- SECCIÓN PRINCIPAL: TABLÓN COMUNITARIO -->
         <section class="seccion-muro">
             <div class="columna-feed-global" style="max-width: 800px; margin: 0 auto; width: 100%;">
-                
+
                 <!-- Caja para escribir en el Muro -->
                 <div class="caja-crear-post">
                     <h3>💬 Tablón de la Comunidad</h3>
                     <form id="formPostGlobal" class="form-comentario">
-                        
+
                         <!-- Banner de respuesta si se contesta a alguien -->
                         <div id="bannerRespuestaGlobal" class="banner-respondiendo oculto">
                             <span>Respondiendo a <strong id="textoRespondiendoGlobal">@Usuario</strong></span>
                             <button type="button" id="btnCancelarRespuestaGlobal" title="Cancelar">✕ Cancelar</button>
                         </div>
 
-                        <textarea id="inputPostGlobal" placeholder="¿Qué está pasando en el server? Escribe algo para todos..." required maxlength="600"></textarea>
-                        
-                        <div class="barra-adjuntos-comentario" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                        <textarea id="inputPostGlobal"
+                            placeholder="¿Qué está pasando en el server? Escribe algo para todos..." required
+                            maxlength="600"></textarea>
+
+                        <div class="barra-adjuntos-comentario"
+                            style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
                             <div style="display: flex; align-items: center; gap: 8px;">
-                                <label for="inputFotoPostGlobal" class="btn-secundario" style="cursor: pointer; padding: 5px 10px; font-size: 0.82rem;">
+                                <label for="inputFotoPostGlobal" class="btn-secundario"
+                                    style="cursor: pointer; padding: 5px 10px; font-size: 0.82rem;">
                                     📷 <span>Subir foto</span>
                                 </label>
                                 <input type="file" id="inputFotoPostGlobal" accept="image/*" class="oculto">
-                                <span id="labelFotoPostGlobal" class="nombre-foto-adjunta oculto" style="font-size: 0.8rem; color: #949ba4;"></span>
-                                <button type="button" id="btnQuitarFotoPostGlobal" class="btn-close oculto" style="font-size: 1rem; color: #ed4245;">&times;</button>
+                                <span id="labelFotoPostGlobal" class="nombre-foto-adjunta oculto"
+                                    style="font-size: 0.8rem; color: #949ba4;"></span>
+                                <button type="button" id="btnQuitarFotoPostGlobal" class="btn-close oculto"
+                                    style="font-size: 1rem; color: #ed4245;">&times;</button>
                             </div>
 
                             <button type="submit" id="btnEnviarPostGlobal" class="btn-primary">Publicar</button>
@@ -107,6 +128,7 @@
     </div>
 
     <script src="js/session.js"></script>
+    <script src="js/notificacion.js"></script>
     <script src="js/muro.js"></script>
 </body>
 
