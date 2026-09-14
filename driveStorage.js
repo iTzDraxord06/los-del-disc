@@ -122,9 +122,10 @@ async function subirADrive(fileBuffer, fileName, mimeType) {
 
 module.exports = {
     subirADrive,
+    obtenerVideoDrive,
+    obtenerInfoVideoDrive,
     obtenerUrlAutorizacion,
-    procesarCallback,
-    obtenerVideoDrive
+    procesarCallback
 };
 
 async function obtenerVideoDrive(fileId, range) {
@@ -154,4 +155,20 @@ async function obtenerVideoDrive(fileId, range) {
     );
 
     return response;
+}
+
+async function obtenerInfoVideoDrive(fileId) {
+    const auth = obtenerClienteDrive();
+
+    const drive = google.drive({
+        version: 'v3',
+        auth
+    });
+
+    const response = await drive.files.get({
+        fileId: fileId,
+        fields: 'size,mimeType'
+    });
+
+    return response.data;
 }

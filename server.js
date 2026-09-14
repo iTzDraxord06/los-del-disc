@@ -8,9 +8,10 @@ const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const {
     subirADrive,
+    obtenerVideoDrive,
+    obtenerInfoVideoDrive,
     obtenerUrlAutorizacion,
-    procesarCallback,
-    obtenerVideoDrive
+    procesarCallback
 } = require('./driveStorage');
 
 process.on('uncaughtException', (err) => console.error('ERROR NO CONTROLADO:', err));
@@ -765,32 +766,68 @@ app.get('/api/media-drive/:id', async (req, res) => {
         const fileId = req.params.id;
         const range = req.headers.range;
 
-        const response = await obtenerVideoDrive(fileId, range);
+        const info = await obtenerInfoVideoDrive(fileId);
+        const tamaño = Number(info.size);
 
-        if (range) {
-            const contentRange = response.headers['content-range'];
-            const contentLength = response.headers['content-length'];
-
-            if (contentRange) {
-                res.status(206);
-                res.setHeader('Content-Range', contentRange);
-            }
-
-            if (contentLength) {
-                res.setHeader('Content-Length', contentLength);
-            }
-
-            res.setHeader('Accept-Ranges', 'bytes');
-        } else {
-            if (response.headers['content-length']) {
-                res.setHeader(
-                    'Content-Length',
-                    response.headers['content-length']
-                );
-            }
+        if (!tamaño) {
+            return res.status(500).json({
+                error: 'No se pudo obtener el tamaño del video.'
+            });
         }
 
-        res.setHeader('Content-Type', 'video/mp4');
+        if (!range) {
+            const response = await obtenerVideoDrive(fileId);
+
+            res.status(200);
+            res.setHeader('Content-Type', info.mimeType || 'video/mp4');
+            res.setHeader('Content-Length', tamaño);
+            res.setHeader('Accept-Ranges', 'bytes');
+
+            response.data.pipe(res);
+            return;
+        }
+
+        const match = range.match(/bytes=(\d+)-(\d*)/);
+
+        if (!match) {
+            return res.status(416).json({
+                error: 'Rango de video no válido.'
+            });
+        }
+
+        const inicio = Number(match[1]);
+        let fin = match[2] ? Number(match[2]) : tamaño - 1;
+
+        if (inicio >= tamaño) {
+            res.status(416);
+            res.setHeader('Content-Range', `bytes */${tamaño}`);
+            return res.end();
+        }
+
+        if (fin >= tamaño) {
+            fin = tamaño - 1;
+        }
+
+        const rangoDrive = `bytes=${inicio}-${fin}`;
+
+        const response = await obtenerVideoDrive(
+            fileId,
+            rangoDrive
+        );
+
+        const longitud = fin - inicio + 1;
+
+        res.status(206);
+        res.setHeader(
+            'Content-Range',
+            `bytes ${inicio}-${fin}/${tamaño}`
+        );
+        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('Content-Length', longitud);
+        res.setHeader(
+            'Content-Type',
+            info.mimeType || 'video/mp4'
+        );
 
         response.data.pipe(res);
 
