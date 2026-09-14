@@ -777,6 +777,58 @@ formNuevoAmigo.addEventListener('submit', async (e) => {
     }
 });
 
+// --- HELPER PARA SUBIR A GOOGLE DRIVE ---
+async function subirArchivoMultimedia(fileInput) {
+    const file = fileInput.files[0];
+    if (!file) return null;
+
+    const formData = new FormData();
+    formData.append('archivo', file);
+
+    const res = await fetch('/api/media-drive', {
+        method: 'POST',
+        body: formData
+    });
+
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Error al subir a Drive');
+    }
+
+    const data = await res.json();
+    return data.url; // Retorna https://drive.google.com/uc?id=...
+}
+
+// --- RENDERIZADOR UNIFICADO DE MULTIMEDIA (IMAGEN O VIDEO) ---
+function renderizarMultimedia(url) {
+    if (!url) return '';
+    if (url.includes('drive.google.com')) {
+        return `
+            <video class="media-reproductor" controls preload="metadata" style="
+                max-width: 100%;
+                max-height: 380px;
+                border-radius: 8px;
+                border: 1px solid var(--borde, #444);
+                margin-top: 10px;
+                display: block;
+                background: #000;
+            ">
+                <source src="${url}" type="video/mp4">
+                Tu navegador no soporta reproducción de video.
+            </video>
+        `;
+    }
+    return `<img src="${url}" alt="Multimedia" class="comentario-imagen" title="Clic para ampliar">`;
+}
+
+const inputMed = document.getElementById('inputVideoMedia');
+if (inputMed) {
+    inputMed.addEventListener('change', () => {
+        const label = document.getElementById('nombreArchivoSel');
+        if (label) label.textContent = inputMed.files[0] ? inputMed.files[0].name : 'Ningún archivo seleccionado';
+    });
+}
+
 // ================= MODAL AFICHE =================
 
 if (btnAbrirModalAfiche) {

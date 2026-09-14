@@ -18,7 +18,7 @@
             <img src="imagenes/Logo Pagina Web.png" alt="Logo Los del Disc" class="disc-logo-img">
             <h2>Los del Disc</h2>
         </div>
-        
+
         <div class="nav-derecha">
             <a href="index.html" class="btn-secundario">🏠 Inicio</a>
             <a href="miembros.html" class="btn-secundario">👥 Miembros</a>
@@ -104,6 +104,16 @@
                                     style="font-size: 0.8rem; color: #949ba4;"></span>
                                 <button type="button" id="btnQuitarFotoPostGlobal" class="btn-close oculto"
                                     style="font-size: 1rem; color: #ed4245;">&times;</button>
+                            </div>
+                            <div class="input-grupo-media">
+                                <label for="inputVideoMedia" class="btn-secundario"
+                                    style="cursor: pointer; padding: 6px 12px; background: #2f3136; border-radius: 4px; display: inline-block;">🎥
+                                    Subir Video/Foto (Drive 30MB)</label>
+                                <input type="file" id="inputVideoMedia" accept="image/*,video/mp4,video/webm"
+                                    style="display: none;" />
+                                <span id="nombreArchivoSel"
+                                    style="margin-left: 10px; font-size: 0.9em; color: #b9bbbe;">Ningún archivo
+                                    seleccionado</span>
                             </div>
 
                             <button type="submit" id="btnEnviarPostGlobal" class="btn-primary">Publicar</button>

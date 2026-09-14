@@ -1278,6 +1278,14 @@ body {
     border-color: transparent;
 }
 
+.input-grupo-media {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0;
+}
+
 /* ================= RESPONSIVE MÓVIL ================= */
 @media (max-width: 768px) {
     .navbar {
@@ -1375,5 +1383,19 @@ body {
         padding: 1.2rem;
         max-height: 90vh;
         overflow-y: auto;
+    }
+    .input-grupo-media {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .input-grupo-media .btn-secundario {
+        text-align: center;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    video.media-reproductor {
+        max-width: 100% !important;
+        height: auto !important;
+        max-height: 250px !important;
     }
 }

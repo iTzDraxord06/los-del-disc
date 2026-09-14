@@ -6,6 +6,7 @@ const fs = require('fs');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { subirADrive } = require('./driveStorage');
 
 process.on('uncaughtException', (err) => console.error('ERROR NO CONTROLADO:', err));
 process.on('unhandledRejection', (err) => console.error('PROMESA NO CONTROLADA:', err));
@@ -22,7 +23,7 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET || 'RBJuAR6QFd4D0EjOGvvwmBPtiGg'
 });
 
-// 2. Storage de Multer flexible para imágenes
+// 2. Storage de Multer flexible para imágenes (Cloudinary)
 const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
@@ -34,6 +35,12 @@ const storage = new CloudinaryStorage({
 const upload = multer({
     storage: storage,
     limits: { fileSize: 25 * 1024 * 1024 }
+});
+
+// Multer en memoria para archivos pesados / Google Drive (hasta 30 MB)
+const uploadMemory = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 30 * 1024 * 1024 }
 });
 
 const manejarSubida = (req, res, next) => {
@@ -589,6 +596,21 @@ app.delete('/api/comentarios/:id', async (req, res) => {
         res.json({ mensaje: 'Comentario eliminado' });
     } catch (err) {
         res.status(500).json({ error: 'No se pudo eliminar el comentario.' });
+    }
+});
+
+// ================= GOOGLE DRIVE MEDIA (VIDEOS/ARCHIVOS PESADOS) =================
+app.post('/api/media-drive', uploadMemory.single('archivo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No se envió ningún archivo.' });
+        }
+        const nombreUnico = `media_${Date.now()}_${req.file.originalname}`;
+        const driveUrl = await subirADrive(req.file.buffer, nombreUnico, req.file.mimetype);
+        res.json({ mensaje: 'Subido a Google Drive con éxito', url: driveUrl });
+    } catch (err) {
+        console.error('Error subiendo a Drive:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 
