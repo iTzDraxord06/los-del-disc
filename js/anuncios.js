@@ -212,6 +212,8 @@ formAfiche.addEventListener('submit', async (e) => {
                 body: formDataVideo
             });
 
+            console.log("RESPUESTA ANUNCIO:", resVideo.status);
+
             if (!resVideo.ok) {
                 const dataErr = await resVideo.json().catch(() => ({}));
                 throw new Error(dataErr.error || 'Error al guardar el anuncio con video');
