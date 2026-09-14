@@ -170,6 +170,8 @@ formAfiche.addEventListener('submit', async (e) => {
                 console.log("RESPUESTA COMPLETA DRIVE:", dataDrive);
 
                 finalImageUrl = dataDrive.url;
+
+                console.log("FINAL IMAGE URL:", finalImageUrl);
             } else {
                 // Imagen normal por Cloudinary usando el endpoint de anuncio con FormData
                 const formDataImg = new FormData();
