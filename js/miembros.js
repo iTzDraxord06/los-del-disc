@@ -30,6 +30,32 @@ const labelNombreFotoComentario = document.getElementById('labelNombreFotoComent
 const btnQuitarFotoComentario = document.getElementById('btnQuitarFotoComentario');
 const btnEnviarComentario = document.getElementById('btnEnviarComentario');
 
+function esVideoDrive(url) {
+    return typeof url === 'string' && url.includes('drive.google.com');
+}
+
+function renderizarMediaPerfil(url, alt = 'Multimedia') {
+    if (!url) return '';
+    if (esVideoDrive(url)) {
+        return `<video class="media-reproductor" controls preload="metadata" playsinline style="width:100%; max-height:320px; border-radius:8px; background:#000; display:block; margin-top:8px;">
+            <source src="${url}" type="video/mp4">
+            Tu navegador no soporta reproducción de video.
+        </video>`;
+    }
+    return `<img src="${url}" alt="${alt}" class="comentario-imagen" style="width:100%; max-height:320px; object-fit:cover; border-radius:8px; cursor:pointer; margin-top:8px;">`;
+}
+
+async function subirVideoDrive(file) {
+    if (!file) return null;
+    if (file.size > 30 * 1024 * 1024) throw new Error('El video no puede superar los 30 MB.');
+    const fd = new FormData();
+    fd.append('archivo', file);
+    const res = await fetch(`${API_URL}/media-drive`, { method: 'POST', body: fd });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'No se pudo subir el video a Google Drive.');
+    return data.url;
+}
+
 // Modales
 const modalAmigo = document.getElementById('modalAmigo');
 const btnCerrarModal = document.getElementById('btnCerrarModal');
@@ -170,12 +196,26 @@ function seleccionarAmigo(amigo) {
         const contenedor = document.createElement('div');
         contenedor.className = 'item-foto-galeria';
 
-        const img = document.createElement('img');
-        img.src = urlFoto;
-        img.alt = 'Foto Galería';
-        img.title = 'Haz clic para ampliar';
-        img.addEventListener('click', () => abrirVisor(urlFoto));
-        contenedor.appendChild(img);
+        if (esVideoDrive(urlFoto)) {
+            const video = document.createElement('video');
+            video.className = 'media-reproductor';
+            video.controls = true;
+            video.preload = 'metadata';
+            video.playsInline = true;
+            video.style.cssText = 'width:100%; max-height:220px; border-radius:8px; background:#000; display:block;';
+            const source = document.createElement('source');
+            source.src = urlFoto;
+            source.type = 'video/mp4';
+            video.appendChild(source);
+            contenedor.appendChild(video);
+        } else {
+            const img = document.createElement('img');
+            img.src = urlFoto;
+            img.alt = 'Foto Galería';
+            img.title = 'Haz clic para ampliar';
+            img.addEventListener('click', () => abrirVisor(urlFoto));
+            contenedor.appendChild(img);
+        }
 
         if ((esAdmin || esDueno) && idFoto) {
             const btnBorrar = document.createElement('button');
@@ -283,7 +323,7 @@ async function cargarComentarios(amigoId) {
             const esAutor = usuarioActual.NombreVisible === c.Autor;
             const puedeGestionar = esAdmin || esAutor;
 
-            let imgHtml = c.ImagenUrl ? `<img src="${c.ImagenUrl}" class="comentario-imagen" alt="Foto comentario" style="cursor: pointer; margin-top: 8px;">` : '';
+            let imgHtml = c.ImagenUrl ? renderizarMediaPerfil(c.ImagenUrl, 'Multimedia del comentario') : '';
 
             const card = document.createElement('div');
             card.className = `comentario-item ${esHijo ? 'comentario-hijo' : ''}`;
@@ -426,7 +466,7 @@ function abrirCajaRespuestaDirectaComentario(padreId, autorMencion, amigoId) {
             <div style="font-size: 0.78rem; color: #00e5ff; margin-bottom: 6px;">
                 Respondiendo a <strong>@${autorMencion}</strong>
             </div>
-            <textarea class="input-inline-texto" placeholder="Escribe tu respuesta..." required style="width: 100%; min-height: 55px; background: #0e1015; color: #fff; border: 1px solid #242933; border-radius: 6px; padding: 8px; font-size: 0.88rem; resize: vertical;"></textarea>
+            <textarea class="input-inline-texto" placeholder="Escribe tu respuesta..." style="width: 100%; min-height: 55px; background: #0e1015; color: #fff; border: 1px solid #242933; border-radius: 6px; padding: 8px; font-size: 0.88rem; resize: vertical;"></textarea>
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; flex-wrap: wrap; gap: 6px;">
                 <div style="display: flex; align-items: center; gap: 6px;">
@@ -435,6 +475,13 @@ function abrirCajaRespuestaDirectaComentario(padreId, autorMencion, amigoId) {
                         <input type="file" class="input-inline-file" accept="image/*" style="display: none;">
                     </label>
                     <span class="inline-file-label" style="font-size: 0.75rem; color: #00e5ff;"></span>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <label class="btn-secundario" style="cursor:pointer; padding:4px 8px; font-size:0.78rem;">
+                        🎥 Video
+                        <input type="file" class="input-inline-video" accept="video/mp4,video/webm" style="display:none;">
+                    </label>
+                    <span class="inline-video-label" style="font-size:0.75rem; color:#00e5ff;"></span>
                 </div>
                 <div style="display: flex; gap: 6px;">
                     <button type="button" class="btn-secundario btn-cancelar-inline" style="padding: 4px 10px; font-size: 0.8rem;">Cancelar</button>
@@ -447,7 +494,9 @@ function abrirCajaRespuestaDirectaComentario(padreId, autorMencion, amigoId) {
     const form = contenedor.querySelector('.form-respuesta-inline');
     const inputTexto = contenedor.querySelector('.input-inline-texto');
     const inputFile = contenedor.querySelector('.input-inline-file');
+    const inputVideo = contenedor.querySelector('.input-inline-video');
     const labelFile = contenedor.querySelector('.inline-file-label');
+    const labelVideo = contenedor.querySelector('.inline-video-label');
     const btnCancelar = contenedor.querySelector('.btn-cancelar-inline');
     const btnEnviar = contenedor.querySelector('.btn-enviar-inline');
 
@@ -459,6 +508,12 @@ function abrirCajaRespuestaDirectaComentario(padreId, autorMencion, amigoId) {
         }
     });
 
+    inputVideo.addEventListener('change', () => {
+        if (inputVideo.files && inputVideo.files[0]) {
+            labelVideo.textContent = `🎥 ${inputVideo.files[0].name}`;
+        }
+    });
+
     btnCancelar.addEventListener('click', () => {
         contenedor.innerHTML = '';
         contenedor.classList.add('oculto');
@@ -467,7 +522,9 @@ function abrirCajaRespuestaDirectaComentario(padreId, autorMencion, amigoId) {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const texto = inputTexto.value.trim();
-        if (!texto) return;
+        const tieneFoto = inputFile.files && inputFile.files[0];
+        const tieneVideo = inputVideo.files && inputVideo.files[0];
+        if (!texto && !tieneFoto && !tieneVideo) return;
 
         const usuarioActual = JSON.parse(localStorage.getItem('disc_user')) || {};
 
@@ -479,11 +536,16 @@ function abrirCajaRespuestaDirectaComentario(padreId, autorMencion, amigoId) {
         formData.append('autor', usuarioActual.NombreVisible || 'Miembro');
         formData.append('contenido', texto);
         formData.append('respuestaAId', padreId);
-        if (inputFile.files && inputFile.files[0]) {
+        if (tieneFoto) {
             formData.append('imagenComentario', inputFile.files[0]);
         }
 
         try {
+            if (tieneVideo) {
+                const urlVideo = await subirVideoDrive(inputVideo.files[0]);
+                formData.append('imagenUrlDirecta', urlVideo);
+            }
+
             const res = await fetch(`${API_URL}/comentarios`, {
                 method: 'POST',
                 body: formData
@@ -512,7 +574,10 @@ if (formComentario) {
         if (!amigoSeleccionadoId) return;
 
         const contenido = inputComentario.value.trim();
-        if (!contenido) return;
+        const inputVid = formComentario.querySelector('.input-video-media-file');
+        const tieneFoto = inputFotoComentario && inputFotoComentario.files && inputFotoComentario.files[0];
+        const tieneVideo = inputVid && inputVid.files && inputVid.files[0];
+        if (!contenido && !tieneFoto && !tieneVideo) return;
 
         const usuarioActual = JSON.parse(localStorage.getItem('disc_user')) || {};
 
@@ -520,9 +585,6 @@ if (formComentario) {
         formData.append('amigoId', amigoSeleccionadoId);
         formData.append('autor', usuarioActual.NombreVisible || 'Miembro');
         formData.append('contenido', contenido);
-        if (inputFotoComentario && inputFotoComentario.files && inputFotoComentario.files[0]) {
-            formData.append('imagenComentario', inputFotoComentario.files[0]);
-        }
 
         if (btnEnviarComentario) {
             btnEnviarComentario.disabled = true;
@@ -530,6 +592,13 @@ if (formComentario) {
         }
 
         try {
+            if (tieneVideo) {
+                const urlVideo = await subirVideoDrive(inputVid.files[0]);
+                formData.append('imagenUrlDirecta', urlVideo);
+            } else if (tieneFoto) {
+                formData.append('imagenComentario', inputFotoComentario.files[0]);
+            }
+
             const res = await fetch(`${API_URL}/comentarios`, {
                 method: 'POST',
                 body: formData
@@ -614,7 +683,18 @@ formNuevoAmigo.addEventListener('submit', async (e) => {
     const waifuInput = document.getElementById('inputWaifuFiles');
     if (waifuInput && waifuInput.files.length > 0) {
         for (let i = 0; i < waifuInput.files.length; i++) {
-            formData.append('waifuFiles', waifuInput.files[i]);
+            const archivo = waifuInput.files[i];
+            if (archivo.type.startsWith('video/')) {
+                try {
+                    const urlVideo = await subirVideoDrive(archivo);
+                    formData.append('waifuUrlDirectas', urlVideo);
+                } catch (err) {
+                    alert(`No se pudo subir el video "${archivo.name}": ${err.message}`);
+                    return;
+                }
+            } else {
+                formData.append('waifuFiles', archivo);
+            }
         }
     }
 

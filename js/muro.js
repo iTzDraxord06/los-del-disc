@@ -3,10 +3,37 @@ var API_URL = window.API_URL || '/api';
 const formPostGlobal = document.getElementById('formPostGlobal');
 const inputPostGlobal = document.getElementById('inputPostGlobal');
 const inputFotoPostGlobal = document.getElementById('inputFotoPostGlobal');
+const inputVideoPostGlobal = document.getElementById('inputVideoPostGlobal');
 const labelFotoPostGlobal = document.getElementById('labelFotoPostGlobal');
 const btnQuitarFotoPostGlobal = document.getElementById('btnQuitarFotoPostGlobal');
 const feedGlobalPosts = document.getElementById('feedGlobalPosts');
 const btnEnviarPostGlobal = document.getElementById('btnEnviarPostGlobal');
+
+function esVideoDrive(url) {
+    return typeof url === 'string' && url.includes('drive.google.com');
+}
+
+function renderizarMultimediaMuro(url, alt = 'Multimedia') {
+    if (!url) return '';
+    if (esVideoDrive(url)) {
+        return `<video class="media-reproductor" controls preload="metadata" playsinline style="max-width:100%; max-height:420px; width:100%; border-radius:8px; border:1px solid var(--borde,#444); margin-top:8px; display:block; background:#000;">
+            <source src="${url}" type="video/mp4">
+            Tu navegador no soporta reproducción de video.
+        </video>`;
+    }
+    return `<img src="${url}" class="comentario-imagen" alt="${alt}" style="cursor:pointer; margin-top:8px; max-width:100%;">`;
+}
+
+async function subirVideoDrive(file) {
+    if (!file) return null;
+    if (file.size > 30 * 1024 * 1024) throw new Error('El video no puede superar los 30 MB.');
+    const fd = new FormData();
+    fd.append('archivo', file);
+    const res = await fetch(`${API_URL}/media-drive`, { method: 'POST', body: fd });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'No se pudo subir el video a Google Drive.');
+    return data.url;
+}
 
 // Visor Lightbox
 const modalVisor = document.getElementById('modalVisor');
@@ -40,6 +67,13 @@ if (inputFotoPostGlobal) {
             labelFotoPostGlobal.classList.remove('oculto');
             btnQuitarFotoPostGlobal.classList.remove('oculto');
         }
+    });
+}
+
+if (inputVideoPostGlobal) {
+    inputVideoPostGlobal.addEventListener('change', () => {
+        const span = inputVideoPostGlobal.parentElement.querySelector('.nombre-archivo-video');
+        if (span) span.textContent = inputVideoPostGlobal.files[0] ? `🎥 ${inputVideoPostGlobal.files[0].name}` : '';
     });
 }
 
@@ -88,7 +122,7 @@ async function cargarPostsGlobales() {
             card.className = `comentario-item ${esHijo ? 'comentario-hijo' : ''}`;
             card.id = `post-${p.Id}`;
 
-            let imgHtml = p.ImagenUrl ? `<img src="${p.ImagenUrl}" class="comentario-imagen" alt="Foto post" style="cursor: pointer;">` : '';
+            let imgHtml = p.ImagenUrl ? renderizarMultimediaMuro(p.ImagenUrl, 'Multimedia del post') : '';
 
             card.innerHTML = `
                 <div class="comentario-header" style="display: flex; justify-content: space-between; align-items: center;">
@@ -253,7 +287,7 @@ function abrirCajaRespuestaDirecta(padreId, autorMencion) {
             <div style="font-size: 0.78rem; color: #00e5ff; margin-bottom: 6px;">
                 Respondiendo a <strong>@${autorMencion}</strong>
             </div>
-            <textarea class="input-inline-texto" placeholder="Escribe tu respuesta..." required style="width: 100%; min-height: 55px; background: #0e1015; color: #fff; border: 1px solid #242933; border-radius: 6px; padding: 8px; font-size: 0.88rem; resize: vertical;"></textarea>
+            <textarea class="input-inline-texto" placeholder="Escribe tu respuesta..." style="width: 100%; min-height: 55px; background: #0e1015; color: #fff; border: 1px solid #242933; border-radius: 6px; padding: 8px; font-size: 0.88rem; resize: vertical;"></textarea>
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; flex-wrap: wrap; gap: 6px;">
                 <div style="display: flex; align-items: center; gap: 6px;">
@@ -262,6 +296,13 @@ function abrirCajaRespuestaDirecta(padreId, autorMencion) {
                         <input type="file" class="input-inline-file" accept="image/*" style="display: none;">
                     </label>
                     <span class="inline-file-label" style="font-size: 0.75rem; color: #00e5ff;"></span>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <label class="btn-secundario" style="cursor:pointer; padding:4px 8px; font-size:0.78rem;">
+                        🎥 Video
+                        <input type="file" class="input-inline-video" accept="video/mp4,video/webm" style="display:none;">
+                    </label>
+                    <span class="inline-video-label" style="font-size:0.75rem; color:#00e5ff;"></span>
                 </div>
                 <div style="display: flex; gap: 6px;">
                     <button type="button" class="btn-secundario btn-cancelar-inline" style="padding: 4px 10px; font-size: 0.8rem;">Cancelar</button>
@@ -274,6 +315,8 @@ function abrirCajaRespuestaDirecta(padreId, autorMencion) {
     const form = contenedor.querySelector('.form-respuesta-inline');
     const inputTexto = contenedor.querySelector('.input-inline-texto');
     const inputFile = contenedor.querySelector('.input-inline-file');
+    const inputVideo = contenedor.querySelector('.input-inline-video');
+    const labelVideo = contenedor.querySelector('.inline-video-label');
     const labelFile = contenedor.querySelector('.inline-file-label');
     const btnCancelar = contenedor.querySelector('.btn-cancelar-inline');
     const btnEnviar = contenedor.querySelector('.btn-enviar-inline');
@@ -286,6 +329,12 @@ function abrirCajaRespuestaDirecta(padreId, autorMencion) {
         }
     });
 
+    inputVideo.addEventListener('change', () => {
+        if (inputVideo.files && inputVideo.files[0]) {
+            labelVideo.textContent = `🎥 ${inputVideo.files[0].name}`;
+        }
+    });
+
     btnCancelar.addEventListener('click', () => {
         contenedor.innerHTML = '';
         contenedor.classList.add('oculto');
@@ -294,7 +343,9 @@ function abrirCajaRespuestaDirecta(padreId, autorMencion) {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const texto = inputTexto.value.trim();
-        if (!texto) return;
+        const tieneFoto = inputFile.files && inputFile.files[0];
+        const tieneVideo = inputVideo.files && inputVideo.files[0];
+        if (!texto && !tieneFoto && !tieneVideo) return;
 
         const usuarioActual = JSON.parse(localStorage.getItem('disc_user')) || {};
 
@@ -305,11 +356,16 @@ function abrirCajaRespuestaDirecta(padreId, autorMencion) {
         formData.append('autor', usuarioActual.NombreVisible || 'Miembro');
         formData.append('contenido', texto);
         formData.append('respuestaAId', padreId);
-        if (inputFile.files && inputFile.files[0]) {
+        if (tieneFoto) {
             formData.append('imagenPost', inputFile.files[0]);
         }
 
         try {
+            if (tieneVideo) {
+                const urlVideo = await subirVideoDrive(inputVideo.files[0]);
+                formData.append('imagenUrlDirecta', urlVideo);
+            }
+
             const res = await fetch(`${API_URL}/publicaciones-globales`, {
                 method: 'POST',
                 body: formData
@@ -337,7 +393,9 @@ if (formPostGlobal) {
     formPostGlobal.addEventListener('submit', async (e) => {
         e.preventDefault();
         const texto = inputPostGlobal.value.trim();
-        if (!texto) return;
+        const tieneFoto = inputFotoPostGlobal && inputFotoPostGlobal.files && inputFotoPostGlobal.files[0];
+        const tieneVideo = inputVideoPostGlobal && inputVideoPostGlobal.files && inputVideoPostGlobal.files[0];
+        if (!texto && !tieneFoto && !tieneVideo) return;
 
         const usuarioActual = JSON.parse(localStorage.getItem('disc_user')) || {};
 
@@ -348,12 +406,19 @@ if (formPostGlobal) {
             formData.append('imagenPost', inputFotoPostGlobal.files[0]);
         }
 
+        const inputVideo = inputVideoPostGlobal;
+
         if (btnEnviarPostGlobal) {
             btnEnviarPostGlobal.disabled = true;
             btnEnviarPostGlobal.textContent = 'Publicando...';
         }
 
         try {
+            if (tieneVideo) {
+                const urlVideo = await subirVideoDrive(inputVideo.files[0]);
+                formData.append('imagenUrlDirecta', urlVideo);
+            }
+
             const res = await fetch(`${API_URL}/publicaciones-globales`, {
                 method: 'POST',
                 body: formData
@@ -361,6 +426,11 @@ if (formPostGlobal) {
             if (res.ok) {
                 inputPostGlobal.value = '';
                 if (btnQuitarFotoPostGlobal) btnQuitarFotoPostGlobal.click();
+                if (inputVideoPostGlobal) {
+                    inputVideoPostGlobal.value = '';
+                    const span = inputVideoPostGlobal.parentElement.querySelector('.nombre-archivo-video');
+                    if (span) span.textContent = '';
+                }
                 cargarPostsGlobales();
             } else {
                 alert('No se pudo enviar la publicación.');

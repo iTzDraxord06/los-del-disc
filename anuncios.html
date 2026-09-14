@@ -33,7 +33,10 @@
                     <div id="listaNotis" class="dropdown-notificaciones-lista"></div>
                 </div>
             </div>
-</div>
+
+            <button id="btnAbrirModalAfiche" class="btn-primary oculto" style="background-color: #5865F2;">+ Publicar
+                Anuncio</button>
+        </div>
     </header>
     <main class="contenedor-principal">
         <!-- BARRA LATERAL (CANALES) -->
@@ -75,9 +78,6 @@
                     <h2 style="font-size: 1.8rem; color: #ffffff;">📢 Tablón de Anuncios Oficiales</h2>
                     <p style="color: #949ba4; font-size: 0.95rem; margin-top: 5px;">Avisos importantes, torneos y
                         actualizaciones de Los del Disc.</p>
-                    <button id="btnAbrirModalAfiche" type="button" class="btn-primary btn-publicar-anuncio oculto">
-                        📢 Publicar Anuncio
-                    </button>
                 </div>
 
                 <div id="feedAfiches" class="feed-afiches">
@@ -109,21 +109,19 @@
                         placeholder="Escribe aquí los detalles del aviso..."></textarea>
                 </div>
                 <div class="campo">
-                    <label for="aficheInputFile">Imagen / Clip de anuncio (Hasta 30MB):</label>
+                    <label>Imagen del afiche / clip:</label>
+                    <input type="file" id="aficheInputFile" accept="image/*">
+                </div>
+                <div class="campo">
+                    <label>Imagen / Clip de anuncio (Hasta 30MB):</label>
                     <div class="input-grupo-media">
-                        <label for="aficheInputFile" class="btn-secundario btn-seleccionar-archivo">
-                            📁 Seleccionar archivo
-                        </label>
-
-                        <input type="file"
-                            id="aficheInputFile"
-                            name="imagenAfiche"
-                            accept="image/*,video/mp4,video/webm"
+                        <label for="aficheInputFile" class="btn-secundario"
+                            style="cursor: pointer; padding: 6px 12px; display: inline-block;">📁 Seleccionar
+                            archivo</label>
+                        <input type="file" id="aficheInputFile" accept="image/*,video/mp4,video/webm"
                             style="display: none;">
-
-                        <span id="labelAficheFile" class="nombre-archivo">
-                            Ningún archivo seleccionado
-                        </span>
+                        <span id="labelAficheFile" style="font-size: 0.85rem; color: #949ba4; margin-left: 8px;">Ningún
+                            archivo seleccionado</span>
                     </div>
                 </div>
                 <button type="submit" id="btnGuardarAfiche" class="btn-primary btn-block">Publicar Anuncio</button>
