@@ -34,28 +34,25 @@ function renderizarMultimediaMuro(url, alt = 'Multimedia') {
 
     // GIF DE CLOUDINARY
     if (url.toLowerCase().includes('.gif')) {
-    const idGif = 'gif-' + Date.now() + '-' + Math.random();
+        return `
+            <img
+                src="${url}"
+                class="comentario-imagen"
+                alt="${alt}"
+                style="cursor:pointer;"
+            >
+        `;
+    }
 
-    setTimeout(() => {
-        const gif = document.getElementById(idGif);
-
-        if (gif) {
-            const src = gif.src;
-            gif.src = '';
-            gif.src = src;
-        }
-    }, 3000);
-
+    // IMAGEN NORMAL
     return `
         <img
-            id="${idGif}"
             src="${url}"
             class="comentario-imagen"
             alt="${alt}"
             style="cursor:pointer;"
         >
     `;
-}
 }
 async function subirVideoDrive(file) {
     if (!file) return null;
