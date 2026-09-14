@@ -763,16 +763,40 @@ app.post('/api/media-drive', uploadMemory.single('archivo'), async (req, res) =>
 app.get('/api/media-drive/:id', async (req, res) => {
     try {
         const fileId = req.params.id;
+        const range = req.headers.range;
 
-        const videoStream = await obtenerVideoDrive(fileId);
+        const response = await obtenerVideoDrive(fileId, range);
+
+        if (range) {
+            const contentRange = response.headers['content-range'];
+            const contentLength = response.headers['content-length'];
+
+            if (contentRange) {
+                res.status(206);
+                res.setHeader('Content-Range', contentRange);
+            }
+
+            if (contentLength) {
+                res.setHeader('Content-Length', contentLength);
+            }
+
+            res.setHeader('Accept-Ranges', 'bytes');
+        } else {
+            if (response.headers['content-length']) {
+                res.setHeader(
+                    'Content-Length',
+                    response.headers['content-length']
+                );
+            }
+        }
 
         res.setHeader('Content-Type', 'video/mp4');
-        res.setHeader('Accept-Ranges', 'bytes');
 
-        videoStream.pipe(res);
+        response.data.pipe(res);
 
     } catch (err) {
         console.error('Error reproduciendo video de Drive:', err);
+
         res.status(500).json({
             error: 'No se pudo reproducir el video.'
         });

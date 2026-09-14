@@ -127,7 +127,7 @@ module.exports = {
     obtenerVideoDrive
 };
 
-async function obtenerVideoDrive(fileId) {
+async function obtenerVideoDrive(fileId, range) {
     const auth = obtenerClienteDrive();
 
     const drive = google.drive({
@@ -135,15 +135,23 @@ async function obtenerVideoDrive(fileId) {
         auth
     });
 
+    const opciones = {
+        responseType: 'stream'
+    };
+
+    if (range) {
+        opciones.headers = {
+            Range: range
+        };
+    }
+
     const response = await drive.files.get(
         {
             fileId: fileId,
             alt: 'media'
         },
-        {
-            responseType: 'stream'
-        }
+        opciones
     );
 
-    return response.data;
+    return response;
 }
