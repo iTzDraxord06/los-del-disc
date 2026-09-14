@@ -78,21 +78,62 @@ const campoRolServidor = document.getElementById('campoRolServidor');
 
 // Visor Lightbox
 const modalVisor = document.getElementById('modalVisor');
+
 const imagenVisorAmpliada = document.getElementById('imagenVisorAmpliada');
+
+const videoVisorAmpliado = document.getElementById('videoVisorAmpliado');
+
+const videoVisorSource = document.getElementById('videoVisorSource');
+
 const btnCerrarVisor = document.getElementById('btnCerrarVisor');
 
 function abrirVisor(url) {
+
     if (!url) return;
-    imagenVisorAmpliada.src = url;
+
+    if (esVideoDrive(url)) {
+
+        const match = url.match(/[?&]id=([^&]+)/);
+
+        if (!match) return;
+
+        const fileId = match[1];
+
+        imagenVisorAmpliada.src = '';
+        imagenVisorAmpliada.style.display = 'none';
+
+        videoVisorSource.src = `/api/media-drive/${fileId}`;
+
+        videoVisorAmpliado.style.display = 'block';
+        videoVisorAmpliado.load();
+
+    } else {
+
+        videoVisorSource.src = '';
+        videoVisorAmpliado.pause();
+        videoVisorAmpliado.load();
+        videoVisorAmpliado.style.display = 'none';
+
+        imagenVisorAmpliada.src = url;
+        imagenVisorAmpliada.style.display = 'block';
+    }
+
     modalVisor.classList.remove('oculto');
 }
 
 function cerrarVisor() {
-    if (!modalVisor) return;
-    modalVisor.classList.add('oculto');
-    imagenVisorAmpliada.src = '';
-}
 
+    if (!modalVisor) return;
+
+    modalVisor.classList.add('oculto');
+
+    imagenVisorAmpliada.src = '';
+
+    videoVisorAmpliado.pause();
+    videoVisorSource.src = '';
+    videoVisorAmpliado.load();
+
+}
 if (btnCerrarVisor) btnCerrarVisor.addEventListener('click', cerrarVisor);
 if (modalVisor) {
     modalVisor.addEventListener('click', (e) => {
