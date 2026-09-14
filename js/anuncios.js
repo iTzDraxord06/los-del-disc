@@ -166,7 +166,9 @@ formAfiche.addEventListener('submit', async (e) => {
                     throw new Error('Fallo al subir el video a Google Drive');
                 }
                 const dataDrive = await resDrive.json();
-                console.log("URL DEL VIDEO:", finalImageUrl);
+
+                console.log("RESPUESTA COMPLETA DRIVE:", dataDrive);
+
                 finalImageUrl = dataDrive.url;
             } else {
                 // Imagen normal por Cloudinary usando el endpoint de anuncio con FormData
