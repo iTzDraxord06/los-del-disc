@@ -1,6 +1,7 @@
-var API_URL = window.API_URL || '/api';
+window.NOTIF_API_URL = '/api';
 
 document.addEventListener('DOMContentLoaded', () => {
+    const API_URL = window.NOTIF_API_URL;
     const btnNotis = document.getElementById('btnNotis');
     const dropdownNotis = document.getElementById('dropdownNotis');
     const badgeNotis = document.getElementById('badgeNotis');
