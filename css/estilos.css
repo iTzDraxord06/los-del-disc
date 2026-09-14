@@ -509,6 +509,7 @@ body {
         opacity: 0;
         transform: translateY(8px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -640,7 +641,11 @@ body {
     gap: 0.75rem;
 }
 
-.form-comentario input, .form-comentario textarea, .campo input, .campo textarea, .campo select {
+.form-comentario input,
+.form-comentario textarea,
+.campo input,
+.campo textarea,
+.campo select {
     background-color: var(--bg-input);
     border: 1px solid var(--borde);
     color: var(--text-principal);
@@ -652,7 +657,10 @@ body {
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.form-comentario input:focus, .form-comentario textarea:focus, .campo input:focus, .campo textarea:focus {
+.form-comentario input:focus,
+.form-comentario textarea:focus,
+.campo input:focus,
+.campo textarea:focus {
     border-color: var(--accent-primary);
     box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
 }
@@ -923,7 +931,7 @@ body {
 }
 
 .item-foto-galeria:hover img,
-.item-foto-galeria:hover video{
+.item-foto-galeria:hover video {
     transform: scale(1.02);
     border-color: var(--accent-primary);
 }
@@ -962,7 +970,7 @@ body {
     z-index: 20;
 }
 
-.contenedor-galeria-fade.colapsado + .contenedor-toggle-galeria {
+.contenedor-galeria-fade.colapsado+.contenedor-toggle-galeria {
     margin-top: -38px;
 }
 
@@ -1046,8 +1054,10 @@ body {
 /* ================= MODALES ================= */
 .modal {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background-color: rgba(5, 6, 8, 0.85);
     display: flex;
     align-items: center;
@@ -1127,8 +1137,10 @@ body {
 /* ================= VISOR (LIGHTBOX) ================= */
 .modal-visor {
     position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
     background-color: rgba(5, 6, 8, 0.92);
     display: flex;
     justify-content: center;
@@ -1150,7 +1162,8 @@ body {
 
 .btn-cerrar-visor {
     position: absolute;
-    top: 18px; right: 25px;
+    top: 18px;
+    right: 25px;
     font-size: 36px;
     color: #ffffff;
     cursor: pointer;
@@ -1160,7 +1173,8 @@ body {
     display: none !important;
 }
 
-.cargando, .sin-datos {
+.cargando,
+.sin-datos {
     color: var(--text-secundario);
     font-size: 0.9rem;
     text-align: center;
@@ -1286,6 +1300,7 @@ body {
     gap: 8px;
     margin: 10px 0;
 }
+
 .media-reproductor {
     display: block;
     width: auto;
@@ -1297,6 +1312,7 @@ body {
     border: 1px solid var(--borde, #444);
     background: #000;
 }
+
 /* ================= RESPONSIVE MÓVIL ================= */
 @media (max-width: 768px) {
     .navbar {
@@ -1305,7 +1321,10 @@ body {
 
     .btn-hamburguesa {
         display: inline-flex;
+        position: relative;
+        z-index: 3000;
     }
+
 
     .logo h2 {
         font-size: 1rem;
@@ -1395,18 +1414,21 @@ body {
         max-height: 90vh;
         overflow-y: auto;
     }
+
     .input-grupo-media {
         flex-direction: column;
         align-items: stretch;
     }
+
     .input-grupo-media .btn-secundario {
         text-align: center;
         width: 100%;
         box-sizing: border-box;
     }
+
     video.media-reproductor {
-    max-width: 100% !important;
-    height: auto !important;
-    max-height: 280px !important;
-}
+        max-width: 100% !important;
+        height: auto !important;
+        max-height: 280px !important;
+    }
 }
