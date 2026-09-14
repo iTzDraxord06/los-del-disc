@@ -1287,9 +1287,10 @@ body {
 }
 .media-reproductor {
     display: block;
-    width: 100%;
-    max-width: 700px;
+    width: auto;
+    max-width: 100%;
     height: auto;
+    max-height: 320px;
     margin: 8px auto 0;
     border-radius: 8px;
     border: 1px solid var(--borde, #444);
@@ -1403,14 +1404,8 @@ body {
         box-sizing: border-box;
     }
     video.media-reproductor {
-        max-width: 100% !important;
-        height: auto !important;
-        max-height: 250px !important;
-    }
-    .media-reproductor {
-        width: 100%;
-        max-width: 100%;
-        height: auto;
-        border-radius: 6px;
-    }
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: 280px !important;
+}
 }

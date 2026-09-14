@@ -36,13 +36,23 @@ function esVideoDrive(url) {
 
 function renderizarMediaPerfil(url, alt = 'Multimedia') {
     if (!url) return '';
+
     if (esVideoDrive(url)) {
-        return `<video class="media-reproductor" controls preload="metadata" playsinline style="width:100%; max-height:320px; border-radius:8px; background:#000; display:block; margin-top:8px;">
-            <source src="${url}" type="video/mp4">
-            Tu navegador no soporta reproducción de video.
-        </video>`;
+        const match = url.match(/[?&]id=([^&]+)/);
+
+        if (!match) return '';
+
+        const fileId = match[1];
+
+        return `
+            <video class="media-reproductor" controls preload="metadata" playsinline>
+                <source src="/api/media-drive/${fileId}" type="video/mp4">
+                Tu navegador no soporta reproducción de video.
+            </video>
+        `;
     }
-    return `<img src="${url}" alt="${alt}" class="comentario-imagen" style="width:100%; max-height:320px; object-fit:cover; border-radius:8px; cursor:pointer; margin-top:8px;">`;
+
+    return `<img src="${url}" alt="${alt}" class="comentario-imagen" style="cursor:pointer;">`;
 }
 
 async function subirVideoDrive(file) {
@@ -197,17 +207,7 @@ function seleccionarAmigo(amigo) {
         contenedor.className = 'item-foto-galeria';
 
         if (esVideoDrive(urlFoto)) {
-            const video = document.createElement('video');
-            video.className = 'media-reproductor';
-            video.controls = true;
-            video.preload = 'metadata';
-            video.playsInline = true;
-            video.style.cssText = 'width:100%; max-height:220px; border-radius:8px; background:#000; display:block;';
-            const source = document.createElement('source');
-            source.src = urlFoto;
-            source.type = 'video/mp4';
-            video.appendChild(source);
-            contenedor.appendChild(video);
+            contenedor.innerHTML = renderizarMediaPerfil(urlFoto, 'Video del perfil');
         } else {
             const img = document.createElement('img');
             img.src = urlFoto;
@@ -648,7 +648,7 @@ if (btnEditarPerfil) {
 
         const usuarioActual = JSON.parse(localStorage.getItem('disc_user')) || {};
         const esAdmin = usuarioActual.RolApp === 'Admin';
-        
+
         if (campoRolServidor) {
             campoRolServidor.style.display = esAdmin ? 'block' : 'none';
             document.getElementById('nuevoRol').value = amigoSeleccionado.RolServidor || 'Miembro';
@@ -757,7 +757,7 @@ if (btnEliminarPerfil) {
 
 window.addEventListener('DOMContentLoaded', async () => {
     await cargarAmigos();
-    
+
     // Auto-scroll y highlight desde notificación de perfil
     const params = new URLSearchParams(window.location.search);
     const amigoQueryId = params.get('amigoId');

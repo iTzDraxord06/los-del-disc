@@ -31,7 +31,7 @@ function renderizarMultimediaMuro(url, alt = 'Multimedia') {
         `;
     }
 
-    return `<img src="${url}" class="comentario-imagen" alt="${alt}" style="cursor:pointer; margin-top:8px; max-width:100%;">`;
+    return `<img src="${url}" class="comentario-imagen" alt="${alt}" style="cursor:pointer;">`;
 }
 
 async function subirVideoDrive(file) {
