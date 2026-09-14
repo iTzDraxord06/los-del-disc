@@ -34,15 +34,22 @@ function renderizarMultimediaMuro(url, alt = 'Multimedia') {
 
     // GIF DE CLOUDINARY
     if (url.toLowerCase().includes('.gif')) {
+        const idGif = 'gif-' + Date.now() + '-' + Math.random();
 
-        const urlGif = url.replace(
-            '/image/upload/',
-            '/image/upload/fl_loop/'
-        );
+        setTimeout(() => {
+            const gif = document.getElementById(idGif);
+
+            if (gif) {
+                const src = gif.src;
+                gif.src = '';
+                gif.src = src;
+            }
+        }, 3000);
 
         return `
         <img
-            src="${urlGif}"
+            id="${idGif}"
+            src="${url}"
             class="comentario-imagen"
             alt="${alt}"
             style="cursor:pointer;"
