@@ -193,11 +193,22 @@ formAfiche.addEventListener('submit', async (e) => {
         // Nota: Si finalImageUrl viene de Drive, mandamos la petición JSON o un FormData con la URL mapeada si tu backend soporta campo unificado, 
         // o si prefieres enviarlo como POST unificado JSON/FormData:
         if (finalImageUrl) {
-            // Enviamos un request alternativo o ajustamos si tu backend de anuncio acepta ImagenUrl JSON o form. 
-            // Como /api/anuncio clásico espera multipart con req.file, enviamos un fetch que guarde el registro en AnuncioGlobal vía un campo extra o adaptamos.
-            // Para mantener compatibilidad con tu backend actual, si es video de Drive y el backend actual solo lee req.file de Cloudinary, 
-            // idealmente tu backend en server.js debe aceptar ImagenUrl en body o manejamos un POST JSON si se adapta, pero por ahora con imagen estándar funciona perfecto.
-            alert('Video subido a Google Drive: ' + finalImageUrl);
+            const formDataVideo = new FormData();
+
+            formDataVideo.append('titulo', tituloVal);
+            formDataVideo.append('descripcion', descVal);
+            formDataVideo.append('rolSolicitante', usuarioSesion.RolApp);
+            formDataVideo.append('imagenUrlDirecta', finalImageUrl);
+
+            const resVideo = await fetch(`${API_URL}/anuncio`, {
+                method: 'POST',
+                body: formDataVideo
+            });
+
+            if (!resVideo.ok) {
+                const dataErr = await resVideo.json().catch(() => ({}));
+                throw new Error(dataErr.error || 'Error al guardar el anuncio con video');
+            }
         }
 
         modalAfiche.classList.add('oculto');

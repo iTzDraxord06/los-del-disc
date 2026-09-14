@@ -795,26 +795,28 @@ app.get('/api/anuncio', async (req, res) => {
 
 app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
     try {
-        const { titulo, descripcion, rolSolicitante } = req.body || {};
-        if (rolSolicitante !== 'Admin') return res.status(403).json({ error: 'Solo Admin.' });
+        const { titulo, descripcion, rolSolicitante, imagenUrlDirecta } = req.body || {};
 
-        const imgUrl = req.file ? req.file.path : '';
+        if (rolSolicitante !== 'Admin') {
+            return res.status(403).json({ error: 'Solo Admin.' });
+        }
+
+        // Si viene una URL directa (por ejemplo, Google Drive), usamos esa.
+        // Si no, usamos la URL generada por Cloudinary.
+        const imgUrl = imagenUrlDirecta || (req.file ? req.file.path : '');
+
         await pool.request()
             .input('t', sql.NVarChar, titulo || '')
             .input('d', sql.NVarChar, descripcion || '')
             .input('img', sql.NVarChar, imgUrl)
-            .query('INSERT INTO AnuncioGlobal (Titulo, Descripcion, ImagenUrl, Activo) VALUES (@t, @d, @img, 1)');
-        res.json({ mensaje: 'Afiche publicado' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
+            .query(`
+                INSERT INTO AnuncioGlobal 
+                (Titulo, Descripcion, ImagenUrl, Activo) 
+                VALUES (@t, @d, @img, 1)
+            `);
 
-app.delete('/api/anuncio/:id', async (req, res) => {
-    if (req.query.rolSolicitante !== 'Admin') return res.status(403).json({ error: 'Solo Admin.' });
-    try {
-        await pool.request().input('id', sql.Int, req.params.id).query('DELETE FROM AnuncioGlobal WHERE Id = @id');
-        res.json({ mensaje: 'Afiche eliminado' });
+        res.json({ mensaje: 'Afiche publicado' });
+
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
