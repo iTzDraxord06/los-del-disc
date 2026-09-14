@@ -34,27 +34,22 @@ function renderizarMultimediaMuro(url, alt = 'Multimedia') {
 
     // GIF DE CLOUDINARY
     if (url.toLowerCase().includes('.gif')) {
-        return `
-            <img
-                src="${url}"
-                class="comentario-imagen"
-                alt="${alt}"
-                style="cursor:pointer;"
-            >
-        `;
-    }
 
-    // IMAGEN NORMAL
-    return `
+        const urlGif = url.replace(
+            '/image/upload/',
+            '/image/upload/fl_loop/'
+        );
+
+        return `
         <img
-            src="${url}"
+            src="${urlGif}"
             class="comentario-imagen"
             alt="${alt}"
             style="cursor:pointer;"
         >
     `;
+    }
 }
-
 async function subirVideoDrive(file) {
     if (!file) return null;
     if (file.size > 30 * 1024 * 1024) throw new Error('El video no puede superar los 30 MB.');
