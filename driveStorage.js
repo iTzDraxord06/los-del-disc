@@ -1,17 +1,27 @@
 const { google } = require('googleapis');
-const path = require('path');
 const stream = require('stream');
 
-const KEYFILEPATH = path.join(__dirname, 'drive-key.json');
 const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 
 const auth = new google.auth.GoogleAuth({
-    keyFile: KEYFILEPATH,
+    credentials: {
+        type: 'service_account',
+        project_id: process.env.GOOGLE_PROJECT_ID,
+        private_key_id: process.env.GOOGLE_PRIVATE_KEY_ID,
+        private_key: process.env.GOOGLE_PRIVATE_KEY
+            ? process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n')
+            : undefined,
+        client_email: process.env.GOOGLE_CLIENT_EMAIL,
+    },
     scopes: SCOPES,
 });
 
-const drive = google.drive({ version: 'v3', auth });
-const FOLDER_ID = '1oRs20DVKv7xbG2Ey9PNjTXL4zOz3CgYb';
+const drive = google.drive({
+    version: 'v3',
+    auth,
+});
+
+const FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
 
 async function subirADrive(fileBuffer, fileName, mimeType) {
     const bufferStream = new stream.PassThrough();
