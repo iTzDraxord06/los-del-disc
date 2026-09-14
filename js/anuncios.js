@@ -1,3 +1,5 @@
+console.log("🔥 ANUNCIOS.JS NUEVO CARGADO");
+
 const API_URL = '/api';
 
 const feedAfiches = document.getElementById('feedAfiches');
