@@ -26,6 +26,7 @@ function abrirVisor(url) {
 }
 
 function cerrarVisor() {
+    if (!modalVisor) return;
     modalVisor.classList.add('oculto');
     imagenVisorAmpliada.src = '';
 }
@@ -65,28 +66,38 @@ function cancelarRespuestaGlobal() {
 
 if (btnCancelarRespuestaGlobal) btnCancelarRespuestaGlobal.addEventListener('click', cancelarRespuestaGlobal);
 
-// Cargar posts con hilos
+// Cargar posts comunitarios
 async function cargarPostsGlobales() {
     if (!feedGlobalPosts) return;
     feedGlobalPosts.innerHTML = '<p class="cargando">Cargando publicaciones...</p>';
+    
     try {
         const res = await fetch(`${API_URL}/publicaciones-globales`);
-        const posts = await res.json();
+        
+        if (!res.ok) {
+            throw new Error(`Servidor devolvió status ${res.status}`);
+        }
+
+        const rawData = await res.json();
+        const posts = Array.isArray(rawData) ? rawData : [];
+
         feedGlobalPosts.innerHTML = '';
 
-        if (!Array.isArray(posts) || posts.length === 0) {
+        if (posts.length === 0) {
             feedGlobalPosts.innerHTML = '<p class="sin-datos">No hay publicaciones aún. ¡Sé el primero en escribir!</p>';
             return;
         }
 
-        const esAdmin = usuarioSesion && usuarioSesion.RolApp === 'Admin';
+        const usuarioActual = JSON.parse(localStorage.getItem('disc_user')) || {};
+        const esAdmin = usuarioActual.RolApp === 'Admin';
+        
         const principales = posts.filter(p => !p.RespuestaAId);
         const respuestas = posts.filter(p => p.RespuestaAId);
 
         function crearNodoPost(p, esHijo = false) {
-            const esAutor = usuarioSesion && usuarioSesion.NombreVisible === p.Autor;
+            const esAutor = usuarioActual.NombreVisible && usuarioActual.NombreVisible === p.Autor;
             const puedeBorrar = esAdmin || esAutor;
-            const fechaStr = new Date(p.Fecha).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' });
+            const fechaStr = p.Fecha ? new Date(p.Fecha).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : 'Reciente';
 
             const card = document.createElement('div');
             card.className = `comentario-item ${esHijo ? 'comentario-hijo' : ''}`;
@@ -96,15 +107,15 @@ async function cargarPostsGlobales() {
             card.innerHTML = `
                 <div class="comentario-header" style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <span class="comentario-autor">${p.Autor}</span>
+                        <span class="comentario-autor">${p.Autor || 'Anónimo'}</span>
                         <span class="comentario-fecha">${fechaStr}</span>
                     </div>
                     <div style="display: flex; gap: 6px; align-items: center;">
                         <button class="btn-responder-comentario" data-id="${p.Id}" data-autor="${p.Autor}">↩ Responder</button>
-                        ${puedeBorrar ? `<button class="btn-borrar-post-global" data-id="${p.Id}" title="Eliminar" style="background: none; border: none; cursor: pointer; color: #ed4245; font-size: 14px;">🗑️</button>` : ''}
+                        ${puedeBorrar ? `<button class="btn-borrar-post-global" data-id="${p.Id}" title="Eliminar" style="background: none; border: none; cursor: pointer; color: #ff3366; font-size: 14px;">🗑️</button>` : ''}
                     </div>
                 </div>
-                <p class="comentario-texto">${p.Texto}</p>
+                <p class="comentario-texto">${p.Texto || ''}</p>
                 ${imgHtml}
             `;
 
@@ -124,7 +135,7 @@ async function cargarPostsGlobales() {
                 const btnB = card.querySelector('.btn-borrar-post-global');
                 btnB.addEventListener('click', async () => {
                     if (!confirm('¿Deseas eliminar esta publicación?')) return;
-                    await fetch(`${API_URL}/publicaciones-globales/${p.Id}?rolSolicitante=${encodeURIComponent(usuarioSesion.RolApp)}&solicitanteNombre=${encodeURIComponent(usuarioSesion.NombreVisible)}`, {
+                    await fetch(`${API_URL}/publicaciones-globales/${p.Id}?rolSolicitante=${encodeURIComponent(usuarioActual.RolApp || '')}&solicitanteNombre=${encodeURIComponent(usuarioActual.NombreVisible || '')}`, {
                         method: 'DELETE'
                     });
                     cargarPostsGlobales();
@@ -146,8 +157,8 @@ async function cargarPostsGlobales() {
         });
 
     } catch (err) {
-        console.error(err);
-        feedGlobalPosts.innerHTML = '<p class="sin-datos">Error al cargar publicaciones.</p>';
+        console.error('Error detallado en muro.js:', err);
+        feedGlobalPosts.innerHTML = '<p class="sin-datos">No se pudieron cargar las publicaciones. Verifica la conexión.</p>';
     }
 }
 
@@ -157,11 +168,13 @@ if (formPostGlobal) {
         const texto = inputPostGlobal.value.trim();
         if (!texto) return;
 
+        const usuarioActual = JSON.parse(localStorage.getItem('disc_user')) || {};
+
         const formData = new FormData();
-        formData.append('autor', usuarioSesion.NombreVisible);
+        formData.append('autor', usuarioActual.NombreVisible || 'Miembro');
         formData.append('contenido', texto);
         if (postRespondiendoId) formData.append('respuestaAId', postRespondiendoId);
-        if (inputFotoPostGlobal.files && inputFotoPostGlobal.files[0]) {
+        if (inputFotoPostGlobal && inputFotoPostGlobal.files && inputFotoPostGlobal.files[0]) {
             formData.append('imagenPost', inputFotoPostGlobal.files[0]);
         }
 
