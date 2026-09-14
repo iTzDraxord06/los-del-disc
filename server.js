@@ -852,6 +852,30 @@ app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
     }
 });
 
+app.delete('/api/anuncio/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { rolSolicitante } = req.query;
+
+        if (rolSolicitante !== 'Admin') {
+            return res.status(403).json({ error: 'Solo Admin.' });
+        }
+
+        await pool.request()
+            .input('id', sql.Int, id)
+            .query(`
+                DELETE FROM AnuncioGlobal
+                WHERE Id = @id
+            `);
+
+        res.json({ mensaje: 'Anuncio eliminado correctamente' });
+
+    } catch (err) {
+        console.error('Error eliminando anuncio:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
