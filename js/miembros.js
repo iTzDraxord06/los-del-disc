@@ -157,7 +157,6 @@ function seleccionarAmigo(amigo) {
     const esAdmin = usuarioActual.RolApp === 'Admin';
     const esDueno = amigo.UsuarioId && (amigo.UsuarioId === usuarioActual.Id);
 
-    // Solo el Admin o el propio dueño de la tarjeta pueden ver el botón de Editar
     if (btnEditarPerfil) btnEditarPerfil.classList.toggle('oculto', !(esAdmin || esDueno));
     if (btnEliminarPerfil) btnEliminarPerfil.classList.toggle('oculto', !esAdmin);
 
@@ -178,7 +177,6 @@ function seleccionarAmigo(amigo) {
         img.addEventListener('click', () => abrirVisor(urlFoto));
         contenedor.appendChild(img);
 
-        // Si es Admin o el dueño de la tarjeta, muestra el botón para borrar foto
         if ((esAdmin || esDueno) && idFoto) {
             const btnBorrar = document.createElement('button');
             btnBorrar.className = 'btn-eliminar-foto';
@@ -208,6 +206,43 @@ function seleccionarAmigo(amigo) {
 
         gridWaifus.appendChild(contenedor);
     });
+
+    // Lógica Fade / Corte Galería (PC 3, Móvil 2)
+    const contenedorFade = document.getElementById('contenedorFadeGaleria');
+    const contenedorBoton = document.getElementById('contenedorBotonGaleria');
+    const btnToggle = document.getElementById('btnToggleGaleria');
+    const textoToggle = document.getElementById('textoToggleGaleria');
+
+    const esPantallaMovil = window.innerWidth <= 768;
+    const limiteCorte = esPantallaMovil ? 2 : 3;
+
+    if (contenedorFade && contenedorBoton && btnToggle) {
+        if (fotos.length > limiteCorte) {
+            contenedorFade.classList.remove('expandido');
+            contenedorFade.classList.add('colapsado');
+            contenedorBoton.classList.remove('oculto');
+
+            const fotosRestantes = fotos.length - limiteCorte;
+            textoToggle.textContent = `▼ Ver más fotos (+${fotosRestantes})`;
+
+            btnToggle.onclick = () => {
+                const estaColapsado = contenedorFade.classList.contains('colapsado');
+                if (estaColapsado) {
+                    contenedorFade.classList.remove('colapsado');
+                    contenedorFade.classList.add('expandido');
+                    textoToggle.textContent = '▲ Ver menos fotos';
+                } else {
+                    contenedorFade.classList.remove('expandido');
+                    contenedorFade.classList.add('colapsado');
+                    textoToggle.textContent = `▼ Ver más fotos (+${fotosRestantes})`;
+                }
+            };
+        } else {
+            contenedorFade.classList.remove('colapsado');
+            contenedorFade.classList.add('expandido');
+            contenedorBoton.classList.add('oculto');
+        }
+    }
 
     limpiarAdjuntoComentario();
     cargarComentarios(amigo.Id);
@@ -545,7 +580,6 @@ if (btnEditarPerfil) {
         const usuarioActual = JSON.parse(localStorage.getItem('disc_user')) || {};
         const esAdmin = usuarioActual.RolApp === 'Admin';
         
-        // Si no es Admin, el campo de rol no se puede modificar
         if (campoRolServidor) {
             campoRolServidor.style.display = esAdmin ? 'block' : 'none';
             document.getElementById('nuevoRol').value = amigoSeleccionado.RolServidor || 'Miembro';
