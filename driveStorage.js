@@ -117,7 +117,7 @@ async function subirADrive(fileBuffer, fileName, mimeType) {
         }
     });
 
-    return `https://drive.google.com/uc?id=${response.data.id}`;
+    return `https://drive.google.com/uc?export=download&id=${response.data.id}`;
 }
 
 module.exports = {
