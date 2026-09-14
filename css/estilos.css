@@ -1399,3 +1399,75 @@ body {
         max-height: 250px !important;
     }
 }
+
+/* ================= CORRECCIONES ANUNCIOS ================= */
+.btn-publicar-anuncio {
+    margin-top: 14px;
+}
+
+.nombre-archivo {
+    font-size: 0.85rem;
+    color: #949ba4;
+    margin-left: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.btn-seleccionar-archivo {
+    cursor: pointer;
+    padding: 6px 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.item-notificacion {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+    line-height: 1.45;
+}
+
+.item-notificacion strong {
+    display: inline;
+}
+
+@media (max-width: 768px) {
+    .btn-publicar-anuncio {
+        width: 100%;
+        margin-top: 14px;
+        justify-content: center;
+    }
+
+    .dropdown-notificaciones {
+        width: min(340px, calc(100vw - 24px));
+        max-width: calc(100vw - 24px);
+        right: -4px;
+        max-height: min(70vh, 400px);
+    }
+
+    .dropdown-notificaciones-lista {
+        min-height: 120px;
+    }
+
+    .item-notificacion {
+        padding: 12px;
+        font-size: 0.82rem;
+        line-height: 1.5;
+    }
+
+    .input-grupo-media {
+        width: 100%;
+    }
+
+    .btn-seleccionar-archivo {
+        width: 100%;
+    }
+
+    .nombre-archivo {
+        width: 100%;
+        margin-left: 0;
+        text-align: center;
+    }
+}

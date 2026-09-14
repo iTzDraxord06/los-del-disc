@@ -18,9 +18,9 @@ app.use(express.urlencoded({ extended: true, limit: '30mb' }));
 
 // 1. Configuración de Cloudinary
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 't0q7ltll',
-    api_key: process.env.CLOUDINARY_API_KEY || '421676215584541',
-    api_secret: process.env.CLOUDINARY_API_SECRET || 'RBJuAR6QFd4D0EjOGvvwmBPtiGg'
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 // 2. Storage de Multer flexible para imágenes (Cloudinary)
@@ -61,11 +61,11 @@ app.use('/imagenes', express.static(rutaImagenes));
 app.use(express.static(path.join(__dirname)));
 
 const dbConfig = {
-    user: 'admin_discord',
-    password: 'ClaveFuerte.2026!',
-    server: 'servidor-discord-eduardo.database.windows.net',
-    port: 1433,
-    database: 'DiscordFriendsDB',
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    server: process.env.DB_SERVER,
+    port: Number(process.env.DB_PORT || 1433),
+    database: process.env.DB_NAME,
     options: {
         encrypt: true,
         trustServerCertificate: false
@@ -650,17 +650,28 @@ app.get('/api/anuncio', async (req, res) => {
 
 app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
     try {
-        const { titulo, descripcion, rolSolicitante } = req.body || {};
-        if (rolSolicitante !== 'Admin') return res.status(403).json({ error: 'Solo Admin.' });
+        const { titulo, descripcion, rolSolicitante, imagenUrl } = req.body || {};
 
-        const imgUrl = req.file ? req.file.path : '';
+        if (rolSolicitante !== 'Admin') {
+            return res.status(403).json({ error: 'Solo Admin.' });
+        }
+
+        // Para imágenes: req.file.path viene de Cloudinary.
+        // Para videos: el frontend envía la URL que devolvió Google Drive.
+        const imgUrl = req.file ? req.file.path : (imagenUrl || '');
+
         await pool.request()
             .input('t', sql.NVarChar, titulo || '')
             .input('d', sql.NVarChar, descripcion || '')
             .input('img', sql.NVarChar, imgUrl)
-            .query('INSERT INTO AnuncioGlobal (Titulo, Descripcion, ImagenUrl, Activo) VALUES (@t, @d, @img, 1)');
-        res.json({ mensaje: 'Afiche publicado' });
+            .query(`
+                INSERT INTO AnuncioGlobal (Titulo, Descripcion, ImagenUrl, Activo)
+                VALUES (@t, @d, @img, 1)
+            `);
+
+        res.json({ mensaje: 'Anuncio publicado correctamente.' });
     } catch (err) {
+        console.error('Error en /api/anuncio:', err);
         res.status(500).json({ error: err.message });
     }
 });

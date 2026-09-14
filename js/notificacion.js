@@ -63,7 +63,14 @@ document.addEventListener('DOMContentLoaded', () => {
             data.forEach(item => {
                 const el = document.createElement('div');
                 el.className = `item-notificacion ${item.Leido ? '' : 'no-leido'}`;
-                el.innerHTML = `<strong>${item.AutorAccion}</strong> respondió: "${item.TextoPrevio || ''}"`;
+                const autor = document.createElement('strong');
+                autor.textContent = item.AutorAccion || 'Alguien';
+
+                const texto = document.createElement('span');
+                texto.textContent = ` respondió: "${item.TextoPrevio || ''}"`;
+
+                el.appendChild(autor);
+                el.appendChild(texto);
                 
                 el.addEventListener('click', async () => {
                     await fetch(`${API_URL}/notificaciones/${item.Id}/leer`, { method: 'PUT' });

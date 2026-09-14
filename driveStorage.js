@@ -13,7 +13,6 @@ const auth = new google.auth.GoogleAuth({
 const drive = google.drive({ version: 'v3', auth });
 const FOLDER_ID = '1oRs20DVKv7xbG2Ey9PNjTXL4zOz3CgYb';
 
-// Helper personalizado para Multer (sube buffer a Google Drive)
 async function subirADrive(fileBuffer, fileName, mimeType) {
     const bufferStream = new stream.PassThrough();
     bufferStream.end(fileBuffer);
@@ -34,7 +33,6 @@ async function subirADrive(fileBuffer, fileName, mimeType) {
         fields: 'id, webContentLink, webViewLink',
     });
 
-    // Hacer público el archivo para que se pueda reproducir/ver en el frontend
     await drive.permissions.create({
         fileId: response.data.id,
         requestBody: {
@@ -43,7 +41,6 @@ async function subirADrive(fileBuffer, fileName, mimeType) {
         },
     });
 
-    // Obtener enlace directo de visualización o stream
     return `https://drive.google.com/uc?id=${response.data.id}`;
 }
 
