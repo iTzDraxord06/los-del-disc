@@ -490,6 +490,21 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
         
         const newComId = insertRes.recordset[0].Id;
 
+        // Buscar el UsuarioId del dueño del perfil (`amigoId`)
+        const duenoCheck = await pool.request()
+            .input('aId', sql.Int, amigoId)
+            .query('SELECT UsuarioId FROM Amigos WHERE Id = @aId');
+        
+        const duenoUsuarioId = duenoCheck.recordset.length > 0 ? duenoCheck.recordset[0].UsuarioId : null;
+
+        // Buscar el UsuarioId de quien comento (si existe en Amigos mediante NombreVisible/autor)
+        const autorCheck = await pool.request()
+            .input('aut', sql.NVarChar, autor)
+            .query('SELECT TOP 1 UsuarioId FROM Amigos WHERE NombreVisible = @aut AND UsuarioId IS NOT NULL');
+        
+        const autorUsuarioId = autorCheck.recordset.length > 0 ? autorCheck.recordset[0].UsuarioId : null;
+
+        // 1. Notificar si es respuesta anidada a otro comentario
         if (respuestaAId) {
             const padreInfo = await pool.request()
                 .input('pId', sql.Int, respuestaAId)
@@ -500,16 +515,30 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
                     .input('nom', sql.NVarChar, nombrePadre)
                     .query('SELECT TOP 1 UsuarioId FROM Amigos WHERE NombreVisible = @nom AND UsuarioId IS NOT NULL');
                 if (destCheck.recordset.length > 0 && destCheck.recordset[0].UsuarioId) {
-                    await pool.request()
-                        .input('uDest', sql.Int, destCheck.recordset[0].UsuarioId)
-                        .input('autor', sql.NVarChar, autor || 'Alguien')
-                        .input('destId', sql.Int, amigoId)
-                        .input('comId', sql.Int, newComId)
-                        .input('txt', sql.NVarChar, (contenido || '').substring(0, 100))
-                        .query(`INSERT INTO Notificaciones (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
-                                VALUES (@uDest, @autor, 'PERFIL', @destId, @comId, @txt)`);
+                    const targetUId = destCheck.recordset[0].UsuarioId;
+                    if (targetUId !== autorUsuarioId) {
+                        await pool.request()
+                            .input('uDest', sql.Int, targetUId)
+                            .input('autor', sql.NVarChar, autor || 'Alguien')
+                            .input('destId', sql.Int, amigoId)
+                            .input('comId', sql.Int, newComId)
+                            .input('txt', sql.NVarChar, (contenido || '').substring(0, 100))
+                            .query(`INSERT INTO Notificaciones (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
+                                    VALUES (@uDest, @autor, 'PERFIL', @destId, @comId, @txt)`);
+                    }
                 }
             }
+        } 
+        // 2. Si NO es respuesta anidada, notificar al dueño del perfil
+        else if (duenoUsuarioId && duenoUsuarioId !== autorUsuarioId) {
+            await pool.request()
+                .input('uDest', sql.Int, duenoUsuarioId)
+                .input('autor', sql.NVarChar, autor || 'Alguien')
+                .input('destId', sql.Int, amigoId)
+                .input('comId', sql.Int, newComId)
+                .input('txt', sql.NVarChar, (contenido || '').substring(0, 100))
+                .query(`INSERT INTO Notificaciones (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
+                        VALUES (@uDest, @autor, 'PERFIL', @destId, @comId, @txt)`);
         }
 
         res.json({ mensaje: 'Comentario publicado exitosamente' });
