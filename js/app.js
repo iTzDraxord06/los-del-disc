@@ -97,7 +97,7 @@ const imagenVisorAmpliada = document.getElementById('imagenVisorAmpliada');
 const btnCerrarVisor = document.getElementById('btnCerrarVisor');
 
 function abrirVisor(url) {
-    if (!url) return;
+    if (!url || url.includes('drive.google.com')) return;
     imagenVisorAmpliada.src = url;
     modalVisor.classList.remove('oculto');
 }
@@ -116,6 +116,45 @@ if (modalVisor) {
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && modalVisor && !modalVisor.classList.contains('oculto')) {
         cerrarVisor();
+    }
+});
+
+// --- HELPER UNIFICADO DE MULTIMEDIA (IMAGEN O VIDEO DRIVE) ---
+function renderizarMultimedia(url) {
+    if (!url) return '';
+    if (url.includes('drive.google.com')) {
+        return `
+            <video class="media-reproductor" controls preload="metadata" style="
+                max-width: 100%;
+                max-height: 380px;
+                border-radius: 8px;
+                border: 1px solid var(--borde, #444);
+                margin-top: 10px;
+                display: block;
+                background: #000;
+            ">
+                <source src="${url}" type="video/mp4">
+                Tu navegador no soporta reproducción de video.
+            </video>
+        `;
+    }
+    return `<img src="${url}" alt="Multimedia" class="comentario-imagen" title="Clic para ampliar" style="cursor: pointer; max-width: 100%; border-radius: 8px;">`;
+}
+
+// Delegación global para triggers de video/foto custom
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('lbl-video-trigger')) {
+        const input = e.target.parentElement.querySelector('.input-video-media-file');
+        if (input) input.click();
+    }
+});
+
+document.addEventListener('change', (e) => {
+    if (e.target.classList.contains('input-video-media-file')) {
+        const span = e.target.parentElement.querySelector('.nombre-archivo-video');
+        if (span) {
+            span.textContent = e.target.files[0] ? `🎬 ${e.target.files[0].name}` : '';
+        }
     }
 });
 
@@ -182,8 +221,8 @@ function volverAlInicio() {
     if (btnEditarPerfil) btnEditarPerfil.classList.add('oculto');
     if (btnEliminarPerfil) btnEliminarPerfil.classList.add('oculto');
 
-    cargarAfiche();
-    cargarPostsGlobales();
+    if (typeof cargarAfiche === 'function') cargarAfiche();
+    if (typeof cargarPostsGlobales === 'function') cargarPostsGlobales();
 }
 
 if (btnInicio) {
@@ -197,223 +236,7 @@ if (btnVolverInicio) {
     btnVolverInicio.addEventListener('click', volverAlInicio);
 }
 
-// ================= AFICHES =================
-
-async function cargarAfiche() {
-    try {
-        const res = await fetch(`${API_URL}/anuncio`);
-        const anuncios = await res.json();
-
-        if (!feedAfiches) return;
-        feedAfiches.innerHTML = '';
-
-        if (Array.isArray(anuncios) && anuncios.length > 0) {
-            feedAfiches.classList.remove('oculto');
-            if (aficheDefault) aficheDefault.classList.add('oculto');
-
-            const esAdmin = usuarioSesion && usuarioSesion.RolApp === 'Admin';
-
-            anuncios.forEach(item => {
-                const tarjeta = document.createElement('div');
-                tarjeta.className = 'tarjeta-afiche';
-
-                let botonBorrar = '';
-                if (esAdmin) {
-                    botonBorrar = `
-                        <div style="text-align: right; margin-bottom: 8px;">
-                            <button class="btn-borrar-afiche" data-id="${item.Id}" style="background-color: #ed4245; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.78rem;">🗑️ Quitar</button>
-                        </div>
-                    `;
-                }
-
-                let imgHtml = '';
-                if (item.ImagenUrl) {
-                    imgHtml = `<img src="${item.ImagenUrl}" alt="Afiche" style="cursor: pointer;" />`;
-                }
-
-                let tituloHtml = item.Titulo ? `<h2>${item.Titulo}</h2>` : '';
-                let descHtml = item.Descripcion ? `<p>${item.Descripcion}</p>` : '';
-
-                tarjeta.innerHTML = `${botonBorrar}${imgHtml}${tituloHtml}${descHtml}`;
-
-                const imgEl = tarjeta.querySelector('img');
-                if (imgEl) imgEl.addEventListener('click', () => abrirVisor(item.ImagenUrl));
-
-                if (esAdmin) {
-                    const btn = tarjeta.querySelector('.btn-borrar-afiche');
-                    btn.addEventListener('click', async () => {
-                        const confirmar = confirm('¿Deseas quitar este afiche?');
-                        if (!confirmar) return;
-
-                        try {
-                            const delRes = await fetch(`${API_URL}/anuncio/${item.Id}?rolSolicitante=${encodeURIComponent(usuarioSesion.RolApp)}`, {
-                                method: 'DELETE'
-                            });
-                            if (delRes.ok) {
-                                cargarAfiche();
-                            } else {
-                                alert('No se pudo quitar el afiche.');
-                            }
-                        } catch (err) {
-                            console.error(err);
-                        }
-                    });
-                }
-
-                feedAfiches.appendChild(tarjeta);
-            });
-        } else {
-            feedAfiches.classList.add('oculto');
-            if (aficheDefault) aficheDefault.classList.remove('oculto');
-        }
-    } catch (err) {
-        console.error(err);
-    }
-}
-
-// ================= GESTIÓN DE AMIGOS =================
-
-async function cargarAmigos() {
-    try {
-        const res = await fetch(`${API_URL}/amigos`);
-        listaAmigosMemoria = await res.json();
-        listaAmigosEl.innerHTML = '';
-
-        if (listaAmigosMemoria.length === 0) {
-            listaAmigosEl.innerHTML = '<p class="sin-datos">No hay amigos registrados.</p>';
-            return;
-        }
-
-        listaAmigosMemoria.forEach(amigo => {
-            const card = document.createElement('div');
-            card.className = `amigo-card ${amigoSeleccionadoId === amigo.Id ? 'activo' : ''}`;
-            const avatar = amigo.AvatarUrl || 'imagenes/default.png';
-
-            card.innerHTML = `
-                <img src="${avatar}" alt="${amigo.Apodo}">
-                <div class="amigo-info">
-                    <h4>${amigo.Apodo}</h4>
-                    <span>@${amigo.DiscordUsername}</span>
-                </div>
-            `;
-            card.addEventListener('click', () => {
-                seleccionarAmigo(amigo);
-            });
-            listaAmigosEl.appendChild(card);
-        });
-
-        if (amigoSeleccionadoId) {
-            const actual = listaAmigosMemoria.find(a => a.Id === amigoSeleccionadoId);
-            if (actual) seleccionarAmigo(actual);
-        }
-    } catch (err) {
-        console.error(err);
-        listaAmigosEl.innerHTML = '<p class="sin-datos">Error al conectar con la base de datos.</p>';
-    }
-}
-
-function seleccionarAmigo(amigo) {
-    cerrarMenuLateral();
-
-    amigoSeleccionado = amigo;
-    amigoSeleccionadoId = amigo.Id;
-
-    muroVacioEl.classList.add('oculto');
-    muroDetalleEl.classList.remove('oculto');
-
-    muroAvatar.src = amigo.AvatarUrl || 'imagenes/default.png';
-    muroApodo.textContent = amigo.Apodo;
-    muroTag.textContent = `@${amigo.DiscordUsername}`;
-    muroRol.textContent = amigo.RolServidor || 'Miembro';
-    muroDesc.textContent = amigo.Descripcion || 'Sin biografía.';
-
-    const esAdmin = usuarioSesion && usuarioSesion.RolApp === 'Admin';
-    if (btnEditarPerfil) btnEditarPerfil.classList.toggle('oculto', !esAdmin);
-    if (btnEliminarPerfil) btnEliminarPerfil.classList.toggle('oculto', !esAdmin);
-
-    gridWaifus.innerHTML = '';
-    const fotos = amigo.Fotos || [];
-
-    fotos.forEach(item => {
-        const urlFoto = typeof item === 'string' ? item : item.url;
-        const idFoto = typeof item === 'object' ? item.id : null;
-
-        const contenedor = document.createElement('div');
-        contenedor.className = 'item-foto-galeria';
-
-        const img = document.createElement('img');
-        img.src = urlFoto;
-        img.alt = 'Foto Galería';
-        img.title = 'Haz clic para ampliar';
-        img.addEventListener('click', () => abrirVisor(urlFoto));
-        contenedor.appendChild(img);
-
-        if (esAdmin && idFoto) {
-            const btnBorrar = document.createElement('button');
-            btnBorrar.className = 'btn-eliminar-foto';
-            btnBorrar.innerHTML = '🗑️';
-            btnBorrar.title = 'Eliminar esta foto de la galería';
-
-            btnBorrar.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                const confirmar = confirm('¿Estás seguro de que deseas eliminar esta imagen de la galería?');
-                if (!confirmar) return;
-
-                try {
-                    const res = await fetch(`${API_URL}/fotos/${idFoto}?rolSolicitante=${encodeURIComponent(usuarioSesion.RolApp)}`, {
-                        method: 'DELETE'
-                    });
-
-                    if (res.ok) {
-                        await cargarAmigos();
-                    } else {
-                        const errData = await res.json().catch(() => ({}));
-                        alert(errData.error || 'No se pudo eliminar la foto.');
-                    }
-                } catch (err) {
-                    console.error('Error al borrar foto:', err);
-                    alert('Error de conexión al eliminar la imagen.');
-                }
-            });
-
-            contenedor.appendChild(btnBorrar);
-        }
-
-        gridWaifus.appendChild(contenedor);
-    });
-
-    document.querySelectorAll('.amigo-card').forEach(c => c.classList.remove('activo'));
-    cargarComentarios(amigo.Id);
-}
-
-if (btnEliminarPerfil) {
-    btnEliminarPerfil.addEventListener('click', async () => {
-        if (!amigoSeleccionadoId) return;
-
-        const confirmar = confirm(`¿Estás seguro de que deseas eliminar a ${amigoSeleccionado.Apodo}? Esta acción borrará también sus comentarios.`);
-        if (!confirmar) return;
-
-        try {
-            const res = await fetch(`${API_URL}/amigos/${amigoSeleccionadoId}?rolSolicitante=${encodeURIComponent(usuarioSesion.RolApp)}`, {
-                method: 'DELETE'
-            });
-            const data = await res.json();
-
-            if (res.ok) {
-                volverAlInicio();
-                await cargarAmigos();
-            } else {
-                alert(data.error || 'Error al eliminar el amigo.');
-            }
-        } catch (err) {
-            console.error(err);
-            alert('Error al intentar eliminar el amigo.');
-        }
-    });
-}
-
 // ================= GESTIÓN DE LA FOTO ADJUNTA EN COMENTARIO =================
-
 if (inputFotoComentario) {
     inputFotoComentario.addEventListener('change', () => {
         if (inputFotoComentario.files && inputFotoComentario.files[0]) {
@@ -438,8 +261,8 @@ if (btnQuitarFotoComentario) {
 }
 
 // ================= COMENTARIOS EN PERFILES =================
-
 async function cargarComentarios(amigoId) {
+    if (!listaComentariosEl) return;
     listaComentariosEl.innerHTML = '<p class="cargando">Cargando comentarios...</p>';
     try {
         const res = await fetch(`${API_URL}/comentarios/${amigoId}`);
@@ -466,10 +289,7 @@ async function cargarComentarios(amigoId) {
             const card = document.createElement('div');
             card.className = 'comentario-item';
             
-            let imagenHtml = '';
-            if (c.ImagenUrl) {
-                imagenHtml = `<img src="${c.ImagenUrl}" alt="Imagen de comentario" class="comentario-imagen" title="Clic para ampliar">`;
-            }
+            let mediaHtml = c.ImagenUrl ? renderizarMultimedia(c.ImagenUrl) : '';
 
             card.innerHTML = `
                 <div class="comentario-header" style="display: flex; justify-content: space-between; align-items: center;">
@@ -480,7 +300,7 @@ async function cargarComentarios(amigoId) {
                     ${puedeBorrar ? `<button class="btn-borrar-comentario" data-id="${c.Id}" title="Eliminar comentario" style="background: none; border: none; cursor: pointer; color: #ed4245; font-size: 14px; padding: 2px 6px;">🗑️</button>` : ''}
                 </div>
                 <p class="comentario-texto">${textoComentario}</p>
-                ${imagenHtml}
+                ${mediaHtml}
             `;
 
             const imgEl = card.querySelector('.comentario-imagen');
@@ -498,11 +318,11 @@ async function cargarComentarios(amigoId) {
                         const deleteRes = await fetch(`${API_URL}/comentarios/${c.Id}?rolSolicitante=${encodeURIComponent(usuarioSesion.RolApp)}&solicitanteNombre=${encodeURIComponent(usuarioSesion.NombreVisible)}`, {
                             method: 'DELETE'
                         });
-                        const data = await deleteRes.json().catch(() => ({}));
 
                         if (deleteRes.ok) {
                             cargarComentarios(amigoId);
                         } else {
+                            const data = await deleteRes.json().catch(() => ({}));
                             alert(data.error || 'No se pudo eliminar el comentario.');
                         }
                     } catch (err) {
@@ -520,71 +340,71 @@ async function cargarComentarios(amigoId) {
     }
 }
 
-formComentario.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    if (!amigoSeleccionadoId) return;
+if (formComentario) {
+    formComentario.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!amigoSeleccionadoId) return;
 
-    const contenido = inputComentario.value.trim();
-    const inputVid = formComentario.querySelector('.input-video-media-file');
-    const tieneFoto = inputFotoComentario && inputFotoComentario.files && inputFotoComentario.files[0];
-    const tieneVideo = inputVid && inputVid.files && inputVid.files[0];
+        const contenido = inputComentario.value.trim();
+        const inputVid = formComentario.querySelector('.input-video-media-file');
+        const tieneFoto = inputFotoComentario && inputFotoComentario.files && inputFotoComentario.files[0];
+        const tieneVideo = inputVid && inputVid.files && inputVid.files[0];
 
-    if (!contenido && !tieneFoto && !tieneVideo) return;
+        if (!contenido && !tieneFoto && !tieneVideo) return;
 
-    const formData = new FormData();
-    formData.append('amigoId', amigoSeleccionadoId);
-    formData.append('autor', usuarioSesion.NombreVisible);
-    formData.append('contenido', contenido || '');
+        const formData = new FormData();
+        formData.append('amigoId', amigoSeleccionadoId);
+        formData.append('autor', usuarioSesion.NombreVisible);
+        formData.append('contenido', contenido || '');
 
-    if (btnEnviarComentario) {
-        btnEnviarComentario.disabled = true;
-        btnEnviarComentario.textContent = 'Enviando...';
-    }
-
-    try {
-        if (tieneVideo) {
-            // Subir video pesado a Google Drive primero
-            const formDataDrive = new FormData();
-            formDataDrive.append('archivo', inputVid.files[0]);
-            const resDrive = await fetch(`${API_URL}/media-drive`, { method: 'POST', body: formDataDrive });
-            if (!resDrive.ok) throw new Error('Falló subida de video a Drive');
-            const dataDrive = await resDrive.json();
-            formData.append('imagenUrlDirecta', dataDrive.url);
-        } else if (tieneFoto) {
-            formData.append('imagenComentario', inputFotoComentario.files[0]);
-        }
-
-        const res = await fetch(`${API_URL}/comentarios`, {
-            method: 'POST',
-            body: formData
-        });
-
-        if (res.ok) {
-            inputComentario.value = '';
-            limpiarAdjuntoComentario();
-            if (inputVid) {
-                inputVid.value = '';
-                const span = inputVid.parentElement.querySelector('.nombre-archivo-video');
-                if (span) span.textContent = '';
-            }
-            cargarComentarios(amigoSeleccionadoId);
-        } else {
-            const errData = await res.json().catch(() => ({}));
-            alert(errData.error || 'No se pudo publicar el comentario.');
-        }
-    } catch (err) {
-        console.error('Error al enviar comentario:', err);
-        alert('Error de conexión al enviar comentario.');
-    } finally {
         if (btnEnviarComentario) {
-            btnEnviarComentario.disabled = false;
-            btnEnviarComentario.textContent = 'Enviar comentario';
+            btnEnviarComentario.disabled = true;
+            btnEnviarComentario.textContent = 'Enviando...';
         }
-    }
-});
+
+        try {
+            if (tieneVideo) {
+                const formDataDrive = new FormData();
+                formDataDrive.append('archivo', inputVid.files[0]);
+                const resDrive = await fetch(`${API_URL}/media-drive`, { method: 'POST', body: formDataDrive });
+                if (!resDrive.ok) throw new Error('Falló subida de video a Drive');
+                const dataDrive = await resDrive.json();
+                formData.append('imagenUrlDirecta', dataDrive.url);
+            } else if (tieneFoto) {
+                formData.append('imagenComentario', inputFotoComentario.files[0]);
+            }
+
+            const res = await fetch(`${API_URL}/comentarios`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (res.ok) {
+                inputComentario.value = '';
+                limpiarAdjuntoComentario();
+                if (inputVid) {
+                    inputVid.value = '';
+                    const span = inputVid.parentElement.querySelector('.nombre-archivo-video');
+                    if (span) span.textContent = '';
+                }
+                cargarComentarios(amigoSeleccionadoId);
+            } else {
+                const errData = await res.json().catch(() => ({}));
+                alert(errData.error || 'No se pudo publicar el comentario.');
+            }
+        } catch (err) {
+            console.error('Error al enviar comentario:', err);
+            alert('Error de conexión al enviar comentario.');
+        } finally {
+            if (btnEnviarComentario) {
+                btnEnviarComentario.disabled = false;
+                btnEnviarComentario.textContent = 'Enviar comentario';
+            }
+        }
+    });
+}
 
 // ================= GESTIÓN DEL MURO GLOBAL (INICIO) =================
-
 if (inputFotoPostGlobal) {
     inputFotoPostGlobal.addEventListener('change', () => {
         if (inputFotoPostGlobal.files && inputFotoPostGlobal.files[0]) {
@@ -620,12 +440,12 @@ async function cargarPostsGlobales() {
         posts.forEach(p => {
             const esAdmin = usuarioSesion && usuarioSesion.RolApp === 'Admin';
             const esAutor = usuarioSesion && usuarioSesion.NombreVisible === p.Autor;
-            const puedeBorrar = esAdmin || esAutor;
+            const peutBorrar = esAdmin || esAutor;
 
             const card = document.createElement('div');
             card.className = 'comentario-item';
             
-            let imgHtml = p.ImagenUrl ? `<img src="${p.ImagenUrl}" class="comentario-imagen" alt="Foto post">` : '';
+            let mediaHtml = p.ImagenUrl ? renderizarMultimedia(p.ImagenUrl) : '';
             
             card.innerHTML = `
                 <div class="comentario-header" style="display: flex; justify-content: space-between; align-items: center;">
@@ -633,16 +453,16 @@ async function cargarPostsGlobales() {
                         <span class="comentario-autor">${p.Autor}</span>
                         <span class="comentario-fecha">${new Date(p.Fecha).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</span>
                     </div>
-                    ${puedeBorrar ? `<button class="btn-borrar-post-global" data-id="${p.Id}" title="Eliminar publicación" style="background: none; border: none; cursor: pointer; color: #ed4245; font-size: 14px;">🗑️</button>` : ''}
+                    ${peutBorrar ? `<button class="btn-borrar-post-global" data-id="${p.Id}" title="Eliminar publicación" style="background: none; border: none; cursor: pointer; color: #ed4245; font-size: 14px;">🗑️</button>` : ''}
                 </div>
                 <p class="comentario-texto">${p.Texto}</p>
-                ${imgHtml}
+                ${mediaHtml}
             `;
 
             const imgEl = card.querySelector('.comentario-imagen');
             if (imgEl) imgEl.addEventListener('click', () => abrirVisor(p.ImagenUrl));
 
-            if (puedeBorrar) {
+            if (peutBorrar) {
                 const btnB = card.querySelector('.btn-borrar-post-global');
                 btnB.addEventListener('click', async () => {
                     if (!confirm('¿Deseas eliminar esta publicación?')) return;
@@ -666,7 +486,7 @@ if (formPostGlobal) {
         e.preventDefault();
         const texto = inputPostGlobal.value.trim();
         const inputVid = formPostGlobal.querySelector('.input-video-media-file');
-        const tieneFoto = inputFotoPostGlobal.files && inputFotoPostGlobal.files[0];
+        const tieneFoto = inputFotoPostGlobal && inputFotoPostGlobal.files && inputFotoPostGlobal.files[0];
         const tieneVideo = inputVid && inputVid.files && inputVid.files[0];
 
         if (!texto && !tieneFoto && !tieneVideo) return;
@@ -720,200 +540,3 @@ if (formPostGlobal) {
         }
     });
 }
-
-// ================= MODAL AMIGO (AGREGAR / EDITAR) =================
-
-if (btnAbrirModal) {
-    btnAbrirModal.addEventListener('click', () => {
-        formNuevoAmigo.reset();
-        amigoEditId.value = '';
-        modalTitulo.textContent = 'Agregar Amigo';
-        modalAmigo.classList.remove('oculto');
-    });
-}
-
-if (btnCerrarModal) {
-    btnCerrarModal.addEventListener('click', () => {
-        modalAmigo.classList.add('oculto');
-    });
-}
-
-if (btnEditarPerfil) {
-    btnEditarPerfil.addEventListener('click', () => {
-        if (!amigoSeleccionado) return;
-        amigoEditId.value = amigoSeleccionado.Id;
-        document.getElementById('nuevoUsername').value = amigoSeleccionado.DiscordUsername;
-        document.getElementById('nuevoApodo').value = amigoSeleccionado.Apodo;
-        document.getElementById('nuevoRol').value = amigoSeleccionado.RolServidor || 'Miembro';
-        document.getElementById('nuevaDesc').value = amigoSeleccionado.Descripcion || '';
-
-        modalTitulo.textContent = `Editar a ${amigoSeleccionado.Apodo}`;
-        modalAmigo.classList.remove('oculto');
-    });
-}
-
-formNuevoAmigo.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const id = amigoEditId.value;
-    const formData = new FormData();
-
-    formData.append('discordUsername', document.getElementById('nuevoUsername').value.trim());
-    formData.append('apodo', document.getElementById('nuevoApodo').value.trim());
-    formData.append('rol', document.getElementById('nuevoRol').value.trim());
-    formData.append('descripcion', document.getElementById('nuevaDesc').value.trim());
-    formData.append('rolSolicitante', usuarioSesion.RolApp);
-
-    const avatarInput = document.getElementById('inputAvatarFile');
-    if (avatarInput && avatarInput.files && avatarInput.files[0]) {
-        formData.append('avatarFile', avatarInput.files[0]);
-    } else if (id && amigoSeleccionado) {
-        formData.append('avatarUrlActual', amigoSeleccionado.AvatarUrl || '');
-    }
-
-    const waifuInput = document.getElementById('inputWaifuFiles');
-    if (waifuInput && waifuInput.files && waifuInput.files.length > 0) {
-        for (let i = 0; i < waifuInput.files.length; i++) {
-            formData.append('waifuFiles', waifuInput.files[i]);
-        }
-    }
-
-    const url = id ? `${API_URL}/amigos/${id}` : `${API_URL}/amigos`;
-    const metodo = id ? 'PUT' : 'POST';
-
-    if (btnGuardarAmigo) {
-        btnGuardarAmigo.disabled = true;
-        btnGuardarAmigo.textContent = 'Guardando...';
-    }
-
-    try {
-        const res = await fetch(url, {
-            method: metodo,
-            body: formData
-        });
-
-        const resp = await res.json().catch(() => ({ error: 'Respuesta inválida del servidor' }));
-
-        if (res.ok) {
-            modalAmigo.classList.add('oculto');
-            formNuevoAmigo.reset();
-            cargarAmigos();
-        } else {
-            alert(resp.error || 'No se pudo completar la operación.');
-        }
-    } catch (err) {
-        console.error('Detalle del fallo:', err);
-        alert('Error al enviar la solicitud: ' + err.message);
-    } finally {
-        if (btnGuardarAmigo) {
-            btnGuardarAmigo.disabled = false;
-            btnGuardarAmigo.textContent = 'Guardar';
-        }
-    }
-});
-
-// --- HELPER PARA SUBIR A GOOGLE DRIVE ---
-async function subirArchivoMultimedia(fileInput) {
-    const file = fileInput.files[0];
-    if (!file) return null;
-
-    const formData = new FormData();
-    formData.append('archivo', file);
-
-    const res = await fetch('/api/media-drive', {
-        method: 'POST',
-        body: formData
-    });
-
-    if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Error al subir a Drive');
-    }
-
-    const data = await res.json();
-    return data.url; // Retorna https://drive.google.com/uc?id=...
-}
-
-// --- RENDERIZADOR UNIFICADO DE MULTIMEDIA (IMAGEN O VIDEO) ---
-function renderizarMultimedia(url) {
-    if (!url) return '';
-    if (url.includes('drive.google.com')) {
-        return `
-            <video class="media-reproductor" controls preload="metadata" style="
-                max-width: 100%;
-                max-height: 380px;
-                border-radius: 8px;
-                border: 1px solid var(--borde, #444);
-                margin-top: 10px;
-                display: block;
-                background: #000;
-            ">
-                <source src="${url}" type="video/mp4">
-                Tu navegador no soporta reproducción de video.
-            </video>
-        `;
-    }
-    return `<img src="${url}" alt="Multimedia" class="comentario-imagen" title="Clic para ampliar">`;
-}
-
-const inputMed = document.getElementById('inputVideoMedia');
-if (inputMed) {
-    inputMed.addEventListener('change', () => {
-        const label = document.getElementById('nombreArchivoSel');
-        if (label) label.textContent = inputMed.files[0] ? inputMed.files[0].name : 'Ningún archivo seleccionado';
-    });
-}
-
-// ================= MODAL AFICHE =================
-
-if (btnAbrirModalAfiche) {
-    btnAbrirModalAfiche.addEventListener('click', () => {
-        formAfiche.reset();
-        modalAfiche.classList.remove('oculto');
-    });
-}
-
-if (btnCerrarModalAfiche) {
-    btnCerrarModalAfiche.addEventListener('click', () => {
-        modalAfiche.classList.add('oculto');
-    });
-}
-
-formAfiche.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const formData = new FormData();
-    formData.append('titulo', document.getElementById('aficheInputTitulo').value.trim());
-    formData.append('descripcion', document.getElementById('aficheInputDesc').value.trim());
-    formData.append('rolSolicitante', usuarioSesion.RolApp);
-
-    const fileInput = document.getElementById('aficheInputFile');
-    if (fileInput && fileInput.files[0]) {
-        formData.append('imagenAfiche', fileInput.files[0]);
-    }
-
-    try {
-        const res = await fetch(`${API_URL}/anuncio`, {
-            method: 'POST',
-            body: formData
-        });
-
-        if (res.ok) {
-            modalAfiche.classList.add('oculto');
-            formAfiche.reset();
-            cargarAfiche();
-        } else {
-            const data = await res.json().catch(() => ({}));
-            alert(data.error || 'Error al guardar el afiche');
-        }
-    } catch (err) {
-        console.error(err);
-        alert('Error al enviar el afiche');
-    }
-});
-
-window.addEventListener('DOMContentLoaded', () => {
-    cargarAmigos();
-    cargarAfiche();
-    cargarPostsGlobales();
-});
