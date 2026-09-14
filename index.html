@@ -11,7 +11,14 @@
 </head>
 
 <body>
-    <header>
+
+    <header class="navbar">
+        <div class="logo" onclick="window.location.href='index.html'" style="cursor: pointer;">
+            <button id="btnMenu" class="btn-hamburguesa" aria-label="Abrir menú">☰</button>
+            <img src="imagenes/Logo Pagina Web.png" alt="Logo Los del Disc" class="disc-logo-img">
+            <h2>Los del Disc</h2>
+        </div>
+        
         <div class="nav-derecha">
             <a href="index.html" class="btn-secundario">🏠 Inicio</a>
             <a href="miembros.html" class="btn-secundario">👥 Miembros</a>
@@ -32,6 +39,7 @@
                 Anuncio</button>
         </div>
     </header>
+
     <main class="contenedor-principal">
         <!-- BARRA LATERAL (CANALES DEL SERVIDOR) -->
         <aside class="seccion-amigos" id="barraLateral">
