@@ -20,13 +20,12 @@
         </div>
 
         <div class="nav-derecha">
-            <!-- Sin botones duplicados de navegación, solo acción de admin si corresponde -->
             <button id="btnAbrirModal" class="btn-primary oculto">+ Nuevo Amigo</button>
         </div>
     </header>
 
     <main class="contenedor-principal">
-        <!-- BARRA LATERAL: SOLO CANALES Y USUARIO -->
+        <!-- BARRA LATERAL: CANALES Y SESIÓN -->
         <aside class="seccion-amigos" id="barraLateral">
             <div class="canales-servidor">
                 <span class="categoria-canales">CANALES</span>
@@ -61,7 +60,7 @@
         <!-- SECCIÓN PRINCIPAL CENTRAL -->
         <section class="seccion-muro" id="seccionMuro">
             
-            <!-- 1. VISTA CUADRÍCULA DE MIEMBROS (EL CÍRCULO ROJO GRANDE) -->
+            <!-- 1. VISTA CUADRÍCULA DE MIEMBROS -->
             <div id="vistaGridMiembros" class="contenedor-miembros-central">
                 <div class="header-miembros-central">
                     <h2>👥 Integrantes del Servidor</h2>
@@ -73,7 +72,7 @@
                 </div>
             </div>
 
-            <!-- 2. VISTA DETALLE DEL PERFIL (SE ABRE AL DAR CLIC A CUALQUIER AMIGO) -->
+            <!-- 2. VISTA DETALLE DEL PERFIL -->
             <div class="muro-contenido oculto" id="muroDetalle" style="max-width: 900px; margin: 0 auto;">
                 <div style="margin-bottom: 12px;">
                     <button id="btnVolverMiembros" class="btn-secundario">← Volver a la lista de miembros</button>
@@ -112,14 +111,21 @@
                     <h4>Muro personal de <span id="nombreAmigoMuro"></span></h4>
 
                     <form id="formComentario" class="form-comentario">
-                        <div id="bannerRespuesta" class="banner-respondiendo oculto">
-                            <span>Respondiendo a <strong id="textoRespondiendoA">@Usuario</strong></span>
-                            <button type="button" id="btnCancelarRespuesta">✕ Cancelar</button>
-                        </div>
-
                         <input type="text" id="inputAutor" placeholder="Tu nombre / apodo" required readonly>
-                        <textarea id="inputComentario" placeholder="Escribe un comentario..." required maxlength="500"></textarea>
-                        <button type="submit" id="btnEnviarComentario" class="btn-primary" style="align-self: flex-end;">Enviar comentario</button>
+                        <textarea id="inputComentario" placeholder="Escribe un comentario en este muro..." required maxlength="500"></textarea>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; flex-wrap: wrap; gap: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <label for="inputFotoComentario" class="btn-secundario" style="cursor: pointer; padding: 5px 10px; font-size: 0.82rem;">
+                                    📷 <span>Subir foto</span>
+                                </label>
+                                <input type="file" id="inputFotoComentario" accept="image/*" class="oculto">
+                                <span id="labelNombreFotoComentario" class="nombre-foto-adjunta oculto" style="font-size: 0.8rem; color: #00e5ff;"></span>
+                                <button type="button" id="btnQuitarFotoComentario" class="btn-close oculto" style="font-size: 1rem; color: #ff3366; background: none; border: none; cursor: pointer;">&times;</button>
+                            </div>
+
+                            <button type="submit" id="btnEnviarComentario" class="btn-primary">Enviar comentario</button>
+                        </div>
                     </form>
 
                     <div id="listaComentarios" class="lista-comentarios"></div>

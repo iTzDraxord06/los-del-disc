@@ -33,7 +33,7 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 15 * 1024 * 1024 } // Hasta 15MB
+    limits: { fileSize: 15 * 1024 * 1024 }
 });
 
 const manejarSubida = (req, res, next) => {
@@ -73,7 +73,7 @@ sql.connect(dbConfig)
     })
     .catch(err => console.error('Error BD:', err.message));
 
-// ================= RUTAS DE VISTAS (PÁGINAS HTML) =================
+// ================= RUTAS DE VISTAS =================
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/miembros', (req, res) => res.sendFile(path.join(__dirname, 'miembros.html')));
 app.get('/muro', (req, res) => res.sendFile(path.join(__dirname, 'muro.html')));
@@ -81,13 +81,9 @@ app.get('/anuncios', (req, res) => res.sendFile(path.join(__dirname, 'anuncios.h
 app.get('/configuracion', (req, res) => res.sendFile(path.join(__dirname, 'configuracion.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
 
-// Endpoint ultraliviano para ping
-app.get('/ping', (req, res) => {
-    res.status(200).send('pong');
-});
+app.get('/ping', (req, res) => res.status(200).send('pong'));
 
-// ================= AUTENTICACIÓN Y PERFIL DE USUARIO =================
-
+// ================= AUTENTICACIÓN Y PERFIL =================
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body || {};
     try {
@@ -118,7 +114,6 @@ app.post('/api/register', async (req, res) => {
             return res.status(400).json({ error: 'Datos no válidos para el registro.' });
         }
 
-        // 1. Crear usuario en UsuariosWeb
         const insertUser = await pool.request()
             .input('u', sql.NVarChar, uLimpio)
             .input('p', sql.NVarChar, pLimpio)
@@ -130,7 +125,6 @@ app.post('/api/register', async (req, res) => {
 
         const nuevoUserId = insertUser.recordset[0].Id;
 
-        // 2. Crear automáticamente su tarjeta en la tabla Amigos
         await pool.request()
             .input('tag', sql.NVarChar, uLimpio)
             .input('nombre', sql.NVarChar, nLimpio)
@@ -148,22 +142,16 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// Actualizar perfil de usuario y sincronizar comentarios automáticamente
 app.put('/api/usuarios/perfil', async (req, res) => {
     try {
         const { userId, newUsername, nombreVisible, passwordActual, nuevoPassword } = req.body || {};
-
-        if (!userId) {
-            return res.status(400).json({ error: 'Falta el identificador del usuario.' });
-        }
+        if (!userId) return res.status(400).json({ error: 'Falta el ID del usuario.' });
 
         const userCheck = await pool.request()
             .input('id', sql.Int, userId)
             .query('SELECT Id, Username, Password, RolApp, NombreVisible FROM UsuariosWeb WHERE Id = @id');
 
-        if (userCheck.recordset.length === 0) {
-            return res.status(404).json({ error: 'Usuario no encontrado.' });
-        }
+        if (userCheck.recordset.length === 0) return res.status(404).json({ error: 'Usuario no encontrado.' });
 
         const usuarioDB = userCheck.recordset[0];
         const oldNombreVisible = usuarioDB.NombreVisible;
@@ -171,9 +159,7 @@ app.put('/api/usuarios/perfil', async (req, res) => {
         let usernameFinal = usuarioDB.Username;
         if (newUsername && newUsername.trim() !== '') {
             const cleanUser = newUsername.trim();
-            if (cleanUser.length < 4) {
-                return res.status(400).json({ error: 'El usuario de inicio de sesión debe tener al menos 4 caracteres.' });
-            }
+            if (cleanUser.length < 4) return res.status(400).json({ error: 'El usuario debe tener al menos 4 caracteres.' });
 
             if (cleanUser.toLowerCase() !== usuarioDB.Username.toLowerCase()) {
                 const existe = await pool.request()
@@ -181,29 +167,18 @@ app.put('/api/usuarios/perfil', async (req, res) => {
                     .input('id', sql.Int, userId)
                     .query('SELECT Id FROM UsuariosWeb WHERE LOWER(Username) = LOWER(@u) AND Id <> @id');
 
-                if (existe.recordset.length > 0) {
-                    return res.status(400).json({ error: 'Ese nombre de usuario ya está en uso por otra persona.' });
-                }
+                if (existe.recordset.length > 0) return res.status(400).json({ error: 'Ese usuario ya está en uso.' });
             }
             usernameFinal = cleanUser;
         }
 
-        const nombreFinal = (nombreVisible && nombreVisible.trim() !== '') 
-            ? nombreVisible.trim() 
-            : usuarioDB.NombreVisible;
-
-        if (nombreFinal.length < 3) {
-            return res.status(400).json({ error: 'El apodo visible debe tener al menos 3 caracteres.' });
-        }
+        const nombreFinal = (nombreVisible && nombreVisible.trim() !== '') ? nombreVisible.trim() : usuarioDB.NombreVisible;
+        if (nombreFinal.length < 3) return res.status(400).json({ error: 'El apodo debe tener al menos 3 caracteres.' });
 
         let passwordFinal = usuarioDB.Password;
         if (nuevoPassword && nuevoPassword.trim() !== '') {
-            if (nuevoPassword.trim().length < 6) {
-                return res.status(400).json({ error: 'La nueva contraseña debe tener mínimo 6 caracteres.' });
-            }
-            if (!passwordActual || passwordActual !== usuarioDB.Password) {
-                return res.status(400).json({ error: 'La contraseña actual no es correcta.' });
-            }
+            if (nuevoPassword.trim().length < 6) return res.status(400).json({ error: 'La contraseña debe tener mínimo 6 caracteres.' });
+            if (!passwordActual || passwordActual !== usuarioDB.Password) return res.status(400).json({ error: 'Contraseña actual incorrecta.' });
             passwordFinal = nuevoPassword.trim();
         }
 
@@ -214,7 +189,6 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             .input('pass', sql.NVarChar, passwordFinal)
             .query('UPDATE UsuariosWeb SET Username = @u, NombreVisible = @nombre, Password = @pass WHERE Id = @id');
 
-        // Sincronizar autor en comentarios y posts
         if (oldNombreVisible && oldNombreVisible !== nombreFinal) {
             await pool.request()
                 .input('nuevoAutor', sql.NVarChar, nombreFinal)
@@ -224,28 +198,20 @@ app.put('/api/usuarios/perfil', async (req, res) => {
                     UPDATE PublicacionesGlobales SET Autor = @nuevoAutor WHERE Autor = @viejoAutor;
                     UPDATE Amigos SET NombreVisible = @nuevoAutor WHERE UsuarioId = ${userId};
                 `);
-            
-            console.log(`[SYNC] Contenidos de "${oldNombreVisible}" actualizados a "${nombreFinal}"`);
         }
 
         res.json({
             exito: true,
-            mensaje: 'Datos y comentarios actualizados correctamente.',
-            usuario: {
-                Id: usuarioDB.Id,
-                Username: usernameFinal,
-                NombreVisible: nombreFinal,
-                RolApp: usuarioDB.RolApp
-            }
+            mensaje: 'Datos actualizados.',
+            usuario: { Id: usuarioDB.Id, Username: usernameFinal, NombreVisible: nombreFinal, RolApp: usuarioDB.RolApp }
         });
     } catch (err) {
-        console.error('Error al actualizar perfil de usuario:', err);
-        res.status(500).json({ error: 'Error interno en la base de datos.' });
+        console.error(err);
+        res.status(500).json({ error: 'Error interno en la BD.' });
     }
 });
 
-// ================= AMIGOS / INTEGRANTES =================
-
+// ================= AMIGOS =================
 app.get('/api/amigos', async (req, res) => {
     try {
         const amigosResult = await pool.request().query('SELECT * FROM Amigos ORDER BY Id ASC');
@@ -271,10 +237,8 @@ app.get('/api/amigos', async (req, res) => {
                 Fotos: fotos
             };
         });
-
         res.json(amigos);
     } catch (err) {
-        console.error('Error en GET /api/amigos:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -283,10 +247,7 @@ app.post('/api/amigos', manejarSubida, async (req, res) => {
     try {
         const body = req.body || {};
         const files = req.files || [];
-
-        if (body.rolSolicitante !== 'Admin') {
-            return res.status(403).json({ error: 'Acceso denegado: Solo Admin puede agregar amigos manualmente.' });
-        }
+        if (body.rolSolicitante !== 'Admin') return res.status(403).json({ error: 'Solo Admin puede agregar amigos.' });
 
         const avatarF = files.find(f => f.fieldname === 'avatarFile');
         const waifuFiles = files.filter(f => f.fieldname === 'waifuFiles');
@@ -299,59 +260,41 @@ app.post('/api/amigos', manejarSubida, async (req, res) => {
             .input('foto', sql.NVarChar, fotoRuta)
             .input('desc', sql.NVarChar, body.descripcion || '')
             .query(`INSERT INTO Amigos (DiscordTag, NombreVisible, RolServidor, FotoRuta, Descripcion) 
-                    OUTPUT INSERTED.Id
-                    VALUES (@tag, @nombre, @rol, @foto, @desc)`);
+                    OUTPUT INSERTED.Id VALUES (@tag, @nombre, @rol, @foto, @desc)`);
 
         const amigoId = insertRes.recordset[0].Id;
-
         for (const file of waifuFiles) {
             await pool.request()
                 .input('amigoId', sql.Int, amigoId)
                 .input('fotoUrl', sql.NVarChar, file.path)
                 .query('INSERT INTO FotosAmigo (AmigoId, FotoUrl) VALUES (@amigoId, @fotoUrl)');
         }
-
         res.json({ mensaje: 'Amigo agregado exitosamente' });
     } catch (err) {
-        console.error('Error en POST /api/amigos:', err);
-        res.status(500).json({ error: err.message || 'Error interno en la base de datos.' });
+        res.status(500).json({ error: err.message });
     }
 });
 
-// Editar Amigo: Permitido para Admin O para el Dueño del perfil
 app.put('/api/amigos/:id', manejarSubida, async (req, res) => {
     try {
         const { id } = req.params;
         const body = req.body || {};
         const files = req.files || [];
 
-        const amigoCheck = await pool.request()
-            .input('id', sql.Int, id)
-            .query('SELECT Id, UsuarioId, FotoRuta FROM Amigos WHERE Id = @id');
-
-        if (amigoCheck.recordset.length === 0) {
-            return res.status(404).json({ error: 'Perfil no encontrado.' });
-        }
+        const amigoCheck = await pool.request().input('id', sql.Int, id).query('SELECT Id, UsuarioId, FotoRuta FROM Amigos WHERE Id = @id');
+        if (amigoCheck.recordset.length === 0) return res.status(404).json({ error: 'Perfil no encontrado.' });
 
         const amigoActual = amigoCheck.recordset[0];
         const esAdmin = body.rolSolicitante === 'Admin';
         const esDueno = body.solicitanteId && parseInt(body.solicitanteId) === amigoActual.UsuarioId;
 
-        if (!esAdmin && !esDueno) {
-            return res.status(403).json({ error: 'No tienes permiso para editar este perfil.' });
-        }
+        if (!esAdmin && !esDueno) return res.status(403).json({ error: 'Sin permiso para editar este perfil.' });
 
         const avatarF = files.find(f => f.fieldname === 'avatarFile');
         const waifuFiles = files.filter(f => f.fieldname === 'waifuFiles');
         const fotoRuta = avatarF ? avatarF.path : (body.avatarUrlActual || amigoActual.FotoRuta || 'imagenes/default.png');
 
-        let queryUpdate = `
-            UPDATE Amigos SET 
-                DiscordTag = @tag,
-                NombreVisible = @nombre,
-                FotoRuta = @foto,
-                Descripcion = @desc
-        `;
+        let queryUpdate = `UPDATE Amigos SET DiscordTag = @tag, NombreVisible = @nombre, FotoRuta = @foto, Descripcion = @desc`;
         if (esAdmin) queryUpdate += `, RolServidor = @rol `;
         queryUpdate += ` WHERE Id = @id`;
 
@@ -362,10 +305,7 @@ app.put('/api/amigos/:id', manejarSubida, async (req, res) => {
             .input('foto', sql.NVarChar, fotoRuta)
             .input('desc', sql.NVarChar, body.descripcion || '');
 
-        if (esAdmin) {
-            requestUpdate.input('rol', sql.NVarChar, body.rol || 'Miembro');
-        }
-
+        if (esAdmin) requestUpdate.input('rol', sql.NVarChar, body.rol || 'Miembro');
         await requestUpdate.query(queryUpdate);
 
         for (const file of waifuFiles) {
@@ -374,62 +314,39 @@ app.put('/api/amigos/:id', manejarSubida, async (req, res) => {
                 .input('fotoUrl', sql.NVarChar, file.path)
                 .query('INSERT INTO FotosAmigo (AmigoId, FotoUrl) VALUES (@amigoId, @fotoUrl)');
         }
-
         res.json({ mensaje: 'Perfil actualizado exitosamente' });
     } catch (err) {
-        console.error('Error en PUT /api/amigos:', err);
-        res.status(500).json({ error: err.message || 'Error interno en la base de datos.' });
+        res.status(500).json({ error: err.message });
     }
 });
 
 app.delete('/api/amigos/:id', async (req, res) => {
-    const { id } = req.params;
-    const { rolSolicitante } = req.query;
-
-    if (rolSolicitante !== 'Admin') {
-        return res.status(403).json({ error: 'Solo los administradores pueden eliminar perfiles.' });
-    }
-
+    if (req.query.rolSolicitante !== 'Admin') return res.status(403).json({ error: 'Solo administradores.' });
     try {
-        await pool.request()
-            .input('id', sql.Int, id)
-            .query('DELETE FROM Amigos WHERE Id = @id');
-
-        res.json({ mensaje: 'Amigo eliminado correctamente' });
+        await pool.request().input('id', sql.Int, req.params.id).query('DELETE FROM Amigos WHERE Id = @id');
+        res.json({ mensaje: 'Amigo eliminado' });
     } catch (err) {
-        console.error('Error en DELETE /api/amigos:', err);
-        res.status(500).json({ error: 'No se pudo eliminar el registro.' });
+        res.status(500).json({ error: 'No se pudo eliminar.' });
     }
 });
 
 app.delete('/api/fotos/:id', async (req, res) => {
-    const { id } = req.params;
-    const { rolSolicitante } = req.query;
-
-    if (rolSolicitante !== 'Admin') {
-        return res.status(403).json({ error: 'Acceso denegado.' });
-    }
-
+    if (req.query.rolSolicitante !== 'Admin') return res.status(403).json({ error: 'Acceso denegado.' });
     try {
-        await pool.request()
-            .input('id', sql.Int, id)
-            .query('DELETE FROM FotosAmigo WHERE Id = @id');
-
-        res.json({ mensaje: 'Foto eliminada correctamente' });
+        await pool.request().input('id', sql.Int, req.params.id).query('DELETE FROM FotosAmigo WHERE Id = @id');
+        res.json({ mensaje: 'Foto eliminada' });
     } catch (err) {
-        console.error('Error al borrar foto:', err);
-        res.status(500).json({ error: 'No se pudo eliminar la foto de la base de datos.' });
+        res.status(500).json({ error: 'No se pudo eliminar la foto.' });
     }
 });
 
-// ================= MURO GLOBAL (TABLÓN COMUNITARIO) =================
-
+// ================= MURO GLOBAL =================
+// DESC para mostrar las publicaciones más recientes arriba
 app.get('/api/publicaciones-globales', async (req, res) => {
     try {
-        const result = await pool.request().query('SELECT * FROM PublicacionesGlobales ORDER BY Id ASC');
+        const result = await pool.request().query('SELECT * FROM PublicacionesGlobales ORDER BY Id DESC');
         res.json(result.recordset);
     } catch (err) {
-        console.error('Error en GET /api/publicaciones-globales:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -442,110 +359,148 @@ app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req,
             .input('autor', sql.NVarChar, autor)
             .input('texto', sql.NVarChar, contenido || '')
             .input('img', sql.NVarChar, imgUrl)
-            .input('parent', sql.Int, respuestaAId || null)
+            .input('parent', sql.Int, respuestaAId ? parseInt(respuestaAId) : null)
             .query('INSERT INTO PublicacionesGlobales (Autor, Texto, Fecha, ImagenUrl, RespuestaAId) VALUES (@autor, @texto, GETDATE(), @img, @parent)');
         res.json({ mensaje: 'Publicación enviada' });
     } catch (err) {
-        console.error('Error en POST /api/publicaciones-globales:', err);
         res.status(500).json({ error: err.message });
+    }
+});
+
+// EDITAR Publicación Global
+app.put('/api/publicaciones-globales/:id', async (req, res) => {
+    const { id } = req.params;
+    const { texto, rolSolicitante, solicitanteNombre } = req.body || {};
+
+    if (!texto || !texto.trim()) return res.status(400).json({ error: 'El texto no puede estar vacío.' });
+
+    try {
+        const check = await pool.request().input('id', sql.Int, id).query('SELECT Autor FROM PublicacionesGlobales WHERE Id = @id');
+        if (check.recordset.length === 0) return res.status(404).json({ error: 'Publicación no encontrada.' });
+
+        const autor = check.recordset[0].Autor;
+        if (rolSolicitante !== 'Admin' && solicitanteNombre !== autor) {
+            return res.status(403).json({ error: 'No tienes permiso para editar esta publicación.' });
+        }
+
+        await pool.request()
+            .input('id', sql.Int, id)
+            .input('texto', sql.NVarChar, texto.trim())
+            .query('UPDATE PublicacionesGlobales SET Texto = @texto WHERE Id = @id');
+
+        res.json({ mensaje: 'Publicación editada correctamente' });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al editar publicación.' });
     }
 });
 
 app.delete('/api/publicaciones-globales/:id', async (req, res) => {
     const { id } = req.params;
     const { rolSolicitante, solicitanteNombre } = req.query;
-
     try {
-        const check = await pool.request()
-            .input('id', sql.Int, id)
-            .query('SELECT Autor FROM PublicacionesGlobales WHERE Id = @id');
-
-        if (check.recordset.length === 0) {
-            return res.status(404).json({ error: 'Publicación no encontrada.' });
-        }
+        const check = await pool.request().input('id', sql.Int, id).query('SELECT Autor FROM PublicacionesGlobales WHERE Id = @id');
+        if (check.recordset.length === 0) return res.status(404).json({ error: 'Publicación no encontrada.' });
 
         const autor = check.recordset[0].Autor;
         if (rolSolicitante !== 'Admin' && solicitanteNombre !== autor) {
-            return res.status(403).json({ error: 'No tienes permiso para borrar esta publicación.' });
+            return res.status(403).json({ error: 'Sin permiso para borrar esta publicación.' });
         }
 
         await pool.request().input('id', sql.Int, id).query('DELETE FROM PublicacionesGlobales WHERE Id = @id');
         res.json({ mensaje: 'Publicación eliminada' });
     } catch (err) {
-        console.error(err);
         res.status(500).json({ error: 'Error al eliminar publicación.' });
     }
 });
 
 // ================= COMENTARIOS EN PERFILES =================
-
 app.get('/api/comentarios/:amigoId', async (req, res) => {
     try {
         const result = await pool.request()
             .input('amigoId', sql.Int, req.params.amigoId)
-            .query('SELECT Id, AmigoId, Autor, Texto, Fecha, RespuestaAId FROM Comentarios WHERE AmigoId = @amigoId ORDER BY Id ASC');
+            .query('SELECT Id, AmigoId, Autor, Texto, Fecha, RespuestaAId, ImagenUrl FROM Comentarios WHERE AmigoId = @amigoId ORDER BY Id DESC');
         res.json(result.recordset);
     } catch (err) {
-        console.error('Error en GET /api/comentarios:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
-app.post('/api/comentarios', async (req, res) => {
+// Ahora soporta subida de imágenes con upload.single('imagenComentario')
+app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res) => {
     const { amigoId, autor, contenido, respuestaAId } = req.body || {};
     try {
         if (!contenido || !contenido.trim()) {
             return res.status(400).json({ error: 'El comentario no puede estar vacío.' });
         }
 
+        const imgUrl = req.file ? req.file.path : null;
+
         await pool.request()
             .input('amigoId', sql.Int, amigoId)
             .input('autor', sql.NVarChar, autor)
             .input('texto', sql.NVarChar, contenido.trim())
-            .input('parent', sql.Int, respuestaAId || null)
-            .query('INSERT INTO Comentarios (AmigoId, Autor, Texto, Fecha, RespuestaAId) VALUES (@amigoId, @autor, @texto, GETDATE(), @parent)');
+            .input('parent', sql.Int, respuestaAId ? parseInt(respuestaAId) : null)
+            .input('img', sql.NVarChar, imgUrl)
+            .query('INSERT INTO Comentarios (AmigoId, Autor, Texto, Fecha, RespuestaAId, ImagenUrl) VALUES (@amigoId, @autor, @texto, GETDATE(), @parent, @img)');
         
         res.json({ mensaje: 'Comentario publicado exitosamente' });
     } catch (err) {
-        console.error('Error en POST /api/comentarios:', err);
         res.status(500).json({ error: err.message });
+    }
+});
+
+// EDITAR Comentario
+app.put('/api/comentarios/:id', async (req, res) => {
+    const { id } = req.params;
+    const { texto, rolSolicitante, solicitanteNombre } = req.body || {};
+
+    if (!texto || !texto.trim()) return res.status(400).json({ error: 'El texto no puede estar vacío.' });
+
+    try {
+        const check = await pool.request().input('id', sql.Int, id).query('SELECT Autor FROM Comentarios WHERE Id = @id');
+        if (check.recordset.length === 0) return res.status(404).json({ error: 'Comentario no encontrado.' });
+
+        const autor = check.recordset[0].Autor;
+        if (rolSolicitante !== 'Admin' && solicitanteNombre !== autor) {
+            return res.status(403).json({ error: 'No tienes permiso para editar este comentario.' });
+        }
+
+        await pool.request()
+            .input('id', sql.Int, id)
+            .input('texto', sql.NVarChar, texto.trim())
+            .query('UPDATE Comentarios SET Texto = @texto WHERE Id = @id');
+
+        res.json({ mensaje: 'Comentario editado correctamente' });
+    } catch (err) {
+        res.status(500).json({ error: 'Error al editar comentario.' });
     }
 });
 
 app.delete('/api/comentarios/:id', async (req, res) => {
     const { id } = req.params;
     const { rolSolicitante, solicitanteNombre } = req.query;
-
     try {
-        const check = await pool.request()
-            .input('id', sql.Int, id)
-            .query('SELECT Autor FROM Comentarios WHERE Id = @id');
-
-        if (check.recordset.length === 0) {
-            return res.status(404).json({ error: 'Comentario no encontrado.' });
-        }
+        const check = await pool.request().input('id', sql.Int, id).query('SELECT Autor FROM Comentarios WHERE Id = @id');
+        if (check.recordset.length === 0) return res.status(404).json({ error: 'Comentario no encontrado.' });
 
         const autor = check.recordset[0].Autor;
         if (rolSolicitante !== 'Admin' && solicitanteNombre !== autor) {
-            return res.status(403).json({ error: 'No tienes permiso para borrar este comentario.' });
+            return res.status(403).json({ error: 'Sin permiso para borrar este comentario.' });
         }
 
         await pool.request().input('id', sql.Int, id).query('DELETE FROM Comentarios WHERE Id = @id');
-        res.json({ mensaje: 'Comentario eliminado correctamente' });
+        res.json({ mensaje: 'Comentario eliminado' });
     } catch (err) {
-        console.error('Error al eliminar comentario:', err);
         res.status(500).json({ error: 'No se pudo eliminar el comentario.' });
     }
 });
 
 // ================= ANUNCIOS =================
-
 app.get('/api/anuncio', async (req, res) => {
     try {
         const result = await pool.request().query('SELECT * FROM AnuncioGlobal ORDER BY Id DESC');
         res.json(result.recordset);
     } catch (err) {
-        console.error('Error en GET /api/anuncio:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -553,9 +508,8 @@ app.get('/api/anuncio', async (req, res) => {
 app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
     try {
         const { titulo, descripcion, rolSolicitante } = req.body || {};
-        if (rolSolicitante !== 'Admin') {
-            return res.status(403).json({ error: 'Acceso denegado: Solo Admin.' });
-        }
+        if (rolSolicitante !== 'Admin') return res.status(403).json({ error: 'Solo Admin.' });
+
         const imgUrl = req.file ? req.file.path : '';
         await pool.request()
             .input('t', sql.NVarChar, titulo || '')
@@ -564,24 +518,16 @@ app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
             .query('INSERT INTO AnuncioGlobal (Titulo, Descripcion, ImagenUrl, Activo) VALUES (@t, @d, @img, 1)');
         res.json({ mensaje: 'Afiche publicado' });
     } catch (err) {
-        console.error('Error en POST /api/anuncio:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
 app.delete('/api/anuncio/:id', async (req, res) => {
+    if (req.query.rolSolicitante !== 'Admin') return res.status(403).json({ error: 'Solo Admin.' });
     try {
-        const { id } = req.params;
-        const { rolSolicitante } = req.query;
-        if (rolSolicitante !== 'Admin') {
-            return res.status(403).json({ error: 'Acceso denegado: Solo Admin.' });
-        }
-        await pool.request()
-            .input('id', sql.Int, id)
-            .query('DELETE FROM AnuncioGlobal WHERE Id = @id');
+        await pool.request().input('id', sql.Int, req.params.id).query('DELETE FROM AnuncioGlobal WHERE Id = @id');
         res.json({ mensaje: 'Afiche eliminado' });
     } catch (err) {
-        console.error('Error en DELETE /api/anuncio:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -589,8 +535,6 @@ app.delete('/api/anuncio/:id', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
-
-    // ================= AUTO-PING DE PREVENCIÓN DE SUSPENSIÓN =================
     const INTERVALO_PING = 10 * 60 * 1000;
     const URL_SERVICIO = process.env.RENDER_EXTERNAL_URL;
 
@@ -598,13 +542,10 @@ app.listen(PORT, () => {
         setInterval(async () => {
             try {
                 const respuesta = await fetch(`${URL_SERVICIO}/ping`);
-                console.log(`[KEEP-ALIVE] Ping exitoso: ${respuesta.status} - ${new Date().toLocaleTimeString()}`);
+                console.log(`[KEEP-ALIVE] Ping: ${respuesta.status} - ${new Date().toLocaleTimeString()}`);
             } catch (err) {
-                console.warn('[KEEP-ALIVE] Ping fallido temporalmente:', err.message);
+                console.warn('[KEEP-ALIVE] Ping fallido:', err.message);
             }
         }, INTERVALO_PING);
-        console.log(`[KEEP-ALIVE] Auto-ping activo hacia ${URL_SERVICIO}/ping cada 10 minutos.`);
-    } else {
-        console.log('[KEEP-ALIVE] Modo local detectado, auto-ping externo no requerido.');
     }
 });
