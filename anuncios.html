@@ -112,16 +112,19 @@
                     <label>Imagen del afiche / clip:</label>
                     <input type="file" id="aficheInputFile" accept="image/*">
                 </div>
-                <button type="submit" id="btnGuardarAfiche" class="btn-primary btn-block">Publicar Anuncio</button>
-                <div class="input-grupo-media">
-                    <label for="inputVideoMedia" class="btn-secundario"
-                        style="cursor: pointer; padding: 6px 12px; background: #2f3136; border-radius: 4px; display: inline-block;">🎥
-                        Subir Video/Clip Anuncio (Drive 30MB)</label>
-                    <input type="file" id="inputVideoMedia" accept="image/*,video/mp4,video/webm"
-                        style="display: none;" />
-                    <span id="nombreArchivoSel" style="margin-left: 10px; font-size: 0.9em; color: #b9bbbe;">Ningún
-                        archivo seleccionado</span>
+                <div class="campo">
+                    <label>Imagen / Clip de anuncio (Hasta 30MB):</label>
+                    <div class="input-grupo-media">
+                        <label for="aficheInputFile" class="btn-secundario"
+                            style="cursor: pointer; padding: 6px 12px; display: inline-block;">📁 Seleccionar
+                            archivo</label>
+                        <input type="file" id="aficheInputFile" accept="image/*,video/mp4,video/webm"
+                            style="display: none;">
+                        <span id="labelAficheFile" style="font-size: 0.85rem; color: #949ba4; margin-left: 8px;">Ningún
+                            archivo seleccionado</span>
+                    </div>
                 </div>
+                <button type="submit" id="btnGuardarAfiche" class="btn-primary btn-block">Publicar Anuncio</button>
             </form>
         </div>
     </div>

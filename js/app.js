@@ -525,16 +525,16 @@ formComentario.addEventListener('submit', async (e) => {
     if (!amigoSeleccionadoId) return;
 
     const contenido = inputComentario.value.trim();
-    if (!contenido) return;
+    const inputVid = formComentario.querySelector('.input-video-media-file');
+    const tieneFoto = inputFotoComentario && inputFotoComentario.files && inputFotoComentario.files[0];
+    const tieneVideo = inputVid && inputVid.files && inputVid.files[0];
+
+    if (!contenido && !tieneFoto && !tieneVideo) return;
 
     const formData = new FormData();
     formData.append('amigoId', amigoSeleccionadoId);
     formData.append('autor', usuarioSesion.NombreVisible);
-    formData.append('contenido', contenido);
-
-    if (inputFotoComentario && inputFotoComentario.files && inputFotoComentario.files[0]) {
-        formData.append('imagenComentario', inputFotoComentario.files[0]);
-    }
+    formData.append('contenido', contenido || '');
 
     if (btnEnviarComentario) {
         btnEnviarComentario.disabled = true;
@@ -542,6 +542,18 @@ formComentario.addEventListener('submit', async (e) => {
     }
 
     try {
+        if (tieneVideo) {
+            // Subir video pesado a Google Drive primero
+            const formDataDrive = new FormData();
+            formDataDrive.append('archivo', inputVid.files[0]);
+            const resDrive = await fetch(`${API_URL}/media-drive`, { method: 'POST', body: formDataDrive });
+            if (!resDrive.ok) throw new Error('Falló subida de video a Drive');
+            const dataDrive = await resDrive.json();
+            formData.append('imagenUrlDirecta', dataDrive.url);
+        } else if (tieneFoto) {
+            formData.append('imagenComentario', inputFotoComentario.files[0]);
+        }
+
         const res = await fetch(`${API_URL}/comentarios`, {
             method: 'POST',
             body: formData
@@ -550,6 +562,11 @@ formComentario.addEventListener('submit', async (e) => {
         if (res.ok) {
             inputComentario.value = '';
             limpiarAdjuntoComentario();
+            if (inputVid) {
+                inputVid.value = '';
+                const span = inputVid.parentElement.querySelector('.nombre-archivo-video');
+                if (span) span.textContent = '';
+            }
             cargarComentarios(amigoSeleccionadoId);
         } else {
             const errData = await res.json().catch(() => ({}));
@@ -648,14 +665,15 @@ if (formPostGlobal) {
     formPostGlobal.addEventListener('submit', async (e) => {
         e.preventDefault();
         const texto = inputPostGlobal.value.trim();
-        if (!texto) return;
+        const inputVid = formPostGlobal.querySelector('.input-video-media-file');
+        const tieneFoto = inputFotoPostGlobal.files && inputFotoPostGlobal.files[0];
+        const tieneVideo = inputVid && inputVid.files && inputVid.files[0];
+
+        if (!texto && !tieneFoto && !tieneVideo) return;
 
         const formData = new FormData();
         formData.append('autor', usuarioSesion.NombreVisible);
-        formData.append('contenido', texto);
-        if (inputFotoPostGlobal.files && inputFotoPostGlobal.files[0]) {
-            formData.append('imagenPost', inputFotoPostGlobal.files[0]);
-        }
+        formData.append('contenido', texto || '');
 
         if (btnEnviarPostGlobal) {
             btnEnviarPostGlobal.disabled = true;
@@ -663,13 +681,30 @@ if (formPostGlobal) {
         }
 
         try {
+            if (tieneVideo) {
+                const formDataDrive = new FormData();
+                formDataDrive.append('archivo', inputVid.files[0]);
+                const resDrive = await fetch(`${API_URL}/media-drive`, { method: 'POST', body: formDataDrive });
+                if (!resDrive.ok) throw new Error('Falló subida de video a Drive');
+                const dataDrive = await resDrive.json();
+                formData.append('imagenUrlDirecta', dataDrive.url);
+            } else if (tieneFoto) {
+                formData.append('imagenPost', inputFotoPostGlobal.files[0]);
+            }
+
             const res = await fetch(`${API_URL}/publicaciones-globales`, {
                 method: 'POST',
                 body: formData
             });
+
             if (res.ok) {
                 inputPostGlobal.value = '';
                 if (btnQuitarFotoPostGlobal) btnQuitarFotoPostGlobal.click();
+                if (inputVid) {
+                    inputVid.value = '';
+                    const span = inputVid.parentElement.querySelector('.nombre-archivo-video');
+                    if (span) span.textContent = '';
+                }
                 cargarPostsGlobales();
             } else {
                 alert('No se pudo enviar la publicación.');
