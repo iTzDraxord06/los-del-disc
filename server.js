@@ -211,7 +211,7 @@ app.put('/api/usuarios/perfil', async (req, res) => {
     }
 });
 
-// ================= AMIGOS =================
+// ================= AMIGOS / INTEGRANTES =================
 app.get('/api/amigos', async (req, res) => {
     try {
         const amigosResult = await pool.request().query('SELECT * FROM Amigos ORDER BY Id ASC');
@@ -330,18 +330,42 @@ app.delete('/api/amigos/:id', async (req, res) => {
     }
 });
 
+// Borrar foto individual: Permitido a Admin O al dueño de la tarjeta de Amigo
 app.delete('/api/fotos/:id', async (req, res) => {
-    if (req.query.rolSolicitante !== 'Admin') return res.status(403).json({ error: 'Acceso denegado.' });
+    const { id } = req.params;
+    const { rolSolicitante, solicitanteId } = req.query;
+
     try {
-        await pool.request().input('id', sql.Int, req.params.id).query('DELETE FROM FotosAmigo WHERE Id = @id');
-        res.json({ mensaje: 'Foto eliminada' });
+        const check = await pool.request()
+            .input('id', sql.Int, id)
+            .query(`
+                SELECT f.Id, a.UsuarioId 
+                FROM FotosAmigo f 
+                INNER JOIN Amigos a ON f.AmigoId = a.Id 
+                WHERE f.Id = @id
+            `);
+
+        if (check.recordset.length === 0) {
+            return res.status(404).json({ error: 'Foto no encontrada.' });
+        }
+
+        const fotoInfo = check.recordset[0];
+        const esAdmin = rolSolicitante === 'Admin';
+        const esDueno = solicitanteId && parseInt(solicitanteId) === fotoInfo.UsuarioId;
+
+        if (!esAdmin && !esDueno) {
+            return res.status(403).json({ error: 'No tienes permiso para borrar esta foto.' });
+        }
+
+        await pool.request().input('id', sql.Int, id).query('DELETE FROM FotosAmigo WHERE Id = @id');
+        res.json({ mensaje: 'Foto eliminada correctamente' });
     } catch (err) {
+        console.error('Error al borrar foto:', err);
         res.status(500).json({ error: 'No se pudo eliminar la foto.' });
     }
 });
 
 // ================= MURO GLOBAL =================
-// DESC para mostrar las publicaciones más recientes arriba
 app.get('/api/publicaciones-globales', async (req, res) => {
     try {
         const result = await pool.request().query('SELECT * FROM PublicacionesGlobales ORDER BY Id DESC');
@@ -367,7 +391,6 @@ app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req,
     }
 });
 
-// EDITAR Publicación Global
 app.put('/api/publicaciones-globales/:id', async (req, res) => {
     const { id } = req.params;
     const { texto, rolSolicitante, solicitanteNombre } = req.body || {};
@@ -425,7 +448,6 @@ app.get('/api/comentarios/:amigoId', async (req, res) => {
     }
 });
 
-// Ahora soporta subida de imágenes con upload.single('imagenComentario')
 app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res) => {
     const { amigoId, autor, contenido, respuestaAId } = req.body || {};
     try {
@@ -449,7 +471,6 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
     }
 });
 
-// EDITAR Comentario
 app.put('/api/comentarios/:id', async (req, res) => {
     const { id } = req.params;
     const { texto, rolSolicitante, solicitanteNombre } = req.body || {};

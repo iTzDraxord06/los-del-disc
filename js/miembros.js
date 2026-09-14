@@ -155,8 +155,9 @@ function seleccionarAmigo(amigo) {
 
     const usuarioActual = JSON.parse(localStorage.getItem('disc_user')) || {};
     const esAdmin = usuarioActual.RolApp === 'Admin';
-    const esDueno = amigo.UsuarioId === usuarioActual.Id;
+    const esDueno = amigo.UsuarioId && (amigo.UsuarioId === usuarioActual.Id);
 
+    // Solo el Admin o el propio dueño de la tarjeta pueden ver el botón de Editar
     if (btnEditarPerfil) btnEditarPerfil.classList.toggle('oculto', !(esAdmin || esDueno));
     if (btnEliminarPerfil) btnEliminarPerfil.classList.toggle('oculto', !esAdmin);
 
@@ -177,6 +178,7 @@ function seleccionarAmigo(amigo) {
         img.addEventListener('click', () => abrirVisor(urlFoto));
         contenedor.appendChild(img);
 
+        // Si es Admin o el dueño de la tarjeta, muestra el botón para borrar foto
         if ((esAdmin || esDueno) && idFoto) {
             const btnBorrar = document.createElement('button');
             btnBorrar.className = 'btn-eliminar-foto';
@@ -187,12 +189,15 @@ function seleccionarAmigo(amigo) {
                 e.stopPropagation();
                 if (!confirm('¿Eliminar esta foto de la galería?')) return;
                 try {
-                    const res = await fetch(`${API_URL}/fotos/${idFoto}?rolSolicitante=${encodeURIComponent(usuarioActual.RolApp)}`, { method: 'DELETE' });
+                    const res = await fetch(`${API_URL}/fotos/${idFoto}?rolSolicitante=${encodeURIComponent(usuarioActual.RolApp || '')}&solicitanteId=${usuarioActual.Id || ''}`, { method: 'DELETE' });
                     if (res.ok) {
                         const amRes = await fetch(`${API_URL}/amigos`);
                         listaAmigosMemoria = await amRes.json();
                         const actualizado = listaAmigosMemoria.find(a => a.Id === amigo.Id);
                         if (actualizado) seleccionarAmigo(actualizado);
+                    } else {
+                        const data = await res.json().catch(() => ({}));
+                        alert(data.error || 'No se pudo eliminar la foto.');
                     }
                 } catch (err) {
                     console.error(err);
@@ -275,14 +280,12 @@ async function cargarComentarios(amigoId) {
             const imgEl = card.querySelector('.comentario-imagen');
             if (imgEl) imgEl.addEventListener('click', () => abrirVisor(c.ImagenUrl));
 
-            // Botón Responder inline
             const btnResp = card.querySelector('.btn-responder-comentario');
             btnResp.addEventListener('click', () => {
                 const targetPadreId = esHijo ? padreId : c.Id;
                 abrirCajaRespuestaDirectaComentario(targetPadreId, c.Autor, amigoId);
             });
 
-            // Botón Editar
             if (puedeGestionar) {
                 const btnEdit = card.querySelector('.btn-editar-comentario');
                 const textoEl = card.querySelector(`#texto-comentario-${c.Id}`);
@@ -337,7 +340,6 @@ async function cargarComentarios(amigoId) {
                     }
                 });
 
-                // Botón Borrar
                 const btnBorrar = card.querySelector('.btn-borrar-comentario');
                 btnBorrar.addEventListener('click', async () => {
                     if (!confirm('¿Deseas eliminar este comentario?')) return;
@@ -359,7 +361,6 @@ async function cargarComentarios(amigoId) {
             const hijos = respuestas.filter(r => r.RespuestaAId === padre.Id);
             hijos.forEach(hijo => wrapper.appendChild(crearNodoComentario(hijo, true, padre.Id)));
 
-            // Contenedor inline para respuesta
             const containerInline = document.createElement('div');
             containerInline.id = `inline-reply-comentario-${padre.Id}`;
             containerInline.className = 'comentario-hijo oculto';
@@ -375,7 +376,6 @@ async function cargarComentarios(amigoId) {
     }
 }
 
-// Función inline reply para comentarios
 function abrirCajaRespuestaDirectaComentario(padreId, autorMencion, amigoId) {
     document.querySelectorAll('[id^="inline-reply-comentario-"]').forEach(c => {
         c.innerHTML = '';
@@ -471,7 +471,6 @@ function abrirCajaRespuestaDirectaComentario(padreId, autorMencion, amigoId) {
     });
 }
 
-// Formulario superior para nuevo comentario
 if (formComentario) {
     formComentario.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -545,6 +544,8 @@ if (btnEditarPerfil) {
 
         const usuarioActual = JSON.parse(localStorage.getItem('disc_user')) || {};
         const esAdmin = usuarioActual.RolApp === 'Admin';
+        
+        // Si no es Admin, el campo de rol no se puede modificar
         if (campoRolServidor) {
             campoRolServidor.style.display = esAdmin ? 'block' : 'none';
             document.getElementById('nuevoRol').value = amigoSeleccionado.RolServidor || 'Miembro';
@@ -566,7 +567,7 @@ formNuevoAmigo.addEventListener('submit', async (e) => {
     formData.append('apodo', document.getElementById('nuevoApodo').value.trim());
     formData.append('rol', document.getElementById('nuevoRol') ? document.getElementById('nuevoRol').value.trim() : 'Miembro');
     formData.append('descripcion', document.getElementById('nuevaDesc').value.trim());
-    formData.append('rolSolicitante', usuarioActual.RolApp);
+    formData.append('rolSolicitante', usuarioActual.RolApp || 'Lector');
     formData.append('solicitanteId', usuarioActual.Id);
 
     const avatarInput = document.getElementById('inputAvatarFile');
@@ -626,7 +627,7 @@ if (btnEliminarPerfil) {
 
         const usuarioActual = JSON.parse(localStorage.getItem('disc_user')) || {};
         try {
-            const res = await fetch(`${API_URL}/amigos/${amigoSeleccionadoId}?rolSolicitante=${encodeURIComponent(usuarioActual.RolApp)}`, { method: 'DELETE' });
+            const res = await fetch(`${API_URL}/amigos/${amigoSeleccionadoId}?rolSolicitante=${encodeURIComponent(usuarioActual.RolApp || '')}`, { method: 'DELETE' });
             if (res.ok) {
                 muroDetalleEl.classList.add('oculto');
                 vistaGridMiembros.classList.remove('oculto');
