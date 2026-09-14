@@ -18,9 +18,9 @@ app.use(express.urlencoded({ extended: true, limit: '30mb' }));
 
 // 1. Configuración de Cloudinary
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 't0q7ltll',
+    api_key: process.env.CLOUDINARY_API_KEY || '421676215584541',
+    api_secret: process.env.CLOUDINARY_API_SECRET || 'RBJuAR6QFd4D0EjOGvvwmBPtiGg'
 });
 
 // 2. Storage de Multer flexible para imágenes (Cloudinary)
@@ -61,11 +61,11 @@ app.use('/imagenes', express.static(rutaImagenes));
 app.use(express.static(path.join(__dirname)));
 
 const dbConfig = {
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    server: process.env.DB_SERVER,
-    port: Number(process.env.DB_PORT || 1433),
-    database: process.env.DB_NAME,
+    user: 'admin_discord',
+    password: 'ClaveFuerte.2026!',
+    server: 'servidor-discord-eduardo.database.windows.net',
+    port: 1433,
+    database: 'DiscordFriendsDB',
     options: {
         encrypt: true,
         trustServerCertificate: false
