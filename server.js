@@ -387,7 +387,6 @@ app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req,
         
         const newPostId = insertRes.recordset[0].Id;
 
-        // Notificar si es respuesta global
         if (respuestaAId) {
             const padreInfo = await pool.request()
                 .input('pId', sql.Int, respuestaAId)
@@ -491,7 +490,6 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
         
         const newComId = insertRes.recordset[0].Id;
 
-        // Notificar si es respuesta a otro comentario
         if (respuestaAId) {
             const padreInfo = await pool.request()
                 .input('pId', sql.Int, respuestaAId)

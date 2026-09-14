@@ -13,32 +13,24 @@
 <body>
 
     <header class="navbar">
-        <div class="logo" onclick="window.location.href='index.html'" style="cursor: pointer;">
-            <button id="btnMenu" class="btn-hamburguesa" aria-label="Abrir menú">☰</button>
-            <img src="imagenes/Logo Pagina Web.png" alt="Logo Los del Disc" class="disc-logo-img">
-            <h2>Los del Disc</h2>
-        </div>
-
         <div class="nav-derecha">
             <a href="index.html" class="btn-secundario">🏠 Inicio</a>
             <a href="miembros.html" class="btn-secundario">👥 Miembros</a>
-            <a href="muro.html" class="btn-secundario activo-nav">💬 Muro</a>
-            <a href="anuncios.html" class="btn-secundario">📢 Anuncios</a>
+            <a href="muro.html" class="btn-secundario">💬 Muro</a>
+            <a href="anuncios.html" class="btn-secundario activo-nav">📢 Anuncios</a>
 
-            <div class="nav-notificaciones" style="position: relative;">
-                <button id="btnNotis" class="btn-secundario" style="padding: 5px 10px; position: relative;"
-                    title="Notificaciones">
-                    🔔 <span id="badgeNotis" class="badge-rol oculto"
-                        style="background:#ff3366; position:absolute; top:-5px; right:-5px; padding:2px 5px; font-size:0.65rem;">0</span>
+            <div class="nav-notificaciones">
+                <button id="btnNotis" class="btn-secundario btn-notificaciones-trigger" title="Notificaciones">
+                    🔔 <span id="badgeNotis" class="badge-notificaciones oculto">0</span>
                 </button>
-                <div id="dropdownNotis" class="menu-popup-usuario oculto"
-                    style="width: 280px; max-height: 320px; overflow-y: auto; right: 0; left: auto; position: absolute; top: calc(100% + 8px); background: #0d0f14; border: 1px solid var(--borde); border-radius: 8px; z-index: 4000;">
-                    <div
-                        style="padding: 10px 12px; font-weight: 700; border-bottom: 1px solid var(--borde); font-size: 0.85rem;">
-                        Notificaciones</div>
-                    <div id="listaNotis" style="padding: 4px;"></div>
+                <div id="dropdownNotis" class="dropdown-notificaciones oculto">
+                    <div class="dropdown-notificaciones-header">Notificaciones</div>
+                    <div id="listaNotis" class="dropdown-notificaciones-lista"></div>
                 </div>
             </div>
+
+            <button id="btnAbrirModalAfiche" class="btn-primary oculto" style="background-color: #5865F2;">+ Publicar
+                Anuncio</button>
         </div>
     </header>
 

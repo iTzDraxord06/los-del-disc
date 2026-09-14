@@ -26,20 +26,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function cargarNotificaciones(usuarioId) {
         if (!listaNotis) return;
-        listaNotis.innerHTML = '<p class="cargando" style="font-size:0.8rem; padding:10px;">Cargando...</p>';
+        listaNotis.innerHTML = '<div class="dropdown-notificaciones-vacio">Cargando...</div>';
+        
         try {
-            // Ejemplo de endpoint futuro: GET /api/notificaciones/:usuarioId
             const res = await fetch(`${API_URL}/notificaciones/${usuarioId}`);
             const data = await res.json();
             
             listaNotis.innerHTML = '';
             if (!Array.isArray(data) || data.length === 0) {
-                listaNotis.innerHTML = '<p class="sin-datos" style="font-size:0.8rem; padding:10px;">No tienes notificaciones.</p>';
+                listaNotis.innerHTML = `<div class="dropdown-notificaciones-vacio">📭 No tienes notificaciones</div>`;
                 if (badgeNotis) badgeNotis.classList.add('oculto');
                 return;
             }
 
-            // Actualizar badge no leídos
             const noLeidos = data.filter(n => !n.Leido).length;
             if (badgeNotis) {
                 if (noLeidos > 0) {
@@ -52,11 +51,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             data.forEach(item => {
                 const el = document.createElement('div');
-                el.style.cssText = 'padding: 8px 10px; border-bottom: 1px solid var(--borde); font-size: 0.8rem; cursor: pointer; background: ' + (item.Leido ? 'transparent' : 'rgba(0,229,255,0.08)') + ';';
+                el.className = `item-notificacion ${item.Leido ? '' : 'no-leido'}`;
                 el.innerHTML = `<strong>${item.AutorAccion}</strong> respondió: "${item.TextoPrevio || ''}"`;
                 
-                el.addEventListener('click', () => {
-                    // Lógica de redirección a perfil o muro y scroll
+                el.addEventListener('click', async () => {
+                    await fetch(`${API_URL}/notificaciones/${item.Id}/leer`, { method: 'PUT' });
+                    
                     if (item.Tipo === 'PERFIL') {
                         window.location.href = `miembros.html?amigoId=${item.DestinoId}&scrollComentario=${item.ComentarioId}`;
                     } else {
@@ -67,12 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (err) {
             console.error('Error notificaciones:', err);
-            listaNotis.innerHTML = '<p class="sin-datos" style="font-size:0.8rem; padding:10px;">Error al cargar.</p>';
+            listaNotis.innerHTML = `<div class="dropdown-notificaciones-vacio">Error al cargar.</div>`;
         }
-    }
-
-    // Opcional: chequear cada 30 segundos si hay un usuario logueado
-    if (usuarioSesion && usuarioSesion.Id) {
-        // Podrías inicializar un contador rápido aquí si deseas
     }
 });
