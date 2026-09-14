@@ -391,7 +391,7 @@ app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req,
             .input('img', sql.NVarChar, imgUrl)
             .input('parent', sql.Int, respuestaAId ? parseInt(respuestaAId) : null)
             .query('INSERT INTO PublicacionesGlobales (Autor, Texto, Fecha, ImagenUrl, RespuestaAId) OUTPUT INSERTED.Id VALUES (@autor, @texto, GETDATE(), @img, @parent)');
-        
+
         const newPostId = insertRes.recordset[0].Id;
 
         if (respuestaAId) {
@@ -494,21 +494,21 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
             .input('parent', sql.Int, respuestaAId ? parseInt(respuestaAId) : null)
             .input('img', sql.NVarChar, imgUrl)
             .query('INSERT INTO Comentarios (AmigoId, Autor, Texto, Fecha, RespuestaAId, ImagenUrl) OUTPUT INSERTED.Id VALUES (@amigoId, @autor, @texto, GETDATE(), @parent, @img)');
-        
+
         const newComId = insertRes.recordset[0].Id;
 
         // Buscar el UsuarioId del dueño del perfil (`amigoId`)
         const duenoCheck = await pool.request()
             .input('aId', sql.Int, amigoId)
             .query('SELECT UsuarioId FROM Amigos WHERE Id = @aId');
-        
+
         const duenoUsuarioId = duenoCheck.recordset.length > 0 ? duenoCheck.recordset[0].UsuarioId : null;
 
         // Buscar el UsuarioId de quien comento (si existe en Amigos mediante NombreVisible/autor)
         const autorCheck = await pool.request()
             .input('aut', sql.NVarChar, autor)
             .query('SELECT TOP 1 UsuarioId FROM Amigos WHERE NombreVisible = @aut AND UsuarioId IS NOT NULL');
-        
+
         const autorUsuarioId = autorCheck.recordset.length > 0 ? autorCheck.recordset[0].UsuarioId : null;
 
         // 1. Notificar si es respuesta anidada a otro comentario
@@ -535,7 +535,7 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
                     }
                 }
             }
-        } 
+        }
         // 2. Si NO es respuesta anidada, notificar al dueño del perfil
         else if (duenoUsuarioId && duenoUsuarioId !== autorUsuarioId) {
             await pool.request()
@@ -613,7 +613,6 @@ app.post('/api/media-drive', uploadMemory.single('archivo'), async (req, res) =>
         res.status(500).json({ error: err.message });
     }
 });
-
 // ================= NOTIFICACIONES =================
 app.get('/api/notificaciones/:usuarioId', async (req, res) => {
     try {
