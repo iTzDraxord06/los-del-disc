@@ -16,6 +16,7 @@ function esVideoDrive(url) {
 function renderizarMultimediaMuro(url, alt = 'Multimedia') {
     if (!url) return '';
 
+    // VIDEO DE GOOGLE DRIVE
     if (esVideoDrive(url)) {
         const match = url.match(/[?&]id=([^&]+)/);
 
@@ -31,7 +32,27 @@ function renderizarMultimediaMuro(url, alt = 'Multimedia') {
         `;
     }
 
-    return `<img src="${url}" class="comentario-imagen" alt="${alt}" style="cursor:pointer;">`;
+    // GIF DE CLOUDINARY
+    if (url.toLowerCase().includes('.gif')) {
+        return `
+            <img
+                src="${url}"
+                class="comentario-imagen"
+                alt="${alt}"
+                style="cursor:pointer;"
+            >
+        `;
+    }
+
+    // IMAGEN NORMAL
+    return `
+        <img
+            src="${url}"
+            class="comentario-imagen"
+            alt="${alt}"
+            style="cursor:pointer;"
+        >
+    `;
 }
 
 async function subirVideoDrive(file) {
