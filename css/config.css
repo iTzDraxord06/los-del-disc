@@ -1,3 +1,25 @@
+:root {
+    /* Fondos Obsidian / Slate */
+    --bg-base: #0a0b0e;
+    --bg-lateral: #12141a;
+    --bg-card: #181b22;
+    --bg-input: #0e1015;
+
+    /* Acentos Neón */
+    --accent-primary: #00e5ff;
+    --accent-secondary: #7c4dff;
+    --accent-gradient: linear-gradient(135deg, #00e5ff 0%, #7c4dff 100%);
+
+    /* Textos y Bordes */
+    --text-principal: #ffffff;
+    --text-secundario: #8b949e;
+    --borde: #242933;
+
+    /* Estados */
+    --error: #ff3366;
+    --success: #00e676;
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -6,17 +28,17 @@
 }
 
 body {
-    background-color: #1e1f22;
-    color: #f2f3f5;
+    background-color: var(--bg-base);
+    color: var(--text-principal);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
 
 .config-navbar {
-    background-color: #2b2d31;
-    border-bottom: 1px solid #3f4147;
-    padding: 0.8rem 1.5rem;
+    background-color: var(--bg-lateral);
+    border-bottom: 1px solid var(--borde);
+    padding: 0.75rem 1.4rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -27,32 +49,45 @@ body {
     align-items: center;
     gap: 0.75rem;
     cursor: pointer;
+    user-select: none;
 }
 
 .config-logo img {
     width: 32px;
     height: 32px;
     object-fit: contain;
+    transition: transform 0.25s ease;
+}
+
+.config-logo:hover img {
+    transform: rotate(-6deg) scale(1.08);
 }
 
 .config-logo h2 {
     font-size: 1.15rem;
+    font-weight: 700;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.02em;
 }
 
 .btn-regresar {
-    background-color: #35373c;
-    border: 1px solid #3f4147;
-    color: #ffffff;
-    padding: 0.5rem 0.9rem;
+    background-color: var(--bg-card);
+    border: 1px solid var(--borde);
+    color: var(--text-principal);
+    padding: 0.5rem 0.95rem;
     border-radius: 6px;
     cursor: pointer;
     font-weight: 600;
     font-size: 0.85rem;
-    transition: background-color 0.2s;
+    transition: all 0.2s ease;
 }
 
 .btn-regresar:hover {
-    background-color: #404249;
+    background-color: #20242e;
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
 }
 
 .config-main {
@@ -64,13 +99,25 @@ body {
 }
 
 .config-card {
-    background-color: #2b2d31;
-    border: 1px solid #3f4147;
-    border-radius: 12px;
+    background-color: var(--bg-lateral);
+    border: 1px solid var(--borde);
+    border-radius: 14px;
     width: 100%;
     max-width: 540px;
-    padding: 2rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    padding: 2.2rem;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
+    position: relative;
+    overflow: hidden;
+}
+
+.config-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent-gradient);
 }
 
 .config-card-header {
@@ -79,15 +126,24 @@ body {
     align-items: center;
     margin-bottom: 1.5rem;
     padding-bottom: 0.8rem;
-    border-bottom: 1px solid #3f4147;
+    border-bottom: 1px solid var(--borde);
+}
+
+.config-card-header h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-principal);
 }
 
 .badge-rol {
-    background-color: #5865f2;
-    font-size: 0.75rem;
+    background-color: var(--accent-secondary);
+    color: #ffffff;
+    font-size: 0.72rem;
     padding: 3px 8px;
     border-radius: 4px;
-    font-weight: bold;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 .grupo-campo {
@@ -98,51 +154,55 @@ body {
 }
 
 .grupo-campo label {
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     font-weight: 700;
-    color: #b5bac1;
+    color: var(--text-secundario);
     text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .grupo-campo input {
-    background-color: #1e1f22;
-    border: 1px solid #3f4147;
-    border-radius: 6px;
+    background-color: var(--bg-input);
+    border: 1px solid var(--borde);
+    border-radius: 8px;
     padding: 0.75rem;
-    color: #ffffff;
-    font-size: 0.95rem;
+    color: var(--text-principal);
+    font-size: 0.92rem;
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .grupo-campo input:focus {
-    border-color: #5865f2;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
 }
 
 .input-bloqueado {
-    opacity: 0.6;
+    opacity: 0.55;
     cursor: not-allowed;
+    border-style: dashed;
 }
 
 .grupo-campo small {
     font-size: 0.75rem;
-    color: #949ba4;
+    color: var(--text-secundario);
 }
 
 .divisor-config {
     border: none;
-    border-top: 1px solid #3f4147;
+    border-top: 1px solid var(--borde);
     margin: 1.5rem 0;
 }
 
 .seccion-pass h3 {
     font-size: 1rem;
+    color: var(--text-principal);
     margin-bottom: 4px;
 }
 
 .seccion-pass p {
     font-size: 0.82rem;
-    color: #949ba4;
+    color: var(--text-secundario);
     margin-bottom: 1rem;
 }
 
@@ -155,52 +215,67 @@ body {
 
 .btn-cancelar {
     background-color: transparent;
-    color: #ffffff;
-    border: 1px solid #3f4147;
+    color: var(--text-principal);
+    border: 1px solid var(--borde);
     padding: 0.6rem 1.2rem;
     border-radius: 6px;
     cursor: pointer;
     font-weight: 600;
+    transition: all 0.2s ease;
 }
 
 .btn-cancelar:hover {
-    background-color: #35373c;
+    background-color: var(--bg-card);
+    border-color: var(--accent-primary);
 }
 
 .btn-guardar {
-    background-color: #5865f2;
-    color: #ffffff;
+    background: var(--accent-gradient);
+    color: #050608;
     border: none;
     padding: 0.6rem 1.4rem;
     border-radius: 6px;
     cursor: pointer;
-    font-weight: 600;
-    transition: background-color 0.2s;
+    font-weight: 700;
+    transition: filter 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
 }
 
 .btn-guardar:hover {
-    background-color: #4752c4;
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
 }
 
 .alerta {
     padding: 0.75rem 1rem;
-    border-radius: 6px;
-    font-size: 0.9rem;
+    border-radius: 8px;
+    font-size: 0.88rem;
     margin-bottom: 1.2rem;
 }
 
 .alerta.exito {
-    background-color: rgba(87, 242, 135, 0.15);
-    border: 1px solid #57f287;
-    color: #57f287;
+    background-color: rgba(0, 230, 118, 0.12);
+    border: 1px solid var(--success);
+    color: var(--success);
 }
 
 .alerta.error {
-    background-color: rgba(237, 66, 69, 0.15);
-    border: 1px solid #ed4245;
-    color: #ed4245;
+    background-color: rgba(255, 51, 102, 0.12);
+    border: 1px solid var(--error);
+    color: var(--error);
 }
 
 .oculto {
     display: none !important;
+}
+
+@media (max-width: 580px) {
+    .config-card {
+        padding: 1.4rem;
+    }
+
+    .config-navbar {
+        padding: 0.6rem 1rem;
+    }
 }

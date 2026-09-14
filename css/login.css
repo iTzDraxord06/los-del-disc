@@ -1,14 +1,24 @@
 :root {
-    --bg-base: #1e1f22;
-    --bg-card: #2b2d31;
-    --bg-input: #1e1f22;
-    --blurple: #5865f2;
-    --blurple-hover: #4752c4;
-    --text: #f2f3f5;
-    --text-muted: #949ba4;
-    --border: #3f4147;
-    --error: #ed4245;
-    --success: #57f287;
+    /* Fondos Obsidian / Slate */
+    --bg-base: #0a0b0e;
+    --bg-card: #12141a;
+    --bg-input: #0e1015;
+
+    /* Acentos Neón */
+    --accent-primary: #00e5ff;
+    --accent-primary-hover: #00b4cc;
+    --accent-secondary: #7c4dff;
+    --accent-gradient: linear-gradient(135deg, #00e5ff 0%, #7c4dff 100%);
+
+    /* Textos y Bordes */
+    --text: #ffffff;
+    --text-muted: #8b949e;
+    --border: #242933;
+    --border-glow: rgba(0, 229, 255, 0.35);
+
+    /* Estados */
+    --error: #ff3366;
+    --success: #00e676;
 }
 
 * {
@@ -25,7 +35,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-image: radial-gradient(circle at 50% 50%, #2b2d31 0%, #1e1f22 100%);
+    background-image: radial-gradient(circle at 50% 50%, #161922 0%, #0a0b0e 100%);
 }
 
 .login-container {
@@ -33,22 +43,44 @@ body {
     max-width: 420px;
     padding: 1.5rem;
 }
-/* Asegura que el logo del login se ajuste perfectamente y nunca quede gigante */
+
+/* Control estricto de tamaño del logo */
 .header-login img, 
 .login-logo-img,
 .auth-logo img {
-    width: 75px !important;
-    height: 75px !important;
+    width: 70px !important;
+    height: 70px !important;
     object-fit: contain !important;
     display: block;
     margin: 0 auto 12px auto;
+    filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.45));
+    transition: transform 0.25s ease;
 }
+
+.header-login img:hover, 
+.login-logo-img:hover,
+.auth-logo img:hover {
+    transform: rotate(-6deg) scale(1.06);
+}
+
 .login-box {
     background-color: var(--bg-card);
     padding: 2.5rem;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    border-radius: 14px;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
     border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+}
+
+.login-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent-gradient);
 }
 
 .header-login {
@@ -56,15 +88,13 @@ body {
     margin-bottom: 2rem;
 }
 
-.discord-logo {
-    font-size: 2.5rem;
-    display: inline-block;
-    margin-bottom: 0.5rem;
-}
-
 .header-login h2 {
     font-size: 1.6rem;
-    font-weight: 700;
+    font-weight: 800;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.02em;
 }
 
 .header-login p {
@@ -77,6 +107,7 @@ body {
     display: flex;
     border-bottom: 1px solid var(--border);
     margin-bottom: 1.5rem;
+    gap: 6px;
 }
 
 .tab-btn {
@@ -92,9 +123,13 @@ body {
     transition: all 0.2s ease;
 }
 
-.tab-btn.active {
+.tab-btn:hover {
     color: var(--text);
-    border-color: var(--blurple);
+}
+
+.tab-btn.active {
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
 }
 
 .auth-form {
@@ -110,11 +145,11 @@ body {
 }
 
 .form-group label {
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     text-transform: uppercase;
     font-weight: 700;
     color: var(--text-muted);
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
 }
 
 .form-group input {
@@ -122,39 +157,44 @@ body {
     border: 1px solid var(--border);
     color: var(--text);
     padding: 0.75rem;
-    border-radius: 6px;
+    border-radius: 8px;
     outline: none;
     font-size: 0.95rem;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .form-group input:focus {
-    border-color: var(--blurple);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
 }
 
 .btn-submit {
-    background-color: var(--blurple);
-    color: white;
+    background: var(--accent-gradient);
+    color: #050608;
     border: none;
     padding: 0.8rem;
-    border-radius: 6px;
-    font-weight: 600;
+    border-radius: 8px;
+    font-weight: 700;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.95rem;
     margin-top: 0.5rem;
-    transition: background-color 0.2s;
+    transition: filter 0.2s ease, transform 0.1s ease;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
 }
 
 .btn-submit:hover {
-    background-color: var(--blurple-hover);
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
 }
 
 .btn-secundario {
-    background-color: #4e5058;
+    background-color: var(--border);
+    color: var(--text);
 }
 
 .btn-secundario:hover {
-    background-color: #6d6f78;
+    background-color: #313745;
 }
 
 .msg-error {
@@ -172,35 +212,34 @@ body {
 .oculto {
     display: none !important;
 }
+
 .logo-login-img {
-    width: 75px !important;
-    height: 75px !important;
-    max-width: 75px !important;
-    max-height: 75px !important;
+    width: 70px !important;
+    height: 70px !important;
+    max-width: 70px !important;
+    max-height: 70px !important;
     object-fit: contain !important;
     display: block !important;
     margin: 0 auto 12px auto !important;
 }
 
-/* RESPONSIVE PARA EL LOGIN */
+/* RESPONSIVE */
 @media (max-width: 480px) {
     .login-container {
         padding: 1rem;
     }
 
     .login-box {
-        padding: 1.5rem;
-        border-radius: 8px;
+        padding: 1.6rem;
+        border-radius: 10px;
     }
 
-    /* Tamaño controlado del logo en celulares */
     .header-login img, 
     .login-logo-img,
     .auth-logo img {
-        width: 60px !important;
-        height: 60px !important;
-        object-fit: contain !important;
-        margin-bottom: 10px;
+        width: 58px !important;
+        height: 58px !important;
+        margin-bottom: 8px;
     }
 
     .header-login h2 {
@@ -218,6 +257,6 @@ body {
 
     .btn-submit {
         font-size: 0.9rem;
-        padding: 0.7rem;
+        padding: 0.72rem;
     }
 }

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Los del Disc - Muro General</title>
+    <link rel="icon" type="image/png" href="imagenes/Logo Pagina Web.png">
+    <link rel="stylesheet" href="css/estilos.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <header class="navbar">
+        <div class="logo" onclick="window.location.href='index.html'" style="cursor: pointer;">
+            <button id="btnMenu" class="btn-hamburguesa" aria-label="Abrir menú">☰</button>
+            <img src="imagenes/Logo Pagina Web.png" alt="Logo Los del Disc" class="disc-logo-img">
+            <h2>Los del Disc</h2>
+        </div>
+
+        <div class="nav-derecha">
+            <a href="index.html" class="btn-secundario">🏠 Inicio</a>
+            <a href="miembros.html" class="btn-secundario">👥 Miembros</a>
+            <a href="muro.html" class="btn-secundario activo-nav">💬 Muro</a>
+            <a href="anuncios.html" class="btn-secundario">📢 Anuncios</a>
+        </div>
+    </header>
+
+    <main class="contenedor-principal">
+        <!-- BARRA LATERAL (CANALES) -->
+        <aside class="seccion-amigos" id="barraLateral">
+            <div class="canales-servidor">
+                <span class="categoria-canales">CANALES</span>
+                <a href="index.html" class="btn-canal">🏠 #inicio</a>
+                <a href="miembros.html" class="btn-canal">👥 #miembros</a>
+                <a href="muro.html" class="btn-canal canal-activo">💬 #muro-general</a>
+                <a href="anuncios.html" class="btn-canal">📢 #anuncios</a>
+            </div>
+
+            <!-- Panel de usuario inferior -->
+            <div class="panel-usuario-inferior" id="panelUsuarioInferior">
+                <div id="menuDesplegableUsuario" class="menu-popup-usuario oculto">
+                    <a href="configuracion.html" class="item-popup">
+                        <span class="icono-item-popup">⚙️</span> Ajustes de Cuenta
+                    </a>
+                    <div class="separador-popup"></div>
+                    <button id="btnCerrarSesion" class="item-popup item-popup-rojo">
+                        <span class="icono-item-popup">🚪</span> Cerrar Sesión
+                    </button>
+                </div>
+
+                <div class="cuerpo-usuario" id="btnToggleMenuUsuario" title="Opciones de cuenta">
+                    <div class="sesion-info">
+                        <span id="labelUsuario" class="nombre-usuario-texto">Cargando...</span>
+                        <span class="subtexto-estado">🟢 En línea</span>
+                    </div>
+                    <span class="icono-flecha">▲</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- SECCIÓN PRINCIPAL: TABLÓN COMUNITARIO -->
+        <section class="seccion-muro">
+            <div class="columna-feed-global" style="max-width: 800px; margin: 0 auto; width: 100%;">
+                
+                <!-- Caja para escribir en el Muro -->
+                <div class="caja-crear-post">
+                    <h3>💬 Tablón de la Comunidad</h3>
+                    <form id="formPostGlobal" class="form-comentario">
+                        
+                        <!-- Banner de respuesta si se contesta a alguien -->
+                        <div id="bannerRespuestaGlobal" class="banner-respondiendo oculto">
+                            <span>Respondiendo a <strong id="textoRespondiendoGlobal">@Usuario</strong></span>
+                            <button type="button" id="btnCancelarRespuestaGlobal" title="Cancelar">✕ Cancelar</button>
+                        </div>
+
+                        <textarea id="inputPostGlobal" placeholder="¿Qué está pasando en el server? Escribe algo para todos..." required maxlength="600"></textarea>
+                        
+                        <div class="barra-adjuntos-comentario" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <label for="inputFotoPostGlobal" class="btn-secundario" style="cursor: pointer; padding: 5px 10px; font-size: 0.82rem;">
+                                    📷 <span>Subir foto</span>
+                                </label>
+                                <input type="file" id="inputFotoPostGlobal" accept="image/*" class="oculto">
+                                <span id="labelFotoPostGlobal" class="nombre-foto-adjunta oculto" style="font-size: 0.8rem; color: #949ba4;"></span>
+                                <button type="button" id="btnQuitarFotoPostGlobal" class="btn-close oculto" style="font-size: 1rem; color: #ed4245;">&times;</button>
+                            </div>
+
+                            <button type="submit" id="btnEnviarPostGlobal" class="btn-primary">Publicar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Lista de publicaciones del Muro -->
+                <div id="feedGlobalPosts" class="lista-comentarios" style="margin-top: 25px;">
+                    <p class="cargando">Cargando publicaciones...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal Visor Lightbox -->
+    <div id="modalVisor" class="modal-visor oculto">
+        <span id="btnCerrarVisor" class="btn-cerrar-visor" title="Cerrar">&times;</span>
+        <img id="imagenVisorAmpliada" src="" alt="Vista previa ampliada">
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/muro.js"></script>
+</body>
+
+</html>

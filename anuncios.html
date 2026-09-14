@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Los del Disc - Tablón de Anuncios</title>
+    <link rel="icon" type="image/png" href="imagenes/Logo Pagina Web.png">
+    <link rel="stylesheet" href="css/estilos.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <header class="navbar">
+        <div class="logo" onclick="window.location.href='index.html'" style="cursor: pointer;">
+            <button id="btnMenu" class="btn-hamburguesa" aria-label="Abrir menú">☰</button>
+            <img src="imagenes/Logo Pagina Web.png" alt="Logo Los del Disc" class="disc-logo-img">
+            <h2>Los del Disc</h2>
+        </div>
+
+        <div class="nav-derecha">
+            <a href="index.html" class="btn-secundario">🏠 Inicio</a>
+            <a href="miembros.html" class="btn-secundario">👥 Miembros</a>
+            <a href="muro.html" class="btn-secundario">💬 Muro</a>
+            <a href="anuncios.html" class="btn-secundario activo-nav">📢 Anuncios</a>
+            <button id="btnAbrirModalAfiche" class="btn-primary oculto" style="background-color: #5865F2;">+ Publicar Anuncio</button>
+        </div>
+    </header>
+
+    <main class="contenedor-principal">
+        <!-- BARRA LATERAL (CANALES) -->
+        <aside class="seccion-amigos" id="barraLateral">
+            <div class="canales-servidor">
+                <span class="categoria-canales">CANALES</span>
+                <a href="index.html" class="btn-canal">🏠 #inicio</a>
+                <a href="miembros.html" class="btn-canal">👥 #miembros</a>
+                <a href="muro.html" class="btn-canal">💬 #muro-general</a>
+                <a href="anuncios.html" class="btn-canal canal-activo">📢 #anuncios</a>
+            </div>
+
+            <!-- Panel de usuario inferior -->
+            <div class="panel-usuario-inferior" id="panelUsuarioInferior">
+                <div id="menuDesplegableUsuario" class="menu-popup-usuario oculto">
+                    <a href="configuracion.html" class="item-popup">
+                        <span class="icono-item-popup">⚙️</span> Ajustes de Cuenta
+                    </a>
+                    <div class="separador-popup"></div>
+                    <button id="btnCerrarSesion" class="item-popup item-popup-rojo">
+                        <span class="icono-item-popup">🚪</span> Cerrar Sesión
+                    </button>
+                </div>
+
+                <div class="cuerpo-usuario" id="btnToggleMenuUsuario" title="Opciones de cuenta">
+                    <div class="sesion-info">
+                        <span id="labelUsuario" class="nombre-usuario-texto">Cargando...</span>
+                        <span class="subtexto-estado">🟢 En línea</span>
+                    </div>
+                    <span class="icono-flecha">▲</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- SECCIÓN PRINCIPAL: FEED DE ANUNCIOS -->
+        <section class="seccion-muro">
+            <div style="max-width: 700px; margin: 0 auto; width: 100%;">
+                <div style="margin-bottom: 25px; text-align: center;">
+                    <h2 style="font-size: 1.8rem; color: #ffffff;">📢 Tablón de Anuncios Oficiales</h2>
+                    <p style="color: #949ba4; font-size: 0.95rem; margin-top: 5px;">Avisos importantes, torneos y actualizaciones de Los del Disc.</p>
+                </div>
+
+                <div id="feedAfiches" class="feed-afiches">
+                    <p class="cargando">Cargando avisos...</p>
+                </div>
+
+                <div id="aficheDefault" class="oculto sin-datos">
+                    <p>No hay anuncios publicados por el momento.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal Publicar Anuncio -->
+    <div id="modalAfiche" class="modal oculto">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>📢 Publicar Anuncio Oficial</h3>
+                <button id="btnCerrarModalAfiche" class="btn-close">&times;</button>
+            </div>
+            <form id="formAfiche">
+                <div class="campo">
+                    <label>Título del anuncio (opcional):</label>
+                    <input type="text" id="aficheInputTitulo" placeholder="Ej: ¡Torneo de fin de semana!">
+                </div>
+                <div class="campo">
+                    <label>Descripción / Mensaje:</label>
+                    <textarea id="aficheInputDesc" rows="3" placeholder="Escribe aquí los detalles del aviso..."></textarea>
+                </div>
+                <div class="campo">
+                    <label>Imagen del afiche / clip:</label>
+                    <input type="file" id="aficheInputFile" accept="image/*">
+                </div>
+                <button type="submit" id="btnGuardarAfiche" class="btn-primary btn-block">Publicar Anuncio</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Visor Lightbox -->
+    <div id="modalVisor" class="modal-visor oculto">
+        <span id="btnCerrarVisor" class="btn-cerrar-visor" title="Cerrar">&times;</span>
+        <img id="imagenVisorAmpliada" src="" alt="Vista previa ampliada">
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/anuncios.js"></script>
+</body>
+
+</html>

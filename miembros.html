@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Los del Disc - Miembros</title>
+    <link rel="icon" type="image/png" href="imagenes/Logo Pagina Web.png">
+    <link rel="stylesheet" href="css/estilos.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <header class="navbar">
+        <div class="logo" onclick="window.location.href='index.html'" style="cursor: pointer;">
+            <button id="btnMenu" class="btn-hamburguesa" aria-label="Abrir menú">☰</button>
+            <img src="imagenes/Logo Pagina Web.png" alt="Logo Los del Disc" class="disc-logo-img">
+            <h2>Los del Disc</h2>
+        </div>
+
+        <div class="nav-derecha">
+            <!-- Sin botones duplicados de navegación, solo acción de admin si corresponde -->
+            <button id="btnAbrirModal" class="btn-primary oculto">+ Nuevo Amigo</button>
+        </div>
+    </header>
+
+    <main class="contenedor-principal">
+        <!-- BARRA LATERAL: SOLO CANALES Y USUARIO -->
+        <aside class="seccion-amigos" id="barraLateral">
+            <div class="canales-servidor">
+                <span class="categoria-canales">CANALES</span>
+                <a href="index.html" class="btn-canal">🏠 #inicio</a>
+                <a href="miembros.html" class="btn-canal canal-activo">👥 #miembros</a>
+                <a href="muro.html" class="btn-canal">💬 #muro-general</a>
+                <a href="anuncios.html" class="btn-canal">📢 #anuncios</a>
+            </div>
+
+            <!-- Panel de usuario inferior -->
+            <div class="panel-usuario-inferior" id="panelUsuarioInferior">
+                <div id="menuDesplegableUsuario" class="menu-popup-usuario oculto">
+                    <a href="configuracion.html" class="item-popup">
+                        <span class="icono-item-popup">⚙️</span> Ajustes de Cuenta
+                    </a>
+                    <div class="separador-popup"></div>
+                    <button id="btnCerrarSesion" class="item-popup item-popup-rojo">
+                        <span class="icono-item-popup">🚪</span> Cerrar Sesión
+                    </button>
+                </div>
+
+                <div class="cuerpo-usuario" id="btnToggleMenuUsuario" title="Opciones de cuenta">
+                    <div class="sesion-info">
+                        <span id="labelUsuario" class="nombre-usuario-texto">Cargando...</span>
+                        <span class="subtexto-estado">🟢 En línea</span>
+                    </div>
+                    <span class="icono-flecha">▲</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- SECCIÓN PRINCIPAL CENTRAL -->
+        <section class="seccion-muro" id="seccionMuro">
+            
+            <!-- 1. VISTA CUADRÍCULA DE MIEMBROS (EL CÍRCULO ROJO GRANDE) -->
+            <div id="vistaGridMiembros" class="contenedor-miembros-central">
+                <div class="header-miembros-central">
+                    <h2>👥 Integrantes del Servidor</h2>
+                    <p>Selecciona a cualquier miembro para ver su muro personal, su galería y comentarle.</p>
+                </div>
+
+                <div id="gridCentralMiembros" class="grid-tarjetas-miembros">
+                    <p class="cargando">Cargando miembros...</p>
+                </div>
+            </div>
+
+            <!-- 2. VISTA DETALLE DEL PERFIL (SE ABRE AL DAR CLIC A CUALQUIER AMIGO) -->
+            <div class="muro-contenido oculto" id="muroDetalle" style="max-width: 900px; margin: 0 auto;">
+                <div style="margin-bottom: 12px;">
+                    <button id="btnVolverMiembros" class="btn-secundario">← Volver a la lista de miembros</button>
+                </div>
+
+                <div class="perfil-banner"></div>
+                <div class="perfil-info">
+                    <div class="perfil-avatar-wrapper">
+                        <img id="muroAvatar" src="" alt="Avatar">
+                    </div>
+                    <div class="perfil-textos">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                                <h2 id="muroApodo">Apodo</h2>
+                                <span id="muroTag" class="discord-tag">@username</span>
+                                <span id="muroRol" class="badge-rol">Rol</span>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button id="btnEditarPerfil" class="btn-secundario oculto">✏️ Editar Perfil</button>
+                                <button id="btnEliminarPerfil" class="btn-secundario oculto" style="background-color: #ff3366; color: #fff; border: none;">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                        <p id="muroDesc" class="bio-texto"></p>
+                    </div>
+
+                    <div class="galeria-waifus">
+                        <h4>Waifu Shrine / Galería</h4>
+                        <div id="gridWaifus" class="grid-waifus"></div>
+                    </div>
+                </div>
+
+                <hr class="divisor">
+
+                <!-- Comentarios del muro personal -->
+                <div class="contenedor-comentarios">
+                    <h4>Muro personal de <span id="nombreAmigoMuro"></span></h4>
+
+                    <form id="formComentario" class="form-comentario">
+                        <div id="bannerRespuesta" class="banner-respondiendo oculto">
+                            <span>Respondiendo a <strong id="textoRespondiendoA">@Usuario</strong></span>
+                            <button type="button" id="btnCancelarRespuesta">✕ Cancelar</button>
+                        </div>
+
+                        <input type="text" id="inputAutor" placeholder="Tu nombre / apodo" required readonly>
+                        <textarea id="inputComentario" placeholder="Escribe un comentario..." required maxlength="500"></textarea>
+                        <button type="submit" id="btnEnviarComentario" class="btn-primary" style="align-self: flex-end;">Enviar comentario</button>
+                    </form>
+
+                    <div id="listaComentarios" class="lista-comentarios"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal Agregar/Editar Amigo -->
+    <div id="modalAmigo" class="modal oculto">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modalTitulo">Editar Perfil</h3>
+                <button id="btnCerrarModal" class="btn-close">&times;</button>
+            </div>
+            <form id="formNuevoAmigo">
+                <input type="hidden" id="amigoEditId">
+
+                <div class="campo">
+                    <label>Usuario de Discord (@):</label>
+                    <input type="text" id="nuevoUsername" required>
+                </div>
+                <div class="campo">
+                    <label>Apodo:</label>
+                    <input type="text" id="nuevoApodo" required>
+                </div>
+                <div class="campo" id="campoRolServidor">
+                    <label>Rol en el servidor:</label>
+                    <input type="text" id="nuevoRol" placeholder="Mod, Admin, Rango G1...">
+                </div>
+
+                <div class="campo">
+                    <label>Foto de Perfil / Logo:</label>
+                    <input type="file" id="inputAvatarFile" accept="image/*">
+                </div>
+
+                <div class="campo">
+                    <label>Fotos Waifu Shrine / Galería:</label>
+                    <input type="file" id="inputWaifuFiles" accept="image/*" multiple>
+                </div>
+
+                <div class="campo">
+                    <label>Descripción / Bio:</label>
+                    <textarea id="nuevaDesc"></textarea>
+                </div>
+                <button type="submit" id="btnGuardarAmigo" class="btn-primary btn-block">Guardar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Visor de Imagen -->
+    <div id="modalVisor" class="modal-visor oculto">
+        <span id="btnCerrarVisor" class="btn-cerrar-visor" title="Cerrar">&times;</span>
+        <img id="imagenVisorAmpliada" src="" alt="Vista previa ampliada">
+    </div>
+
+    <script src="js/auth-check.js"></script>
+    <script src="js/miembros.js"></script>
+</body>
+
+</html>
