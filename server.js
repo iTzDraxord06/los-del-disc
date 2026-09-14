@@ -803,7 +803,16 @@ app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
 
         // Si viene una URL directa (por ejemplo, Google Drive), usamos esa.
         // Si no, usamos la URL generada por Cloudinary.
-        const imgUrl = imagenUrlDirecta || (req.file ? req.file.path : '');
+
+        let imgUrl = imagenUrlDirecta || (req.file ? req.file.path : '');
+
+        if (imgUrl.startsWith('[') && imgUrl.includes('](')) {
+            const coincidencia = imgUrl.match(/\]\((.*?)\)/);
+
+            if (coincidencia) {
+                imgUrl = coincidencia[1];
+            }
+        }
 
         await pool.request()
             .input('t', sql.NVarChar, titulo || '')
