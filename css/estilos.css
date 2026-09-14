@@ -1295,6 +1295,16 @@ body {
     border: 1px solid var(--borde, #444);
     background: #000;
 }
+.media-reproductor {
+    display: block;
+    width: 100%;
+    max-width: 700px;
+    max-height: 420px;
+    margin: 8px auto 0;
+    border-radius: 8px;
+    border: 1px solid var(--borde, #444);
+    background: #000;
+}
 
 /* ================= RESPONSIVE MÓVIL ================= */
 @media (max-width: 768px) {
@@ -1414,5 +1424,10 @@ body {
         max-height: none;
         margin: 10px auto 0;
         border-radius: 6px;
+    }
+    .media-reproductor {
+        width: 100%;
+        max-width: 100%;
+        max-height: none;
     }
 }

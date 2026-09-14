@@ -15,12 +15,22 @@ function esVideoDrive(url) {
 
 function renderizarMultimediaMuro(url, alt = 'Multimedia') {
     if (!url) return '';
+
     if (esVideoDrive(url)) {
-        return `<video class="media-reproductor" controls preload="metadata" playsinline style="max-width:100%; max-height:420px; width:100%; border-radius:8px; border:1px solid var(--borde,#444); margin-top:8px; display:block; background:#000;">
-            <source src="${url}" type="video/mp4">
-            Tu navegador no soporta reproducción de video.
-        </video>`;
+        const match = url.match(/[?&]id=([^&]+)/);
+
+        if (!match) return '';
+
+        const fileId = match[1];
+
+        return `
+            <video class="media-reproductor" controls preload="metadata" playsinline>
+                <source src="/api/media-drive/${fileId}" type="video/mp4">
+                Tu navegador no soporta reproducción de video.
+            </video>
+        `;
     }
+
     return `<img src="${url}" class="comentario-imagen" alt="${alt}" style="cursor:pointer; margin-top:8px; max-width:100%;">`;
 }
 
