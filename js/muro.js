@@ -34,19 +34,19 @@ function renderizarMultimediaMuro(url, alt = 'Multimedia') {
 
     // GIF DE CLOUDINARY
     if (url.toLowerCase().includes('.gif')) {
-        const idGif = 'gif-' + Date.now() + '-' + Math.random();
+    const idGif = 'gif-' + Date.now() + '-' + Math.random();
 
-        setTimeout(() => {
-            const gif = document.getElementById(idGif);
+    setTimeout(() => {
+        const gif = document.getElementById(idGif);
 
-            if (gif) {
-                const src = gif.src;
-                gif.src = '';
-                gif.src = src;
-            }
-        }, 1100);
+        if (gif) {
+            const src = gif.src;
+            gif.src = '';
+            gif.src = src;
+        }
+    }, 3000);
 
-        return `
+    return `
         <img
             id="${idGif}"
             src="${url}"
@@ -55,7 +55,7 @@ function renderizarMultimediaMuro(url, alt = 'Multimedia') {
             style="cursor:pointer;"
         >
     `;
-    }
+}
 }
 async function subirVideoDrive(file) {
     if (!file) return null;
