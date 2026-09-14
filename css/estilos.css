@@ -911,18 +911,19 @@ body {
     overflow: hidden;
 }
 
-.item-foto-galeria img {
+.item-foto-galeria img,
+.item-foto-galeria video {
     width: 100%;
     aspect-ratio: 1 / 1;
-    object-fit: cover;
+    object-fit: contain;
+    background: #000;
     border-radius: 10px;
     border: 1px solid var(--borde);
-    cursor: pointer;
     display: block;
-    transition: all 0.2s ease;
 }
 
-.item-foto-galeria:hover img {
+.item-foto-galeria:hover img,
+.item-foto-galeria:hover video{
     transform: scale(1.02);
     border-color: var(--accent-primary);
 }
