@@ -67,6 +67,7 @@ async function cargarAfiche() {
     try {
         const res = await fetch(`${API_URL}/anuncio`);
         const anuncios = await res.json();
+        console.log("ANUNCIOS RECIBIDOS:", anuncios);
 
         if (!feedAfiches) return;
         feedAfiches.innerHTML = '';
