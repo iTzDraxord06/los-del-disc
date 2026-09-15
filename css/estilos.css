@@ -1352,14 +1352,16 @@ body {
         position: fixed;
         top: 0;
         left: 0;
-        width: 260px;
-        max-width: 80vw;
-        height: 100%;
+        width: 280px; /* Subido de 260px a 280px */
+        max-width: 85vw;
         height: 100dvh;
-        z-index: 2500;
+        z-index: 4000; /* Subido por encima del navbar si es necesario */
         transform: translateX(-100%);
         box-shadow: 8px 0 30px rgba(0, 0, 0, 0.8);
         transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        box-sizing: border-box;
+        padding-left: 10px; /* Espaciado interno para que no pegue al borde */
+        padding-right: 10px;
     }
 
     .seccion-amigos.abierto {
