@@ -552,7 +552,7 @@ app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req,
                     .input('nom', sql.NVarChar, nombrePadre)
                     .query('SELECT TOP 1 UsuarioId FROM Amigos WHERE NombreVisible = @nom AND UsuarioId IS NOT NULL');
                 console.log('DEBUG MURO - Autor padre:', nombrePadre);
-                console.log('DEBUG MURO - Usuario encontrado:', destCheck.recordset);       
+                console.log('DEBUG MURO - Usuario encontrado:', destCheck.recordset);
                 if (destCheck.recordset.length > 0 && destCheck.recordset[0].UsuarioId) {
                     await pool.request()
                         .input('uDest', sql.Int, destCheck.recordset[0].UsuarioId)
@@ -665,22 +665,38 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
             const padreInfo = await pool.request()
                 .input('pId', sql.Int, respuestaAId)
                 .query('SELECT Autor FROM Comentarios WHERE Id = @pId');
-            if (padreInfo.recordset.length > 0) {
-                const nombrePadre = padreInfo.recordset[0].Autor;
-                const destCheck = await pool.request()
-                    .input('nom', sql.NVarChar, nombrePadre)
-                    .query('SELECT TOP 1 UsuarioId FROM Amigos WHERE NombreVisible = @nom AND UsuarioId IS NOT NULL');
-                if (destCheck.recordset.length > 0 && destCheck.recordset[0].UsuarioId) {
-                    const targetUId = destCheck.recordset[0].UsuarioId;
-                    if (targetUId !== autorUsuarioId) {
+            if (respuestaAId) {
+                const padreInfo = await pool.request()
+                    .input('pId', sql.Int, respuestaAId)
+                    .query('SELECT Autor FROM PublicacionesGlobales WHERE Id = @pId');
+
+                if (padreInfo.recordset.length > 0) {
+                    const nombrePadre = padreInfo.recordset[0].Autor;
+
+                    const destCheck = await pool.request()
+                        .input('nom', sql.NVarChar, `%${nombrePadre}%`)
+                        .query(`
+                SELECT TOP 1 UsuarioId
+                FROM Amigos
+                WHERE NombreVisible LIKE @nom
+                AND UsuarioId IS NOT NULL
+            `);
+
+                    console.log('DEBUG MURO - Autor padre:', nombrePadre);
+                    console.log('DEBUG MURO - Usuario encontrado:', destCheck.recordset);
+
+                    if (destCheck.recordset.length > 0 && destCheck.recordset[0].UsuarioId) {
                         await pool.request()
-                            .input('uDest', sql.Int, targetUId)
+                            .input('uDest', sql.Int, destCheck.recordset[0].UsuarioId)
                             .input('autor', sql.NVarChar, autor || 'Alguien')
-                            .input('destId', sql.Int, amigoId)
-                            .input('comId', sql.Int, newComId)
+                            .input('comId', sql.Int, newPostId)
                             .input('txt', sql.NVarChar, (contenido || '').substring(0, 100))
-                            .query(`INSERT INTO Notificaciones (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
-                                    VALUES (@uDest, @autor, 'PERFIL', @destId, @comId, @txt)`);
+                            .query(`
+                    INSERT INTO Notificaciones
+                    (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
+                    VALUES
+                    (@uDest, @autor, 'MURO', @comId, @comId, @txt)
+                `);
                     }
                 }
             }
