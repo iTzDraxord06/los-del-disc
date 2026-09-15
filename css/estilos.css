@@ -1317,8 +1317,6 @@ body {
 @media (max-width: 768px) {
     .navbar {
         padding: 0.55rem 0.85rem;
-        position: relative;
-        z-index: 3000;
     }
 
     .btn-hamburguesa {
