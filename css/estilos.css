@@ -1335,7 +1335,7 @@ body {
         height: 28px;
     }
 
-    .dropdown-notificaciones {
+    .amigo-card {
         width: 300px;
         right: -10px;
         max-height: 350px;
@@ -1430,5 +1430,16 @@ body {
         max-width: 100% !important;
         height: auto !important;
         max-height: 280px !important;
+    }
+
+    .nav-derecha {
+        position: relative;
+    }
+
+    #btnAbrirModalAfiche {
+        position: absolute;
+        top: 38px;
+        right: 0;
+        white-space: nowrap;
     }
 }
