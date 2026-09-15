@@ -12,11 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
     btnNotis.addEventListener('click', (e) => {
         e.stopPropagation();
         dropdownNotis.classList.toggle('oculto');
-        
+
         if (!dropdownNotis.classList.contains('oculto')) {
             const usuarioSesion = JSON.parse(localStorage.getItem('disc_user'));
             const uId = usuarioSesion ? (usuarioSesion.Id || usuarioSesion.id) : null;
-            
+
             console.log('DEBUG - Usuario en sesión para notificaciones:', uId);
 
             if (!uId) {
@@ -37,12 +37,12 @@ document.addEventListener('DOMContentLoaded', () => {
     async function cargarNotificaciones(usuarioId) {
         if (!listaNotis) return;
         listaNotis.innerHTML = '<div class="dropdown-notificaciones-vacio">Cargando...</div>';
-        
+
         try {
             const res = await fetch(`${API_URL}/notificaciones/${usuarioId}`);
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
             const data = await res.json();
-            
+
             listaNotis.innerHTML = '';
             if (!Array.isArray(data) || data.length === 0) {
                 listaNotis.innerHTML = `<div class="dropdown-notificaciones-vacio">📭 No tienes notificaciones</div>`;
@@ -63,11 +63,22 @@ document.addEventListener('DOMContentLoaded', () => {
             data.forEach(item => {
                 const el = document.createElement('div');
                 el.className = `item-notificacion ${item.Leido ? '' : 'no-leido'}`;
-                el.innerHTML = `<strong>${item.AutorAccion}</strong> respondió: "${item.TextoPrevio || ''}"`;
-                
+
+                let mensajeNotificacion = '';
+
+                if (item.TextoPrevio && item.TextoPrevio.trim()) {
+                    mensajeNotificacion = `respondió: "${item.TextoPrevio}"`;
+                } else {
+                    mensajeNotificacion = 'envió una imagen 🖼️';
+                }
+
+                el.innerHTML = `
+                <strong>${item.AutorAccion}</strong> ${mensajeNotificacion}
+                `;
+
                 el.addEventListener('click', async () => {
                     await fetch(`${API_URL}/notificaciones/${item.Id}/leer`, { method: 'PUT' });
-                    
+
                     if (item.Tipo === 'PERFIL') {
                         window.location.href = `miembros.html?amigoId=${item.DestinoId}&scrollComentario=${item.ComentarioId}`;
                     } else {
