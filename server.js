@@ -551,6 +551,12 @@ app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req,
                 const destCheck = await pool.request()
                     .input('nom', sql.NVarChar, nombrePadre)
                     .query('SELECT TOP 1 UsuarioId FROM Amigos WHERE NombreVisible = @nom AND UsuarioId IS NOT NULL');
+                const debugAmigos = await pool.request()
+                    .query(`
+                    SELECT TOP 20 UsuarioId, NombreVisible
+                    FROM Amigos
+                    WHERE NombreVisible LIKE '%Draxord%'
+                `);
                 console.log('DEBUG MURO - Autor padre:', nombrePadre);
                 console.log('DEBUG MURO - Usuario encontrado:', destCheck.recordset);
                 if (destCheck.recordset.length > 0 && destCheck.recordset[0].UsuarioId) {
