@@ -559,6 +559,8 @@ app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req,
                 `);
                 console.log('DEBUG MURO - Autor padre:', nombrePadre);
                 console.log('DEBUG MURO - Usuario encontrado:', destCheck.recordset);
+                console.log('DEBUG MURO - Amigos en BD de Render:', debugAmigos.recordset);
+
                 if (destCheck.recordset.length > 0 && destCheck.recordset[0].UsuarioId) {
                     await pool.request()
                         .input('uDest', sql.Int, destCheck.recordset[0].UsuarioId)
@@ -690,8 +692,7 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
 
                     console.log('DEBUG MURO - Autor padre:', nombrePadre);
                     console.log('DEBUG MURO - Usuario encontrado:', destCheck.recordset);
-                    console.log('DEBUG MURO - Amigos en BD de Render:', debugAmigos.recordset);
-
+                    
                     if (destCheck.recordset.length > 0 && destCheck.recordset[0].UsuarioId) {
                         await pool.request()
                             .input('uDest', sql.Int, destCheck.recordset[0].UsuarioId)
