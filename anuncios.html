@@ -33,9 +33,6 @@
                     <div id="listaNotis" class="dropdown-notificaciones-lista"></div>
                 </div>
             </div>
-
-            <button id="btnAbrirModalAfiche" class="btn-primary oculto" style="background-color: #5865F2;">+ Publicar
-                Anuncio</button>
         </div>
     </header>
     <main class="contenedor-principal">
@@ -74,10 +71,15 @@
         <!-- SECCIÓN PRINCIPAL: FEED DE ANUNCIOS -->
         <section class="seccion-muro">
             <div style="max-width: 700px; margin: 0 auto; width: 100%;">
-                <div style="margin-bottom: 25px; text-align: center;">
-                    <h2 style="font-size: 1.8rem; color: #ffffff;">📢 Tablón de Anuncios Oficiales</h2>
-                    <p style="color: #949ba4; font-size: 0.95rem; margin-top: 5px;">Avisos importantes, torneos y
-                        actualizaciones de Los del Disc.</p>
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 25px; text-align: left;">
+                    <div>
+                        <h2 style="font-size: 1.8rem; color: #ffffff;">📢 Tablón de Anuncios Oficiales</h2>
+                        <p style="color: #949ba4; font-size: 0.95rem; margin-top: 5px;">Avisos importantes, torneos y
+                            actualizaciones de Los del Disc.</p>
+                    </div>
+                    <button id="btnAbrirModalAfiche" class="btn-primary oculto"
+                        style="background-color: #5865F2; white-space: nowrap;">+ Publicar Anuncio</button>
                 </div>
 
                 <div id="feedAfiches" class="feed-afiches">

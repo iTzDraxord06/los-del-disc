@@ -1351,12 +1351,15 @@ body {
 
     .seccion-amigos {
         position: fixed;
-        top: 52px; /* Empieza justo debajo de la navbar */
+        top: 52px;
+        /* Empieza justo debajo de la navbar */
         left: 0;
         width: 270px;
         max-width: 80vw;
-        height: calc(100dvh - 52px); /* Altura restante exactas */
-        z-index: 3500; /* Superior al z-index de la navbar (3000) */
+        height: calc(100dvh - 52px);
+        /* Altura restante exactas */
+        z-index: 3500;
+        /* Superior al z-index de la navbar (3000) */
         transform: translateX(-100%);
         box-shadow: 8px 0 30px rgba(0, 0, 0, 0.8);
         transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1445,5 +1448,16 @@ body {
         font-size: 0.75rem;
         padding: 6px 10px;
         white-space: nowrap;
+    }
+
+    .seccion-muro div[style*="display: flex"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        text-align: center !important;
+    }
+
+    #btnAbrirModalAfiche {
+        width: 100%;
+        margin-top: 5px;
     }
 }
