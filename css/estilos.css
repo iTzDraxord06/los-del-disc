@@ -1327,7 +1327,6 @@ body {
         z-index: 3000;
     }
 
-
     .logo h2 {
         font-size: 1rem;
     }
@@ -1348,18 +1347,14 @@ body {
         height: calc(100vh - 52px);
     }
 
-
     .seccion-amigos {
         position: fixed;
         top: 52px;
-        /* Empieza justo debajo de la navbar */
         left: 0;
         width: 270px;
         max-width: 80vw;
         height: calc(100dvh - 52px);
-        /* Altura restante exactas */
         z-index: 3500;
-        /* Superior al z-index de la navbar (3000) */
         transform: translateX(-100%);
         box-shadow: 8px 0 30px rgba(0, 0, 0, 0.8);
         transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1411,18 +1406,41 @@ body {
     .contenedor-galeria-fade.colapsado::after {
         height: 120px !important;
     }
-    .comentario-item .comentario-imagen {
-        max-width: 320px;
-        width: 100%;
-        height: auto;
+
+    /* ---- TARJETAS Y COMENTARIOS (ESTILO PC EN MÓVIL) ---- */
+    .comentario-item {
+        padding: 12px 14px !important;
+        box-sizing: border-box;
+    }
+
+    /* Evita que los iconos y botones de responder/borrar se vayan al centro en vertical */
+    .comentario-item .comentario-header,
+    .comentario-item div[style*="display: flex"] {
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        text-align: left !important;
+    }
+
+    /* Tamaño armónico tipo PC para imágenes y videos */
+    .comentario-item .comentario-imagen,
+    .comentario-item .media-reproductor,
+    video.media-reproductor {
+        max-width: 280px !important;
+        width: 100% !important;
+        height: auto !important;
+        max-height: 260px !important;
+        border-radius: 8px;
         display: block;
         margin-top: 8px;
+        object-fit: cover;
     }
 
     .comentario-hijo {
-        margin-left: 16px;
+        margin-left: 12px;
     }
 
+    /* Modal general */
     .modal-card {
         width: 95%;
         padding: 1.2rem;
@@ -1441,30 +1459,12 @@ body {
         box-sizing: border-box;
     }
 
-    video.media-reproductor {
-        max-width: 100% !important;
-        height: auto !important;
-        max-height: 280px !important;
-    }
-
     .nav-derecha {
         position: relative;
     }
 
-    #btnAbrirModalAfiche {
-        font-size: 0.75rem;
-        padding: 6px 10px;
-        white-space: nowrap;
-    }
-
-    .seccion-muro div[style*="display: flex"] {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        text-align: center !important;
-    }
-
-    #btnAbrirModalAfiche {
-        width: 100%;
-        margin-top: 5px;
+    /* Limpieza de botón publicar anuncio en la navbar de móvil */
+    .nav-derecha #btnAbrirModalAfiche {
+        display: none !important;
     }
 }
