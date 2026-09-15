@@ -1317,6 +1317,8 @@ body {
 @media (max-width: 768px) {
     .navbar {
         padding: 0.55rem 0.85rem;
+        position: relative;
+        z-index: 3000;
     }
 
     .btn-hamburguesa {
@@ -1437,9 +1439,8 @@ body {
     }
 
     #btnAbrirModalAfiche {
-        position: absolute;
-        top: 38px;
-        right: 0;
+        font-size: 0.75rem;
+        padding: 6px 10px;
         white-space: nowrap;
     }
 }
