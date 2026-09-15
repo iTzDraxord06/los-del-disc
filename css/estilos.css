@@ -1348,20 +1348,21 @@ body {
         height: calc(100vh - 52px);
     }
 
+
     .seccion-amigos {
         position: fixed;
-        top: 0;
+        top: 52px; /* Empieza justo debajo de la navbar */
         left: 0;
-        width: 280px; /* Subido de 260px a 280px */
-        max-width: 85vw;
-        height: 100dvh;
-        z-index: 4000; /* Subido por encima del navbar si es necesario */
+        width: 270px;
+        max-width: 80vw;
+        height: calc(100dvh - 52px); /* Altura restante exactas */
+        z-index: 3500; /* Superior al z-index de la navbar (3000) */
         transform: translateX(-100%);
         box-shadow: 8px 0 30px rgba(0, 0, 0, 0.8);
         transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         box-sizing: border-box;
-        padding-left: 10px; /* Espaciado interno para que no pegue al borde */
-        padding-right: 10px;
+        padding: 12px 10px;
+        overflow-y: auto;
     }
 
     .seccion-amigos.abierto {

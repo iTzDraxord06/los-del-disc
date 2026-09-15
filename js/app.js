@@ -163,11 +163,11 @@ if (btnMenu) {
     });
 }
 
-if (seccionMuro) {
-    seccionMuro.addEventListener('click', () => {
+document.querySelectorAll('.btn-canal').forEach(canal => {
+    canal.addEventListener('click', () => {
         cerrarMenuLateral();
     });
-}
+});
 
 function volverAlInicio() {
     cerrarMenuLateral();
