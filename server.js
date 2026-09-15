@@ -551,6 +551,8 @@ app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req,
                 const destCheck = await pool.request()
                     .input('nom', sql.NVarChar, nombrePadre)
                     .query('SELECT TOP 1 UsuarioId FROM Amigos WHERE NombreVisible = @nom AND UsuarioId IS NOT NULL');
+                console.log('DEBUG MURO - Autor padre:', nombrePadre);
+                console.log('DEBUG MURO - Usuario encontrado:', destCheck.recordset);       
                 if (destCheck.recordset.length > 0 && destCheck.recordset[0].UsuarioId) {
                     await pool.request()
                         .input('uDest', sql.Int, destCheck.recordset[0].UsuarioId)
