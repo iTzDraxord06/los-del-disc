@@ -653,7 +653,8 @@ app.get('/api/comentarios/:amigoId', async (req, res) => {
 });
 
 app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res) => {
-    const { amigoId, autor, contenido, respuestaAId, imagenUrlDirecta } = req.body || {};
+    // 1. Recibimos usuarioId directamente del frontend
+    const { amigoId, autor, contenido, respuestaAId, imagenUrlDirecta, usuarioId } = req.body || {};
 
     try {
         const imgUrl = req.file ? req.file.path : (imagenUrlDirecta || null);
@@ -664,22 +665,26 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
             });
         }
 
-        // ================= BUSCAR USUARIO QUE ESTÁ COMENTANDO =================
-        const autorCheck = await pool.request()
-            .input('aut', sql.NVarChar, autor)
-            .query(`
-                SELECT TOP 1 UsuarioId
-                FROM Amigos
-                WHERE NombreVisible LIKE '%' + @aut + '%'
-                AND UsuarioId IS NOT NULL
-            `);
+        // 2. Usar el ID enviado o buscarlo como respaldo coincidiendo por Username o NombreVisible
+        let autorUsuarioId = usuarioId ? parseInt(usuarioId) : null;
 
-        const autorUsuarioId = autorCheck.recordset.length > 0
-            ? autorCheck.recordset[0].UsuarioId
-            : null;
+        if (!autorUsuarioId && autor) {
+            const autorCheck = await pool.request()
+                .input('aut', sql.NVarChar, autor.trim())
+                .query(`
+                    SELECT TOP 1 UsuarioId
+                    FROM Amigos
+                    WHERE (NombreVisible = @aut OR Username = @aut)
+                    AND UsuarioId IS NOT NULL
+                `);
+
+            if (autorCheck.recordset.length > 0) {
+                autorUsuarioId = autorCheck.recordset[0].UsuarioId;
+            }
+        }
 
         console.log('DEBUG PERFIL - Autor:', autor);
-        console.log('DEBUG PERFIL - UsuarioId autor:', autorUsuarioId);
+        console.log('DEBUG PERFIL - UsuarioId autor asignado:', autorUsuarioId);
 
         // ================= INSERTAR COMENTARIO =================
         const insertRes = await pool.request()
