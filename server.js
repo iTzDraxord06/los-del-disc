@@ -1051,7 +1051,6 @@ app.get('/api/anuncio', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
 app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
     const { titulo, descripcion, rolSolicitante } = req.body || {};
 
@@ -1062,39 +1061,43 @@ app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
     try {
         const imgUrl = req.file ? req.file.path : null;
 
-        // 1. Guardar el anuncio
+        // 1. Insertar en la tabla exacta: AnuncioGlobal
         const insertRes = await pool.request()
             .input('tit', sql.NVarChar, (titulo || 'Nuevo Anuncio').trim())
             .input('desc', sql.NVarChar, (descripcion || '').trim())
             .input('img', sql.NVarChar, imgUrl)
             .query(`
-                INSERT INTO Anuncios (Titulo, Descripcion, ImagenUrl, FechaCreacion, Activo)
+                INSERT INTO AnuncioGlobal (Titulo, Descripcion, ImagenUrl, FechaCreacion, Activo)
                 OUTPUT INSERTED.Id
                 VALUES (@tit, @desc, @img, GETDATE(), 1)
             `);
 
         const newAnuncioId = insertRes.recordset[0].Id;
 
-        // 2. Notificar a todos los usuarios registrados para la campanita
-        const usuariosList = await pool.request().query('SELECT Id FROM Usuarios');
+        // 2. Notificar a todos los usuarios para la campanita
+        try {
+            const usuariosList = await pool.request().query('SELECT Id FROM Usuarios');
 
-        for (const user of usuariosList.recordset) {
-            await pool.request()
-                .input('uDest', sql.Int, user.Id)
-                .input('autor', sql.NVarChar, '📢 Administración')
-                .input('tipo', sql.NVarChar, 'ANUNCIO')
-                .input('destId', sql.Int, newAnuncioId)
-                .input('comId', sql.Int, newAnuncioId)
-                .input('txt', sql.NVarChar, (titulo || 'Nuevo anuncio publicado').substring(0, 100))
-                .query(`
-                    INSERT INTO Notificaciones 
-                    (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
-                    VALUES 
-                    (@uDest, @autor, @tipo, @destId, @comId, @txt)
-                `);
+            for (const user of usuariosList.recordset) {
+                await pool.request()
+                    .input('uDest', sql.Int, user.Id)
+                    .input('autor', sql.NVarChar, '📢 Anuncio')
+                    .input('tipo', sql.NVarChar, 'ANUNCIO')
+                    .input('destId', sql.Int, newAnuncioId)
+                    .input('comId', sql.Int, newAnuncioId)
+                    .input('txt', sql.NVarChar, (titulo || 'Nuevo aviso publicado').substring(0, 100))
+                    .query(`
+                        INSERT INTO Notificaciones 
+                        (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
+                        VALUES 
+                        (@uDest, @autor, @tipo, @destId, @comId, @txt)
+                    `);
+            }
+        } catch (notifErr) {
+            console.warn('Aviso: error insertando notificaciones masivas:', notifErr.message);
         }
 
-        res.json({ mensaje: 'Anuncio publicado y usuarios notificados' });
+        res.json({ mensaje: 'Anuncio publicado exitosamente', id: newAnuncioId });
     } catch (err) {
         console.error('Error al publicar anuncio:', err);
         res.status(500).json({ error: err.message });
