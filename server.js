@@ -628,6 +628,29 @@ app.delete('/api/publicaciones-globales/:id', async (req, res) => {
         res.status(500).json({ error: 'Error al eliminar publicación.' });
     }
 });
+// ================= COMENTARIOS EN PERFILES =================
+
+app.get('/api/comentarios/:amigoId', async (req, res) => {
+    try {
+        const result = await pool.request()
+            .input('amigoId', sql.Int, req.params.amigoId)
+            .query(`
+                SELECT Id, AmigoId, Autor, UsuarioId, Texto, Fecha, RespuestaAId, ImagenUrl
+                FROM Comentarios
+                WHERE AmigoId = @amigoId
+                ORDER BY Id DESC
+            `);
+
+        res.json(result.recordset);
+
+    } catch (err) {
+        console.error('ERROR GET /api/comentarios:', err);
+
+        res.status(500).json({
+            error: err.message
+        });
+    }
+});
 
 app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res) => {
     const { amigoId, autor, contenido, respuestaAId, imagenUrlDirecta } = req.body || {};
