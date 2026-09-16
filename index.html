@@ -18,7 +18,7 @@
             <img src="imagenes/Logo Pagina Web.png" alt="Logo Los del Disc" class="disc-logo-img">
             <h2>Los del Disc</h2>
         </div>
-        
+
         <div class="nav-derecha">
             <a href="index.html" class="btn-secundario">🏠 Inicio</a>
             <a href="miembros.html" class="btn-secundario">👥 Miembros</a>
@@ -28,7 +28,7 @@
             <div class="nav-notificaciones">
                 <button id="btnNotis" class="btn-secundario btn-notificaciones-trigger" title="Notificaciones">
                     🔔 <span id="badgeNotis" class="badge-notificaciones oculto">0</span>
-                </button> 
+                </button>
                 <div id="dropdownNotis" class="dropdown-notificaciones oculto">
                     <div class="dropdown-notificaciones-header">Notificaciones</div>
                     <div id="listaNotis" class="dropdown-notificaciones-lista"></div>
@@ -115,6 +115,21 @@
             </div>
         </section>
     </main>
+    <!-- Popup Banner de Anuncio -->
+    <div id="popupAnuncio" class="popup-anuncio oculto">
+        <div class="popup-anuncio-contenido">
+            <div class="popup-header">
+                <span class="popup-tag">📢 Nuevo Anuncio</span>
+                <button id="btnCerrarX" class="btn-cerrar-x">&times;</button>
+            </div>
+            <h4 id="popupTitulo">Título del anuncio</h4>
+            <p id="popupFragmento">Fragmento del anuncio...</p>
+            <div class="popup-acciones">
+                <button id="btnDescartarAnuncio" class="btn-descartar">Descartar</button>
+                <button id="btnIrAnuncio" class="btn-ir">Ver Anuncio</button>
+            </div>
+        </div>
+    </div>
 
     <script src="js/app.js"></script>
     <script src="js/notificacion.js"></script>

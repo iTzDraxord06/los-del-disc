@@ -917,3 +917,57 @@ window.addEventListener('DOMContentLoaded', () => {
     cargarAfiche();
     cargarPostsGlobales();
 });
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const popup = document.getElementById('popupAnuncio');
+    if (!popup) return;
+
+    const titulo = document.getElementById('popupTitulo');
+    const fragmento = document.getElementById('popupFragmento');
+    const btnDescartar = document.getElementById('btnDescartarAnuncio');
+    const btnCerrarX = document.getElementById('btnCerrarX');
+    const btnIr = document.getElementById('btnIrAnuncio');
+
+    try {
+        const res = await fetch('/api/anuncios/ultimo');
+        if (!res.ok) return;
+        const anuncio = await res.json();
+
+        if (!anuncio) return;
+
+        // Comprobamos si el usuario ya descartó este anuncio específico antes
+        const ultimoDescartado = localStorage.getItem('ultimo_anuncio_descartado');
+        if (ultimoDescartado && parseInt(ultimoDescartado) === anuncio.Id) {
+            return; // Ya lo vio o lo descartó, no mostramos nada
+        }
+
+        // Cargar los datos en el modal
+        titulo.textContent = anuncio.Titulo || 'Nuevo anuncio';
+        const textoLimpio = (anuncio.Contenido || '').trim();
+        fragmento.textContent = textoLimpio.length > 90 
+            ? textoLimpio.substring(0, 90) + '...' 
+            : textoLimpio;
+
+        // Mostrar con un pequeño delay estético tras abrir la página
+        setTimeout(() => {
+            popup.classList.remove('oculto');
+        }, 1200);
+
+        // Función para cerrar y recordar el descarte
+        const cerrarPopup = () => {
+            popup.classList.add('oculto');
+            localStorage.setItem('ultimo_anuncio_descartado', anuncio.Id);
+        };
+
+        btnDescartar.addEventListener('click', cerrarPopup);
+        btnCerrarX.addEventListener('click', cerrarPopup);
+
+        btnIr.addEventListener('click', () => {
+            localStorage.setItem('ultimo_anuncio_descartado', anuncio.Id);
+            window.location.href = `anuncios.html?anuncioId=${anuncio.Id}`;
+        });
+
+    } catch (err) {
+        console.error('Error al cargar popup de anuncio:', err);
+    }
+});

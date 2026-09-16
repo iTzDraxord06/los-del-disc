@@ -1313,8 +1313,123 @@ body {
     background: #000;
 }
 
+.popup-anuncio {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    max-width: 380px;
+    width: calc(100% - 32px);
+    background: #18191c;
+    border: 1px solid #313338;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.35s ease-out;
+    color: #dbdee1;
+}
+
+.popup-anuncio.oculto {
+    display: none;
+}
+
+.popup-anuncio-contenido {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.popup-tag {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #5865f2;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-cerrar-x {
+    background: transparent;
+    border: none;
+    color: #949ba4;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+#popupTitulo {
+    margin: 0;
+    font-size: 1.05rem;
+    color: #f2f3f5;
+}
+
+#popupFragmento {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #949ba4;
+    line-height: 1.4;
+}
+
+.popup-acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.btn-descartar {
+    background: #2b2d31;
+    color: #dbdee1;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.btn-descartar:hover {
+    background: #35373c;
+}
+
+.btn-ir {
+    background: #5865f2;
+    color: #ffffff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.85rem;
+}
+
+.btn-ir:hover {
+    background: #4752c4;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
 /* ================= RESPONSIVE MÓVIL ================= */
 @media (max-width: 768px) {
+
+    .popup-anuncio {
+        right: 16px;
+        left: 16px;
+        bottom: 16px;
+        max-width: 100%;
+    }
     .navbar {
         padding: 0.55rem 0.85rem;
         position: relative;
