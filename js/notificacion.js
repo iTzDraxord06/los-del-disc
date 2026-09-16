@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (item.Tipo === 'PERFIL') {
                         window.location.href = `miembros.html?amigoId=${item.DestinoId}&scrollComentario=${item.ComentarioId}`;
                     } else if (item.Tipo === 'ANUNCIO') {
-                        window.location.href = `anuncios.html?anuncioId=${item.ComentarioId}`;
+                        window.location.href = `anuncios.html`;
                     } else {
                         window.location.href = `muro.html?scrollPost=${item.ComentarioId}`;
                     }

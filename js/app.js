@@ -912,7 +912,7 @@ formAfiche.addEventListener('submit', async (e) => {
     }
 });
 
-async function verificarAnuncioPopup() {
+async function verificarPopupAnuncio() {
     const popup = document.getElementById('popupAnuncio');
     if (!popup) return;
 
@@ -923,48 +923,51 @@ async function verificarAnuncioPopup() {
         const anuncios = await res.json();
         if (!Array.isArray(anuncios) || anuncios.length === 0) return;
 
-        // El primer elemento es el anuncio más nuevo (Id: 20 por ejemplo)
         const ultimo = anuncios[0];
 
-        // Revisar si este usuario ya descartó este anuncio específico
-        const descartadoId = localStorage.getItem('anuncio_visto_id');
-        if (descartadoId && parseInt(descartadoId) === ultimo.Id) {
-            return; // Ya fue descartado, no molestar al usuario
+        // Comprobar si ya fue descartado en este navegador
+        const vistoId = localStorage.getItem('anuncio_visto_id');
+        if (vistoId && parseInt(vistoId) === ultimo.Id) {
+            return;
         }
 
-        // Cargar información en la tarjeta
-        document.getElementById('popupTitulo').textContent = ultimo.Titulo || 'Aviso importante';
-        const textoDesc = (ultimo.Descripcion || '').trim();
-        document.getElementById('popupResumen').textContent = textoDesc.length > 90
-            ? textoDesc.substring(0, 90) + '...'
-            : (textoDesc || 'Haz clic para revisar el nuevo aviso de la comunidad.');
+        const tituloEl = document.getElementById('popupTitulo');
+        const resumenEl = document.getElementById('popupFragmento') || document.getElementById('popupResumen');
 
-        // Desplegar el popup
+        if (tituloEl) tituloEl.textContent = ultimo.Titulo || 'Nuevo anuncio';
+        if (resumenEl) {
+            const desc = (ultimo.Descripcion || '').trim();
+            resumenEl.textContent = desc.length > 90 ? desc.substring(0, 90) + '...' : (desc || 'Entra para ver los detalles.');
+        }
+
         popup.classList.remove('oculto');
 
-        // Función para cerrar y recordar en localStorage
         const descartar = () => {
             popup.classList.add('oculto');
             localStorage.setItem('anuncio_visto_id', ultimo.Id);
         };
 
-        document.getElementById('btnDescartarAnuncio').onclick = descartar;
-        document.getElementById('btnCerrarPopupX').onclick = descartar;
+        const btnDesc = document.getElementById('btnDescartarAnuncio');
+        const btnX = document.getElementById('btnCerrarX') || document.getElementById('btnCerrarPopupX');
+        const btnIr = document.getElementById('btnIrAnuncio');
 
-        document.getElementById('btnIrAnuncio').onclick = () => {
-            localStorage.setItem('anuncio_visto_id', ultimo.Id);
-            window.location.href = `anuncios.html?anuncioId=${ultimo.Id}`;
-        };
-
+        if (btnDesc) btnDesc.onclick = descartar;
+        if (btnX) btnX.onclick = descartar;
+        if (btnIr) {
+            btnIr.onclick = () => {
+                localStorage.setItem('anuncio_visto_id', ultimo.Id);
+                window.location.href = 'anuncios.html';
+            };
+        }
     } catch (err) {
-        console.error('Error popup anuncio:', err);
+        console.error('Error comprobando popup anuncio:', err);
     }
 }
 
-// Asegúrate de llamarlo al iniciar:
+// Llamar dentro de la carga del documento
 window.addEventListener('DOMContentLoaded', () => {
     cargarAmigos();
     cargarAfiche();
     cargarPostsGlobales();
-    verificarAnuncioPopup(); // <-- Ejecutar aquí
+    verificarPopupAnuncio();
 });
