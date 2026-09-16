@@ -74,7 +74,7 @@ const dbConfig = {
     database: process.env.DB_DATABASE || 'DiscordFriendsDB',
     options: {
         encrypt: true,
-        trustServerCertificate: false
+        trustServerCertificate: true // <-- Cambia false por true
     }
 };
 
