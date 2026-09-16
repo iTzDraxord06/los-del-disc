@@ -634,7 +634,12 @@ app.get('/api/comentarios/:amigoId', async (req, res) => {
     try {
         const result = await pool.request()
             .input('amigoId', sql.Int, req.params.amigoId)
-            .query('SELECT Id, AmigoId, Autor, Texto, Fecha, RespuestaAId, ImagenUrl FROM Comentarios WHERE AmigoId = @amigoId ORDER BY Id DESC');
+            .query(`
+                    SELECT Id, AmigoId, Autor, UsuarioId, Texto, Fecha, RespuestaAId, ImagenUrl
+                    FROM Comentarios
+                    WHERE AmigoId = @amigoId
+                    ORDER BY Id DESC
+                `);
         res.json(result.recordset);
     } catch (err) {
         res.status(500).json({ error: err.message });
