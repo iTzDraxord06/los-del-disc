@@ -529,57 +529,109 @@ app.get('/api/publicaciones-globales', async (req, res) => {
 });
 
 app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req, res) => {
-    const { autor, contenido, respuestaAId, imagenUrlDirecta } = req.body || {};
+    const { autor, contenido, respuestaAId, imagenUrlDirecta, usuarioId } = req.body || {};
     try {
-        // Las imágenes pasan por Cloudinary; los videos llegan previamente desde Google Drive.
         const imgUrl = req.file ? req.file.path : (imagenUrlDirecta || null);
+
+        // 1. Obtener ID del usuario que publica (recibido o buscado como respaldo)
+        let autorUsuarioId = usuarioId ? parseInt(usuarioId) : null;
+
+        if (!autorUsuarioId && autor) {
+            try {
+                const userCheck = await pool.request()
+                    .input('nom', sql.NVarChar, autor.trim())
+                    .query(`
+                        SELECT TOP 1 UsuarioId
+                        FROM Amigos
+                        WHERE NombreVisible LIKE '%' + @nom + '%'
+                          AND UsuarioId IS NOT NULL
+                    `);
+                if (userCheck.recordset.length > 0) {
+                    autorUsuarioId = userCheck.recordset[0].UsuarioId;
+                }
+            } catch (queryErr) {
+                console.warn('Aviso buscando autor en Amigos:', queryErr.message);
+            }
+        }
+
+        // 2. Insertar publicación global
         const insertRes = await pool.request()
             .input('autor', sql.NVarChar, autor)
             .input('texto', sql.NVarChar, contenido || '')
             .input('img', sql.NVarChar, imgUrl)
             .input('parent', sql.Int, respuestaAId ? parseInt(respuestaAId) : null)
-            .query('INSERT INTO PublicacionesGlobales (Autor, Texto, Fecha, ImagenUrl, RespuestaAId) OUTPUT INSERTED.Id VALUES (@autor, @texto, GETDATE(), @img, @parent)');
+            .query(`
+                INSERT INTO PublicacionesGlobales (Autor, Texto, Fecha, ImagenUrl, RespuestaAId) 
+                OUTPUT INSERTED.Id 
+                VALUES (@autor, @texto, GETDATE(), @img, @parent)
+            `);
 
         const newPostId = insertRes.recordset[0].Id;
 
+        // 3. Notificación si es respuesta
         if (respuestaAId) {
             const padreInfo = await pool.request()
                 .input('pId', sql.Int, respuestaAId)
-                .query('SELECT Autor FROM PublicacionesGlobales WHERE Id = @pId');
+                .query('SELECT Id, Autor FROM PublicacionesGlobales WHERE Id = @pId');
+
             if (padreInfo.recordset.length > 0) {
                 const nombrePadre = padreInfo.recordset[0].Autor;
-                const destCheck = await pool.request()
-                    .input('nom', sql.NVarChar, nombrePadre)
-                    .query(`
-                            SELECT TOP 1 UsuarioId
-                            FROM Amigos
-                            WHERE NombreVisible LIKE '%' + @nom + '%'
-                            AND UsuarioId IS NOT NULL
-                    `);
-                const debugAmigos = await pool.request()
-                    .query(`
-                    SELECT TOP 20 UsuarioId, NombreVisible
-                    FROM Amigos
-                    WHERE NombreVisible LIKE '%Draxord%'
-                `);
-                console.log('DEBUG MURO - Autor padre:', nombrePadre);
-                console.log('DEBUG MURO - Usuario encontrado:', destCheck.recordset);
-                console.log('DEBUG MURO - Amigos en BD de Render:', debugAmigos.recordset);
 
-                if (destCheck.recordset.length > 0 && destCheck.recordset[0].UsuarioId) {
+                // Buscar el UsuarioId del autor original del post
+                const destCheck = await pool.request()
+                    .input('nom', sql.NVarChar, nombrePadre.trim())
+                    .query(`
+                        SELECT TOP 1 UsuarioId
+                        FROM Amigos
+                        WHERE (NombreVisible LIKE '%' + @nom + '%' OR NombreVisible = @nom)
+                          AND UsuarioId IS NOT NULL
+                    `);
+
+                let usuarioDestinoId = (destCheck.recordset.length > 0) 
+                    ? destCheck.recordset[0].UsuarioId 
+                    : null;
+
+                // Si quien responde es el mismo autor del post padre,
+                // buscamos al último participante distinto dentro del hilo
+                if (usuarioDestinoId && autorUsuarioId && usuarioDestinoId === autorUsuarioId) {
+                    const ultimoParticipante = await pool.request()
+                        .input('pId', sql.Int, respuestaAId)
+                        .input('yo', sql.NVarChar, autor)
+                        .query(`
+                            SELECT TOP 1 p.Autor, a.UsuarioId
+                            FROM PublicacionesGlobales p
+                            INNER JOIN Amigos a ON a.NombreVisible LIKE '%' + p.Autor + '%'
+                            WHERE p.RespuestaAId = @pId
+                              AND p.Autor != @yo
+                              AND a.UsuarioId IS NOT NULL
+                            ORDER BY p.Fecha DESC
+                        `);
+
+                    if (ultimoParticipante.recordset.length > 0) {
+                        usuarioDestinoId = ultimoParticipante.recordset[0].UsuarioId;
+                    }
+                }
+
+                // Insertar notificación sin notificarse a uno mismo
+                if (usuarioDestinoId && usuarioDestinoId !== autorUsuarioId) {
                     await pool.request()
-                        .input('uDest', sql.Int, destCheck.recordset[0].UsuarioId)
+                        .input('uDest', sql.Int, usuarioDestinoId)
                         .input('autor', sql.NVarChar, autor || 'Alguien')
                         .input('comId', sql.Int, newPostId)
-                        .input('txt', sql.NVarChar, (contenido || '').substring(0, 100))
-                        .query(`INSERT INTO Notificaciones (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
-                                VALUES (@uDest, @autor, 'MURO', @comId, @comId, @txt)`);
+                        .input('txt', sql.NVarChar, (contenido || '').trim().substring(0, 100))
+                        .query(`
+                            INSERT INTO Notificaciones 
+                            (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
+                            VALUES 
+                            (@uDest, @autor, 'MURO', @comId, @comId, @txt)
+                        `);
                 }
             }
         }
 
         res.json({ mensaje: 'Publicación enviada' });
     } catch (err) {
+        console.error('Error POST /api/publicaciones-globales:', err);
         res.status(500).json({ error: err.message });
     }
 });
