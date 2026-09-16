@@ -737,10 +737,9 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
             : null;
 
         // ============================================================
-        // 1. SI ES RESPUESTA A OTRO COMENTARIO
+        // 1. SI ES RESPUESTA A OTRO COMENTARIO (CÓDIGO NUEVO)
         // ============================================================
         if (respuestaAId) {
-
             const padreInfo = await pool.request()
                 .input('pId', sql.Int, respuestaAId)
                 .query(`
@@ -749,97 +748,68 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
                     WHERE Id = @pId
                 `);
 
-            console.log(
-                'DEBUG PERFIL - Comentario padre:',
-                padreInfo.recordset
-            );
+            console.log('DEBUG PERFIL - Comentario padre:', padreInfo.recordset);
 
             if (padreInfo.recordset.length > 0) {
+                let usuarioDestinoId = padreInfo.recordset[0].UsuarioId;
 
-                const usuarioDestinoId = padreInfo.recordset[0].UsuarioId;
+                // Si quien responde es el dueño del comentario original, notificar al último participante
+                if (usuarioDestinoId === autorUsuarioId) {
+                    const ultimoParticipante = await pool.request()
+                        .input('pId', sql.Int, respuestaAId)
+                        .input('yo', sql.Int, autorUsuarioId)
+                        .query(`
+                            SELECT TOP 1 UsuarioId 
+                            FROM Comentarios 
+                            WHERE RespuestaAId = @pId 
+                              AND UsuarioId != @yo 
+                              AND UsuarioId IS NOT NULL
+                            ORDER BY Fecha DESC
+                        `);
 
-                console.log(
-                    'DEBUG PERFIL - Usuario destino:',
-                    usuarioDestinoId
-                );
+                    if (ultimoParticipante.recordset.length > 0) {
+                        usuarioDestinoId = ultimoParticipante.recordset[0].UsuarioId;
+                    }
+                }
+
+                console.log('DEBUG PERFIL - Usuario destino final:', usuarioDestinoId);
 
                 // No notificarse a uno mismo
-                if (
-                    usuarioDestinoId &&
-                    usuarioDestinoId !== autorUsuarioId
-                ) {
-
+                if (usuarioDestinoId && usuarioDestinoId !== autorUsuarioId) {
                     await pool.request()
                         .input('uDest', sql.Int, usuarioDestinoId)
                         .input('autor', sql.NVarChar, autor || 'Alguien')
                         .input('destId', sql.Int, amigoId)
                         .input('comId', sql.Int, newComId)
-                        .input(
-                            'txt',
-                            sql.NVarChar,
-                            (contenido || '').trim().substring(0, 100)
-                        )
+                        .input('txt', sql.NVarChar, (contenido || '').trim().substring(0, 100))
                         .query(`
                             INSERT INTO Notificaciones
-                            (
-                                UsuarioDestinoId,
-                                AutorAccion,
-                                Tipo,
-                                DestinoId,
-                                ComentarioId,
-                                TextoPrevio
-                            )
+                            (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
                             VALUES
-                            (
-                                @uDest,
-                                @autor,
-                                'PERFIL',
-                                @destId,
-                                @comId,
-                                @txt
-                            )
+                            (@uDest, @autor, 'PERFIL', @destId, @comId, @txt)
                         `);
                 }
             }
         }
 
         // ============================================================
-        // 2. SI NO ES RESPUESTA, NOTIFICAR AL DUEÑO DEL PERFIL
+        // 2. SI NO ES RESPUESTA, NOTIFICAR AL DUEÑO DEL PERFIL (SE QUEDA IGUAL)
         // ============================================================
         else if (
             duenoUsuarioId &&
             duenoUsuarioId !== autorUsuarioId
         ) {
-
             await pool.request()
                 .input('uDest', sql.Int, duenoUsuarioId)
                 .input('autor', sql.NVarChar, autor || 'Alguien')
                 .input('destId', sql.Int, amigoId)
                 .input('comId', sql.Int, newComId)
-                .input(
-                    'txt',
-                    sql.NVarChar,
-                    (contenido || '').trim().substring(0, 100)
-                )
+                .input('txt', sql.NVarChar, (contenido || '').trim().substring(0, 100))
                 .query(`
                     INSERT INTO Notificaciones
-                    (
-                        UsuarioDestinoId,
-                        AutorAccion,
-                        Tipo,
-                        DestinoId,
-                        ComentarioId,
-                        TextoPrevio
-                    )
+                    (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
                     VALUES
-                    (
-                        @uDest,
-                        @autor,
-                        'PERFIL',
-                        @destId,
-                        @comId,
-                        @txt
-                    )
+                    (@uDest, @autor, 'PERFIL', @destId, @comId, @txt)
                 `);
         }
 
