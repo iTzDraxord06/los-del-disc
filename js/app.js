@@ -912,43 +912,47 @@ formAfiche.addEventListener('submit', async (e) => {
     }
 });
 
+// ================= POPUP FLOTANTE DE ANUNCIO EN INDEX =================
 async function verificarPopupAnuncio() {
     const popup = document.getElementById('popupAnuncio');
-    if (!popup) return;
+    if (!popup) return; // Si no estamos en index.html, no hace nada
 
     try {
-        const res = await fetch(`${API_URL}/anuncio`);
+        const res = await fetch('/api/anuncio');
         if (!res.ok) return;
 
         const anuncios = await res.json();
         if (!Array.isArray(anuncios) || anuncios.length === 0) return;
 
+        // Anuncio más reciente (Id: 20, etc.)
         const ultimo = anuncios[0];
 
-        // Comprobar si ya fue descartado en este navegador
+        // Verificar si ya fue descartado en este navegador
         const vistoId = localStorage.getItem('anuncio_visto_id');
         if (vistoId && parseInt(vistoId) === ultimo.Id) {
             return;
         }
 
         const tituloEl = document.getElementById('popupTitulo');
-        const resumenEl = document.getElementById('popupFragmento') || document.getElementById('popupResumen');
+        const resumenEl = document.getElementById('popupResumen');
 
-        if (tituloEl) tituloEl.textContent = ultimo.Titulo || 'Nuevo anuncio';
+        if (tituloEl) tituloEl.textContent = ultimo.Titulo || 'Aviso importante';
         if (resumenEl) {
             const desc = (ultimo.Descripcion || '').trim();
-            resumenEl.textContent = desc.length > 90 ? desc.substring(0, 90) + '...' : (desc || 'Entra para ver los detalles.');
+            resumenEl.textContent = desc.length > 95 ? desc.substring(0, 95) + '...' : (desc || 'Entra para ver los detalles.');
         }
 
+        // Mostrar popup
         popup.classList.remove('oculto');
 
+        // Handlers de descarte y navegación
         const descartar = () => {
             popup.classList.add('oculto');
             localStorage.setItem('anuncio_visto_id', ultimo.Id);
         };
 
         const btnDesc = document.getElementById('btnDescartarAnuncio');
-        const btnX = document.getElementById('btnCerrarX') || document.getElementById('btnCerrarPopupX');
+        const btnX = document.getElementById('btnCerrarPopupX');
         const btnIr = document.getElementById('btnIrAnuncio');
 
         if (btnDesc) btnDesc.onclick = descartar;
@@ -960,14 +964,22 @@ async function verificarPopupAnuncio() {
             };
         }
     } catch (err) {
-        console.error('Error comprobando popup anuncio:', err);
+        console.error('Error al verificar popup de anuncio:', err);
     }
 }
 
-// Llamar dentro de la carga del documento
+// Ejecutar de forma segura con validación de elementos existentes
 window.addEventListener('DOMContentLoaded', () => {
-    cargarAmigos();
-    cargarAfiche();
-    cargarPostsGlobales();
+    if (typeof cargarAmigos === 'function' && document.getElementById('listaAmigos')) {
+        cargarAmigos();
+    }
+    if (typeof cargarAfiche === 'function' && document.getElementById('feedAfiches')) {
+        cargarAfiche();
+    }
+    if (typeof cargarPostsGlobales === 'function' && document.getElementById('feedGlobalPosts')) {
+        cargarPostsGlobales();
+    }
+    
+    // Ejecutar el popup siempre que esté en la página
     verificarPopupAnuncio();
 });

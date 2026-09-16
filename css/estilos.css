@@ -1419,6 +1419,26 @@ body {
     background: #4752c4;
 }
 
+#popupAnuncio {
+    position: fixed !important;
+    bottom: 24px !important;
+    right: 24px !important;
+    z-index: 999999 !important;
+    max-width: 380px !important;
+    width: calc(100% - 36px) !important;
+    background: #1e1f22 !important;
+    border: 1px solid #383a40 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.75) !important;
+    color: #dbdee1 !important;
+    display: block !important;
+    animation: popupEntrada 0.3s ease-out !important;
+}
+
+#popupAnuncio.oculto {
+    display: none !important;
+}
+
 @keyframes popupEntrada {
     from {
         transform: translateY(40px);
