@@ -929,31 +929,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnIr = document.getElementById('btnIrAnuncio');
 
     try {
-        const res = await fetch('/api/anuncios/ultimo');
+        // Usamos el endpoint en singular que ya tienes probado en cargarAfiche()
+        const res = await fetch(`${API_URL}/anuncio`);
         if (!res.ok) return;
-        const anuncio = await res.json();
+        const anuncios = await res.json();
 
-        if (!anuncio) return;
+        // Tomamos el anuncio más reciente (el primero de la lista o el objeto directo)
+        const anuncio = Array.isArray(anuncios) ? anuncios[0] : anuncios;
+        if (!anuncio || !anuncio.Id) return;
 
-        // Comprobamos si el usuario ya descartó este anuncio específico antes
+        // Comprobamos si el usuario ya descartó este anuncio específico
         const ultimoDescartado = localStorage.getItem('ultimo_anuncio_descartado');
         if (ultimoDescartado && parseInt(ultimoDescartado) === anuncio.Id) {
-            return; // Ya lo vio o lo descartó, no mostramos nada
+            return;
         }
 
-        // Cargar los datos en el modal
+        // Asignamos título y descripción (soporta Contenido o Descripcion)
         titulo.textContent = anuncio.Titulo || 'Nuevo anuncio';
-        const textoLimpio = (anuncio.Contenido || '').trim();
+        const textoLimpio = (anuncio.Descripcion || anuncio.Contenido || '').trim();
         fragmento.textContent = textoLimpio.length > 90 
             ? textoLimpio.substring(0, 90) + '...' 
-            : textoLimpio;
+            : (textoLimpio || 'Haz clic para ver los detalles.');
 
-        // Mostrar con un pequeño delay estético tras abrir la página
+        // Desplegar el modal
         setTimeout(() => {
             popup.classList.remove('oculto');
-        }, 1200);
+        }, 800);
 
-        // Función para cerrar y recordar el descarte
         const cerrarPopup = () => {
             popup.classList.add('oculto');
             localStorage.setItem('ultimo_anuncio_descartado', anuncio.Id);
