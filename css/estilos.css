@@ -1314,124 +1314,114 @@ body {
 }
 
 .popup-anuncio {
-    position: fixed;
+    position: fixed !important;
     bottom: 24px;
     right: 24px;
-    z-index: 9999;
+    z-index: 99999;
     max-width: 380px;
-    width: calc(100% - 32px);
-    background: #18191c;
-    border: 1px solid #313338;
+    width: calc(100% - 36px);
+    background: #1e1f22;
+    border: 1px solid #383a40;
     border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-    animation: slideUp 0.35s ease-out;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65);
     color: #dbdee1;
+    font-family: inherit;
+    animation: popupEntrada 0.3s ease-out;
 }
 
 .popup-anuncio.oculto {
-    display: none;
+    display: none !important;
 }
 
-.popup-anuncio-contenido {
+.popup-contenido {
     padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.popup-header {
+.popup-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.popup-tag {
-    font-size: 0.8rem;
-    font-weight: bold;
+.popup-badge {
+    font-size: 0.78rem;
+    font-weight: 700;
     color: #5865f2;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
-.btn-cerrar-x {
+.popup-btn-x {
     background: transparent;
     border: none;
     color: #949ba4;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     cursor: pointer;
+    line-height: 1;
+}
+
+.popup-btn-x:hover {
+    color: #ffffff;
 }
 
 #popupTitulo {
     margin: 0;
     font-size: 1.05rem;
-    color: #f2f3f5;
+    color: #ffffff;
+    font-weight: 600;
 }
 
-#popupFragmento {
+#popupResumen {
     margin: 0;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     color: #949ba4;
     line-height: 1.4;
 }
 
-.popup-acciones {
+.popup-botones {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
     margin-top: 10px;
 }
 
-.btn-descartar {
+.btn-popup-secundario {
     background: #2b2d31;
     color: #dbdee1;
     border: none;
-    padding: 8px 14px;
+    padding: 7px 12px;
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.85rem;
+    transition: background 0.2s;
 }
 
-.btn-descartar:hover {
+.btn-popup-secundario:hover {
     background: #35373c;
 }
 
-.btn-ir {
+.btn-popup-primario {
     background: #5865f2;
     color: #ffffff;
     border: none;
-    padding: 8px 14px;
+    padding: 7px 14px;
     border-radius: 6px;
     cursor: pointer;
-    font-weight: 500;
     font-size: 0.85rem;
+    font-weight: 600;
+    transition: background 0.2s;
 }
 
-.btn-ir:hover {
+.btn-popup-primario:hover {
     background: #4752c4;
 }
-#popupAnuncio {
-    position: fixed !important;
-    bottom: 24px !important;
-    right: 24px !important;
-    z-index: 999999 !important;
-    max-width: 380px !important;
-    width: calc(100% - 32px) !important;
-    background: #1e1f22 !important;
-    border: 1px solid #383a40 !important;
-    border-radius: 12px !important;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8) !important;
-    color: #dbdee1 !important;
-    display: block !important;
-    animation: popupAparecer 0.3s ease-out !important;
-}
 
-#popupAnuncio.oculto {
-    display: none !important;
-}
-
-@keyframes slideUp {
+@keyframes popupEntrada {
     from {
-        transform: translateY(100px);
+        transform: translateY(40px);
         opacity: 0;
     }
     to {

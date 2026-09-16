@@ -1053,39 +1053,50 @@ app.get('/api/anuncio', async (req, res) => {
 });
 
 app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
+    const { titulo, descripcion, rolSolicitante } = req.body || {};
+
+    if (rolSolicitante !== 'Admin') {
+        return res.status(403).json({ error: 'Solo administradores pueden publicar anuncios.' });
+    }
+
     try {
-        const { titulo, descripcion, rolSolicitante, imagenUrlDirecta } = req.body || {};
+        const imgUrl = req.file ? req.file.path : null;
 
-        if (rolSolicitante !== 'Admin') {
-            return res.status(403).json({ error: 'Solo Admin.' });
-        }
-
-        // Si viene una URL directa (por ejemplo, Google Drive), usamos esa.
-        // Si no, usamos la URL generada por Cloudinary.
-
-        let imgUrl = imagenUrlDirecta || (req.file ? req.file.path : '');
-
-        if (imgUrl.startsWith('[') && imgUrl.includes('](')) {
-            const coincidencia = imgUrl.match(/\]\((.*?)\)/);
-
-            if (coincidencia) {
-                imgUrl = coincidencia[1];
-            }
-        }
-
-        await pool.request()
-            .input('t', sql.NVarChar, titulo || '')
-            .input('d', sql.NVarChar, descripcion || '')
+        // 1. Guardar el anuncio
+        const insertRes = await pool.request()
+            .input('tit', sql.NVarChar, (titulo || 'Nuevo Anuncio').trim())
+            .input('desc', sql.NVarChar, (descripcion || '').trim())
             .input('img', sql.NVarChar, imgUrl)
             .query(`
-                INSERT INTO AnuncioGlobal 
-                (Titulo, Descripcion, ImagenUrl, Activo) 
-                VALUES (@t, @d, @img, 1)
+                INSERT INTO Anuncios (Titulo, Descripcion, ImagenUrl, FechaCreacion, Activo)
+                OUTPUT INSERTED.Id
+                VALUES (@tit, @desc, @img, GETDATE(), 1)
             `);
 
-        res.json({ mensaje: 'Afiche publicado' });
+        const newAnuncioId = insertRes.recordset[0].Id;
 
+        // 2. Notificar a todos los usuarios registrados para la campanita
+        const usuariosList = await pool.request().query('SELECT Id FROM Usuarios');
+
+        for (const user of usuariosList.recordset) {
+            await pool.request()
+                .input('uDest', sql.Int, user.Id)
+                .input('autor', sql.NVarChar, '📢 Administración')
+                .input('tipo', sql.NVarChar, 'ANUNCIO')
+                .input('destId', sql.Int, newAnuncioId)
+                .input('comId', sql.Int, newAnuncioId)
+                .input('txt', sql.NVarChar, (titulo || 'Nuevo anuncio publicado').substring(0, 100))
+                .query(`
+                    INSERT INTO Notificaciones 
+                    (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
+                    VALUES 
+                    (@uDest, @autor, @tipo, @destId, @comId, @txt)
+                `);
+        }
+
+        res.json({ mensaje: 'Anuncio publicado y usuarios notificados' });
     } catch (err) {
+        console.error('Error al publicar anuncio:', err);
         res.status(500).json({ error: err.message });
     }
 });

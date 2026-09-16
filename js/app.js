@@ -912,64 +912,59 @@ formAfiche.addEventListener('submit', async (e) => {
     }
 });
 
+async function verificarAnuncioPopup() {
+    const popup = document.getElementById('popupAnuncio');
+    if (!popup) return;
+
+    try {
+        const res = await fetch(`${API_URL}/anuncio`);
+        if (!res.ok) return;
+
+        const anuncios = await res.json();
+        if (!Array.isArray(anuncios) || anuncios.length === 0) return;
+
+        // El primer elemento es el anuncio más nuevo (Id: 20 por ejemplo)
+        const ultimo = anuncios[0];
+
+        // Revisar si este usuario ya descartó este anuncio específico
+        const descartadoId = localStorage.getItem('anuncio_visto_id');
+        if (descartadoId && parseInt(descartadoId) === ultimo.Id) {
+            return; // Ya fue descartado, no molestar al usuario
+        }
+
+        // Cargar información en la tarjeta
+        document.getElementById('popupTitulo').textContent = ultimo.Titulo || 'Aviso importante';
+        const textoDesc = (ultimo.Descripcion || '').trim();
+        document.getElementById('popupResumen').textContent = textoDesc.length > 90
+            ? textoDesc.substring(0, 90) + '...'
+            : (textoDesc || 'Haz clic para revisar el nuevo aviso de la comunidad.');
+
+        // Desplegar el popup
+        popup.classList.remove('oculto');
+
+        // Función para cerrar y recordar en localStorage
+        const descartar = () => {
+            popup.classList.add('oculto');
+            localStorage.setItem('anuncio_visto_id', ultimo.Id);
+        };
+
+        document.getElementById('btnDescartarAnuncio').onclick = descartar;
+        document.getElementById('btnCerrarPopupX').onclick = descartar;
+
+        document.getElementById('btnIrAnuncio').onclick = () => {
+            localStorage.setItem('anuncio_visto_id', ultimo.Id);
+            window.location.href = `anuncios.html?anuncioId=${ultimo.Id}`;
+        };
+
+    } catch (err) {
+        console.error('Error popup anuncio:', err);
+    }
+}
+
+// Asegúrate de llamarlo al iniciar:
 window.addEventListener('DOMContentLoaded', () => {
     cargarAmigos();
     cargarAfiche();
     cargarPostsGlobales();
-});
-
-document.addEventListener('DOMContentLoaded', async () => {
-    const popup = document.getElementById('popupAnuncio');
-    if (!popup) return;
-
-    const titulo = document.getElementById('popupTitulo');
-    const fragmento = document.getElementById('popupFragmento');
-    const btnDescartar = document.getElementById('btnDescartarAnuncio');
-    const btnCerrarX = document.getElementById('btnCerrarX');
-    const btnIr = document.getElementById('btnIrAnuncio');
-
-    try {
-        // Usamos el endpoint en singular que ya tienes probado en cargarAfiche()
-        const res = await fetch(`${API_URL}/anuncio`);
-        if (!res.ok) return;
-        const anuncios = await res.json();
-
-        // Tomamos el anuncio más reciente (el primero de la lista o el objeto directo)
-        const anuncio = Array.isArray(anuncios) ? anuncios[0] : anuncios;
-        if (!anuncio || !anuncio.Id) return;
-
-        // Comprobamos si el usuario ya descartó este anuncio específico
-        const ultimoDescartado = localStorage.getItem('ultimo_anuncio_descartado');
-        if (ultimoDescartado && parseInt(ultimoDescartado) === anuncio.Id) {
-            return;
-        }
-
-        // Asignamos título y descripción (soporta Contenido o Descripcion)
-        titulo.textContent = anuncio.Titulo || 'Nuevo anuncio';
-        const textoLimpio = (anuncio.Descripcion || anuncio.Contenido || '').trim();
-        fragmento.textContent = textoLimpio.length > 90 
-            ? textoLimpio.substring(0, 90) + '...' 
-            : (textoLimpio || 'Haz clic para ver los detalles.');
-
-        // Desplegar el modal
-        setTimeout(() => {
-            popup.classList.remove('oculto');
-        }, 800);
-
-        const cerrarPopup = () => {
-            popup.classList.add('oculto');
-            localStorage.setItem('ultimo_anuncio_descartado', anuncio.Id);
-        };
-
-        btnDescartar.addEventListener('click', cerrarPopup);
-        btnCerrarX.addEventListener('click', cerrarPopup);
-
-        btnIr.addEventListener('click', () => {
-            localStorage.setItem('ultimo_anuncio_descartado', anuncio.Id);
-            window.location.href = `anuncios.html?anuncioId=${anuncio.Id}`;
-        });
-
-    } catch (err) {
-        console.error('Error al cargar popup de anuncio:', err);
-    }
+    verificarAnuncioPopup(); // <-- Ejecutar aquí
 });
