@@ -653,7 +653,6 @@ app.get('/api/comentarios/:amigoId', async (req, res) => {
 });
 
 app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res) => {
-    // 1. Recibimos usuarioId directamente del frontend
     const { amigoId, autor, contenido, respuestaAId, imagenUrlDirecta, usuarioId } = req.body || {};
 
     try {
@@ -665,26 +664,46 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
             });
         }
 
-        // 2. Usar el ID enviado o buscarlo como respaldo coincidiendo por Username o NombreVisible
         let autorUsuarioId = usuarioId ? parseInt(usuarioId) : null;
 
         if (!autorUsuarioId && autor) {
-            const autorCheck = await pool.request()
-                .input('aut', sql.NVarChar, autor.trim())
-                .query(`
-                    SELECT TOP 1 UsuarioId
-                    FROM Amigos
-                    WHERE (NombreVisible = @aut OR Username = @aut)
-                    AND UsuarioId IS NOT NULL
-                `);
+            try {
+                const autorCheck = await pool.request()
+                    .input('aut', sql.NVarChar, autor.trim())
+                    .query(`
+                        SELECT TOP 1 UsuarioId
+                        FROM Amigos
+                        WHERE NombreVisible LIKE '%' + @aut + '%'
+                        AND UsuarioId IS NOT NULL
+                    `);
 
-            if (autorCheck.recordset.length > 0) {
-                autorUsuarioId = autorCheck.recordset[0].UsuarioId;
+                if (autorCheck.recordset.length > 0) {
+                    autorUsuarioId = autorCheck.recordset[0].UsuarioId;
+                }
+            } catch (queryErr) {
+                console.warn('Advertencia buscando en Amigos:', queryErr.message);
+            }
+        }
+
+        if (!autorUsuarioId && autor) {
+            try {
+                const userCheck = await pool.request()
+                    .input('aut', sql.NVarChar, autor.trim())
+                    .query(`
+                        SELECT TOP 1 Id
+                        FROM Usuarios
+                        WHERE Username = @aut OR NombreVisible = @aut
+                    `);
+
+                if (userCheck.recordset.length > 0) {
+                    autorUsuarioId = userCheck.recordset[0].Id;
+                }
+            } catch (err) {
             }
         }
 
         console.log('DEBUG PERFIL - Autor:', autor);
-        console.log('DEBUG PERFIL - UsuarioId autor asignado:', autorUsuarioId);
+        console.log('DEBUG PERFIL - UsuarioId autor final:', autorUsuarioId);
 
         // ================= INSERTAR COMENTARIO =================
         const insertRes = await pool.request()
