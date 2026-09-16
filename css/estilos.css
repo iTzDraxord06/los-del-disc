@@ -1409,6 +1409,25 @@ body {
 .btn-ir:hover {
     background: #4752c4;
 }
+#popupAnuncio {
+    position: fixed !important;
+    bottom: 24px !important;
+    right: 24px !important;
+    z-index: 999999 !important;
+    max-width: 380px !important;
+    width: calc(100% - 32px) !important;
+    background: #1e1f22 !important;
+    border: 1px solid #383a40 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.8) !important;
+    color: #dbdee1 !important;
+    display: block !important;
+    animation: popupAparecer 0.3s ease-out !important;
+}
+
+#popupAnuncio.oculto {
+    display: none !important;
+}
 
 @keyframes slideUp {
     from {
@@ -1419,6 +1438,10 @@ body {
         transform: translateY(0);
         opacity: 1;
     }
+}
+@keyframes popupAparecer {
+    from { transform: translateY(50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }
 
 /* ================= RESPONSIVE MÓVIL ================= */
