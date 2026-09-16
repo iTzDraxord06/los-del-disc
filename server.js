@@ -629,124 +629,183 @@ app.delete('/api/publicaciones-globales/:id', async (req, res) => {
     }
 });
 
-// ================= COMENTARIOS EN PERFILES =================
-app.get('/api/comentarios/:amigoId', async (req, res) => {
-    try {
-        const result = await pool.request()
-            .input('amigoId', sql.Int, req.params.amigoId)
-            .query(`
-                    SELECT Id, AmigoId, Autor, UsuarioId, Texto, Fecha, RespuestaAId, ImagenUrl
-                    FROM Comentarios
-                    WHERE AmigoId = @amigoId
-                    ORDER BY Id DESC
-                `);
-        res.json(result.recordset);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
 app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res) => {
     const { amigoId, autor, contenido, respuestaAId, imagenUrlDirecta } = req.body || {};
+
     try {
         const imgUrl = req.file ? req.file.path : (imagenUrlDirecta || null);
+
         if ((!contenido || !contenido.trim()) && !imgUrl) {
-            return res.status(400).json({ error: 'El comentario no puede estar vacío.' });
+            return res.status(400).json({
+                error: 'El comentario no puede estar vacío.'
+            });
         }
 
+        // ================= BUSCAR USUARIO QUE ESTÁ COMENTANDO =================
+        const autorCheck = await pool.request()
+            .input('aut', sql.NVarChar, autor)
+            .query(`
+                SELECT TOP 1 UsuarioId
+                FROM Amigos
+                WHERE NombreVisible LIKE '%' + @aut + '%'
+                AND UsuarioId IS NOT NULL
+            `);
+
+        const autorUsuarioId = autorCheck.recordset.length > 0
+            ? autorCheck.recordset[0].UsuarioId
+            : null;
+
+        console.log('DEBUG PERFIL - Autor:', autor);
+        console.log('DEBUG PERFIL - UsuarioId autor:', autorUsuarioId);
+
+        // ================= INSERTAR COMENTARIO =================
         const insertRes = await pool.request()
             .input('amigoId', sql.Int, amigoId)
             .input('autor', sql.NVarChar, autor)
+            .input('usuarioId', sql.Int, autorUsuarioId)
             .input('texto', sql.NVarChar, (contenido || '').trim())
             .input('parent', sql.Int, respuestaAId ? parseInt(respuestaAId) : null)
             .input('img', sql.NVarChar, imgUrl)
-            .query('INSERT INTO Comentarios (AmigoId, Autor, Texto, Fecha, RespuestaAId, ImagenUrl) OUTPUT INSERTED.Id VALUES (@amigoId, @autor, @texto, GETDATE(), @parent, @img)');
+            .query(`
+                INSERT INTO Comentarios
+                (AmigoId, Autor, UsuarioId, Texto, Fecha, RespuestaAId, ImagenUrl)
+                OUTPUT INSERTED.Id
+                VALUES
+                (@amigoId, @autor, @usuarioId, @texto, GETDATE(), @parent, @img)
+            `);
 
         const newComId = insertRes.recordset[0].Id;
 
-        // Buscar el UsuarioId del dueño del perfil (`amigoId`)
+        // ================= DUEÑO DEL PERFIL =================
         const duenoCheck = await pool.request()
             .input('aId', sql.Int, amigoId)
-            .query('SELECT UsuarioId FROM Amigos WHERE Id = @aId');
+            .query(`
+                SELECT UsuarioId
+                FROM Amigos
+                WHERE Id = @aId
+            `);
 
-        const duenoUsuarioId = duenoCheck.recordset.length > 0 ? duenoCheck.recordset[0].UsuarioId : null;
+        const duenoUsuarioId = duenoCheck.recordset.length > 0
+            ? duenoCheck.recordset[0].UsuarioId
+            : null;
 
-        // Buscar el UsuarioId de quien comento (si existe en Amigos mediante NombreVisible/autor)
-        const autorCheck = await pool.request()
-            .input('aut', sql.NVarChar, autor)
-            .query('SELECT TOP 1 UsuarioId FROM Amigos WHERE NombreVisible = @aut AND UsuarioId IS NOT NULL');
-
-        const autorUsuarioId = autorCheck.recordset.length > 0 ? autorCheck.recordset[0].UsuarioId : null;
-
-        // 1. Notificar si es respuesta a otro comentario
+        // ============================================================
+        // 1. SI ES RESPUESTA A OTRO COMENTARIO
+        // ============================================================
         if (respuestaAId) {
 
             const padreInfo = await pool.request()
                 .input('pId', sql.Int, respuestaAId)
                 .query(`
-            SELECT Autor, AmigoId
-            FROM Comentarios
-            WHERE Id = @pId
-        `);
+                    SELECT Id, Autor, UsuarioId, AmigoId
+                    FROM Comentarios
+                    WHERE Id = @pId
+                `);
+
+            console.log(
+                'DEBUG PERFIL - Comentario padre:',
+                padreInfo.recordset
+            );
 
             if (padreInfo.recordset.length > 0) {
 
-                const nombrePadre = padreInfo.recordset[0].Autor;
+                const usuarioDestinoId = padreInfo.recordset[0].UsuarioId;
 
-                const destCheck = await pool.request()
-                    .input('nom', sql.NVarChar, nombrePadre)
-                    .query(`
-                SELECT TOP 1 UsuarioId
-                FROM Amigos
-                WHERE NombreVisible LIKE '%' + @nom + '%'
-                AND UsuarioId IS NOT NULL
-            `);
+                console.log(
+                    'DEBUG PERFIL - Usuario destino:',
+                    usuarioDestinoId
+                );
 
-                const usuarioDestinoId = destCheck.recordset.length > 0
-                    ? destCheck.recordset[0].UsuarioId
-                    : null;
-
-                console.log('DEBUG PERFIL - Autor comentario padre:', nombrePadre);
-                console.log('DEBUG PERFIL - Usuario destino:', destCheck.recordset);
-
-                if (usuarioDestinoId && usuarioDestinoId !== autorUsuarioId) {
+                // No notificarse a uno mismo
+                if (
+                    usuarioDestinoId &&
+                    usuarioDestinoId !== autorUsuarioId
+                ) {
 
                     await pool.request()
                         .input('uDest', sql.Int, usuarioDestinoId)
                         .input('autor', sql.NVarChar, autor || 'Alguien')
                         .input('destId', sql.Int, amigoId)
                         .input('comId', sql.Int, newComId)
-                        .input('txt', sql.NVarChar, (contenido || '').substring(0, 100))
+                        .input(
+                            'txt',
+                            sql.NVarChar,
+                            (contenido || '').trim().substring(0, 100)
+                        )
                         .query(`
-                    INSERT INTO Notificaciones
-                    (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
-                    VALUES
-                    (@uDest, @autor, 'PERFIL', @destId, @comId, @txt)
-                `);
+                            INSERT INTO Notificaciones
+                            (
+                                UsuarioDestinoId,
+                                AutorAccion,
+                                Tipo,
+                                DestinoId,
+                                ComentarioId,
+                                TextoPrevio
+                            )
+                            VALUES
+                            (
+                                @uDest,
+                                @autor,
+                                'PERFIL',
+                                @destId,
+                                @comId,
+                                @txt
+                            )
+                        `);
                 }
             }
         }
 
-        // 2. Si NO es respuesta, notificar al dueño del perfil
-        else if (duenoUsuarioId && duenoUsuarioId !== autorUsuarioId) {
+        // ============================================================
+        // 2. SI NO ES RESPUESTA, NOTIFICAR AL DUEÑO DEL PERFIL
+        // ============================================================
+        else if (
+            duenoUsuarioId &&
+            duenoUsuarioId !== autorUsuarioId
+        ) {
 
             await pool.request()
                 .input('uDest', sql.Int, duenoUsuarioId)
                 .input('autor', sql.NVarChar, autor || 'Alguien')
                 .input('destId', sql.Int, amigoId)
                 .input('comId', sql.Int, newComId)
-                .input('txt', sql.NVarChar, (contenido || '').substring(0, 100))
+                .input(
+                    'txt',
+                    sql.NVarChar,
+                    (contenido || '').trim().substring(0, 100)
+                )
                 .query(`
-            INSERT INTO Notificaciones
-            (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
-            VALUES
-            (@uDest, @autor, 'PERFIL', @destId, @comId, @txt)
-        `);
+                    INSERT INTO Notificaciones
+                    (
+                        UsuarioDestinoId,
+                        AutorAccion,
+                        Tipo,
+                        DestinoId,
+                        ComentarioId,
+                        TextoPrevio
+                    )
+                    VALUES
+                    (
+                        @uDest,
+                        @autor,
+                        'PERFIL',
+                        @destId,
+                        @comId,
+                        @txt
+                    )
+                `);
         }
 
-        res.json({ mensaje: 'Comentario publicado exitosamente' });
+        res.json({
+            mensaje: 'Comentario publicado exitosamente'
+        });
+
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Error POST /api/comentarios:', err);
+
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
