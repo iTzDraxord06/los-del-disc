@@ -1052,38 +1052,26 @@ app.get('/api/anuncio', async (req, res) => {
     }
 });
 app.post('/api/anuncio', uploadMemory.single('imagenAfiche'), async (req, res) => {
-    // --- LÍNEAS DE DEPURACIÓN (DEBUG) ---
-    console.log('=== [DEBUG /api/anuncio] ===');
-    console.log('req.body:', req.body);
-    console.log('¿req.file existe?:', !!req.file);
-    if (req.file) {
-        console.log('Archivo recibido:', req.file.originalname, '| MIME:', req.file.mimetype, '| Tamaño:', req.file.size);
-    } else {
-        console.log('ALERTA: req.file llegó undefined');
-    }
-    // ------------------------------------
-
-    const { titulo, descripcion, rolSolicitante } = req.body || {};
+    const { titulo, descripcion, rolSolicitante, imagenUrlDirecta } = req.body || {};
 
     if (rolSolicitante !== 'Admin') {
         return res.status(403).json({ error: 'Solo administradores pueden publicar anuncios.' });
     }
 
     try {
-        let mediaUrl = null;
+        // Si el frontend ya subió el video a Drive y envió la URL directa, la tomamos; si no, null
+        let mediaUrl = imagenUrlDirecta || null;
 
         if (req.file) {
             const esVideo = req.file.mimetype.startsWith('video/') || 
                             req.file.originalname.match(/\.(mp4|webm|mov|mkv|avi)$/i);
 
             if (esVideo) {
-                // 1. Si es video, se sube directo a tu Google Drive
+                // Si es video enviado directamente en la petición
                 const nombreUnico = `anuncio_video_${Date.now()}_${req.file.originalname}`;
-                console.log('Iniciando subida a Drive:', nombreUnico);
                 mediaUrl = await subirADrive(req.file.buffer, nombreUnico, req.file.mimetype);
-                console.log('Subida a Drive exitosa, URL:', mediaUrl);
             } else {
-                // 2. Si es imagen, la mandamos a Cloudinary (y si falla, a Drive como respaldo)
+                // Si es imagen, la mandamos a Cloudinary (y si falla, a Drive como respaldo)
                 try {
                     const uploadPromise = new Promise((resolve, reject) => {
                         const uploadStream = cloudinary.uploader.upload_stream(
@@ -1104,7 +1092,7 @@ app.post('/api/anuncio', uploadMemory.single('imagenAfiche'), async (req, res) =
             }
         }
 
-        // 3. Guardar en la base de datos
+        // Guardar en la base de datos
         const insertRes = await pool.request()
             .input('tit', sql.NVarChar, (titulo || 'Nuevo Anuncio').trim())
             .input('desc', sql.NVarChar, (descripcion || '').trim())
@@ -1117,7 +1105,7 @@ app.post('/api/anuncio', uploadMemory.single('imagenAfiche'), async (req, res) =
 
         const newAnuncioId = insertRes.recordset[0].Id;
 
-        // 4. Notificaciones masivas para los miembros (UsuariosWeb)
+        // Notificaciones masivas para los miembros
         try {
             const usuariosList = await pool.request().query('SELECT Id FROM UsuariosWeb');
 
