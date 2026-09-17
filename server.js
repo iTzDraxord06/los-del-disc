@@ -1051,7 +1051,7 @@ app.get('/api/anuncio', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
+app.post('/api/anuncio', uploadMemory.single('imagenAfiche'), async (req, res) => {
     const { titulo, descripcion, rolSolicitante } = req.body || {};
 
     if (rolSolicitante !== 'Admin') {
@@ -1059,13 +1059,43 @@ app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
     }
 
     try {
-        const imgUrl = req.file ? req.file.path : null;
+        let mediaUrl = null;
 
-        // 1. Insertar en la tabla exacta: AnuncioGlobal
+        if (req.file) {
+            const esVideo = req.file.mimetype.startsWith('video/') || 
+                            req.file.originalname.match(/\.(mp4|webm|mov|mkv|avi)$/i);
+
+            if (esVideo) {
+                // 1. Si es video, se sube directo a tu Google Drive
+                const nombreUnico = `anuncio_video_${Date.now()}_${req.file.originalname}`;
+                mediaUrl = await subirADrive(req.file.buffer, nombreUnico, req.file.mimetype);
+            } else {
+                // 2. Si es imagen, la mandamos a Cloudinary (y si falla, a Drive como respaldo)
+                try {
+                    const uploadPromise = new Promise((resolve, reject) => {
+                        const uploadStream = cloudinary.uploader.upload_stream(
+                            { folder: 'los-del-disc' },
+                            (error, result) => {
+                                if (error) return reject(error);
+                                resolve(result.secure_url);
+                            }
+                        );
+                        uploadStream.end(req.file.buffer);
+                    });
+                    mediaUrl = await uploadPromise;
+                } catch (cErr) {
+                    console.warn('Aviso: Cloudinary falló, guardando imagen en Google Drive:', cErr.message);
+                    const nombreUnico = `anuncio_img_${Date.now()}_${req.file.originalname}`;
+                    mediaUrl = await subirADrive(req.file.buffer, nombreUnico, req.file.mimetype);
+                }
+            }
+        }
+
+        // 3. Guardar en la base de datos
         const insertRes = await pool.request()
             .input('tit', sql.NVarChar, (titulo || 'Nuevo Anuncio').trim())
             .input('desc', sql.NVarChar, (descripcion || '').trim())
-            .input('img', sql.NVarChar, imgUrl)
+            .input('img', sql.NVarChar, mediaUrl)
             .query(`
                 INSERT INTO AnuncioGlobal (Titulo, Descripcion, ImagenUrl, FechaCreacion, Activo)
                 OUTPUT INSERTED.Id
@@ -1074,9 +1104,9 @@ app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
 
         const newAnuncioId = insertRes.recordset[0].Id;
 
-        // 2. Notificar a todos los usuarios para la campanita
+        // 4. Notificaciones masivas para los miembros (UsuariosWeb)
         try {
-            const usuariosList = await pool.request().query('SELECT Id FROM Usuarios');
+            const usuariosList = await pool.request().query('SELECT Id FROM UsuariosWeb');
 
             for (const user of usuariosList.recordset) {
                 await pool.request()
@@ -1097,7 +1127,7 @@ app.post('/api/anuncio', upload.single('imagenAfiche'), async (req, res) => {
             console.warn('Aviso: error insertando notificaciones masivas:', notifErr.message);
         }
 
-        res.json({ mensaje: 'Anuncio publicado exitosamente', id: newAnuncioId });
+        res.json({ mensaje: 'Anuncio publicado exitosamente', id: newAnuncioId, url: mediaUrl });
     } catch (err) {
         console.error('Error al publicar anuncio:', err);
         res.status(500).json({ error: err.message });
