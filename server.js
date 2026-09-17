@@ -1052,6 +1052,17 @@ app.get('/api/anuncio', async (req, res) => {
     }
 });
 app.post('/api/anuncio', uploadMemory.single('imagenAfiche'), async (req, res) => {
+    // --- LÍNEAS DE DEPURACIÓN (DEBUG) ---
+    console.log('=== [DEBUG /api/anuncio] ===');
+    console.log('req.body:', req.body);
+    console.log('¿req.file existe?:', !!req.file);
+    if (req.file) {
+        console.log('Archivo recibido:', req.file.originalname, '| MIME:', req.file.mimetype, '| Tamaño:', req.file.size);
+    } else {
+        console.log('ALERTA: req.file llegó undefined');
+    }
+    // ------------------------------------
+
     const { titulo, descripcion, rolSolicitante } = req.body || {};
 
     if (rolSolicitante !== 'Admin') {
@@ -1068,7 +1079,9 @@ app.post('/api/anuncio', uploadMemory.single('imagenAfiche'), async (req, res) =
             if (esVideo) {
                 // 1. Si es video, se sube directo a tu Google Drive
                 const nombreUnico = `anuncio_video_${Date.now()}_${req.file.originalname}`;
+                console.log('Iniciando subida a Drive:', nombreUnico);
                 mediaUrl = await subirADrive(req.file.buffer, nombreUnico, req.file.mimetype);
+                console.log('Subida a Drive exitosa, URL:', mediaUrl);
             } else {
                 // 2. Si es imagen, la mandamos a Cloudinary (y si falla, a Drive como respaldo)
                 try {
