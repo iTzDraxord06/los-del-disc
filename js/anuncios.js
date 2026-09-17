@@ -42,14 +42,17 @@ function renderizarMultimediaAnuncio(url) {
 
     if (url.includes('drive.google.com')) {
         const match = url.match(/[?&]id=([^&]+)/);
-
         if (!match) return '';
 
         const fileId = match[1];
+        // Asegura la URL base del backend de Render
+        const baseUrl = (typeof API_URL !== 'undefined') 
+            ? API_URL.replace(/\/api\/?$/, '') 
+            : 'https://los-del-disc.onrender.com';
 
         return `
-            <video class="media-reproductor" controls preload="metadata" style="
-                max-width: 100%;
+            <video class="media-reproductor" controls playsinline preload="metadata" style="
+                width: 100%;
                 max-height: 380px;
                 border-radius: 8px;
                 border: 1px solid var(--borde, #444);
@@ -57,13 +60,13 @@ function renderizarMultimediaAnuncio(url) {
                 display: block;
                 background: #000;
             ">
-                <source src="/api/media-drive/${fileId}" type="video/mp4">
+                <source src="${baseUrl}/api/media-drive/${fileId}">
                 Tu navegador no soporta reproducción de video.
             </video>
         `;
     }
 
-    return `<img src="${url}" alt="Afiche" style="cursor: pointer; max-width: 100%; border-radius: 8px;" />`;
+    return `<img src="${url}" alt="Afiche" style="cursor: pointer; max-width: 100%; border-radius: 8px; display: block; margin-top: 10px;" />`;
 }
 // Botón para Admin
 if (usuarioSesion && usuarioSesion.RolApp === 'Admin' && btnAbrirModalAfiche) {
