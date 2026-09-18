@@ -430,11 +430,11 @@ canvas.addEventListener('contextmenu', (e) => {
 // ==========================================
 // 4. MOTOR DOOM (EMBEBIDO)
 // ==========================================
-let dosInstance = null;
+let dosRuntime = null;
 
 function cargarDoom() {
     limpiarLoops();
-    labelInstruccion.textContent = 'DOOM Shareware cargado con js-dos';
+    labelInstruccion.textContent = 'DOOM Shareware (Wasm)';
     labelScore.textContent = 'Modo Campaña';
 
     canvas.style.display = 'none';
@@ -453,19 +453,24 @@ function cargarDoom() {
         doomContainer.style.display = 'block';
     }
 
-    // Inicializar emulador si no está cargado
-    if (!dosInstance && typeof Dos !== 'undefined') {
+    // Inicializar DosBox v7
+    if (!dosRuntime && typeof Dos !== 'undefined') {
         const doomCanvas = document.createElement('canvas');
+        doomCanvas.id = 'jsdosCanvas';
+        doomCanvas.style.width = '100%';
+        doomCanvas.style.height = '100%';
         doomContainer.appendChild(doomCanvas);
 
-        Dos(doomCanvas, {
-            wdosboxUrl: 'https://v6.js-dos.com/6.22/current/wdosbox.js'
-        }).ready((fs, main) => {
-            dosInstance = { fs, main };
-            fs.extract('https://cdn.dos.zone/custom/dos/doom.jsdos').then(() => {
-                main(['-c', 'DOOM.EXE']);
+        // Dos() de v7 usa run() directamente con el bundle comprimido
+        Dos(doomCanvas)
+            .run('https://v8.js-dos.com/bundles/doom.jsdos')
+            .then(runtime => {
+                dosRuntime = runtime;
+            })
+            .catch(err => {
+                console.error('Error cargando DOOM:', err);
+                doomContainer.innerHTML = '<p style="color:#ed4245;text-align:center;padding-top:40px;">No se pudo inicializar DOOM.</p>';
             });
-        });
     }
 }
 
