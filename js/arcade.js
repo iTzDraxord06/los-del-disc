@@ -434,28 +434,21 @@ let dosboxInstance = null;
 
 function cargarDoom() {
     limpiarLoops();
-    labelInstruccion.textContent = 'Mover: Flechas | Disparo: S | Usar/Abrir: W | Correr: Espacio';
-    labelScore.textContent = 'DOOM (1993) Campaña';
+    labelInstruccion.textContent = 'Mover: Flechas | Disparar: S | Usar/Puertas: W | Correr: Espacio';
+    labelScore.textContent = 'Modo Campaña (DOOM 1993)';
 
     canvas.style.display = 'none';
 
-    let doomWrapper = document.getElementById('doomWrapper');
-    if (!doomWrapper) {
-        doomWrapper = document.createElement('div');
-        doomWrapper.id = 'doomWrapper';
-        doomWrapper.style.width = '100%';
-        doomWrapper.style.maxWidth = '480px';
-        doomWrapper.style.height = '400px';
-        doomWrapper.style.borderRadius = '8px';
-        doomWrapper.style.overflow = 'hidden';
-        doomWrapper.style.background = '#000';
-        doomWrapper.innerHTML = '<div id="dosbox"></div>';
-        contenedorJuego.appendChild(doomWrapper);
+    let dosboxWrapper = document.getElementById('dosboxWrapper');
+    if (!dosboxWrapper) {
+        dosboxWrapper = document.createElement('div');
+        dosboxWrapper.id = 'dosboxWrapper';
+        dosboxWrapper.innerHTML = '<div id="dosbox"></div>';
+        contenedorJuego.appendChild(dosboxWrapper);
     } else {
-        doomWrapper.style.display = 'block';
+        dosboxWrapper.style.display = 'block';
     }
 
-    // Inicializar el motor nativo de la página
     if (!dosboxInstance && typeof Dosbox !== 'undefined') {
         dosboxInstance = new Dosbox({
             id: "dosbox",
@@ -474,10 +467,62 @@ function limpiarLoops() {
     juegoCorriendo = false;
     canvas.style.display = 'block';
 
-    const doomWrapper = document.getElementById('doomWrapper');
-    if (doomWrapper) {
-        doomWrapper.style.display = 'none';
+    const dosboxWrapper = document.getElementById('dosboxWrapper');
+    if (dosboxWrapper) {
+        dosboxWrapper.style.display = 'none';
     }
+}
+
+function simularEventoTeclado(tipo, tecla, codigo) {
+    const canvasDoom = document.querySelector('#dosbox canvas');
+    const objetivo = canvasDoom || window;
+
+    const evento = new KeyboardEvent(tipo, {
+        key: tecla,
+        code: codigo,
+        bubbles: true,
+        cancelable: true
+    });
+    objetivo.dispatchEvent(evento);
+}
+
+// Enlace de las acciones del D-Pad a los controles de DOOM
+function ejecutarComandoDoom(accion, tipoEvento) {
+    if (juegoActual !== 'doom') return;
+
+    if (accion === 'ArrowUp') simularEventoTeclado(tipoEvento, 'ArrowUp', 'ArrowUp');
+    if (accion === 'ArrowDown') simularEventoTeclado(tipoEvento, 'ArrowDown', 'ArrowDown');
+    if (accion === 'ArrowLeft') simularEventoTeclado(tipoEvento, 'ArrowLeft', 'ArrowLeft');
+    if (accion === 'ArrowRight') simularEventoTeclado(tipoEvento, 'ArrowRight', 'ArrowRight');
+    if (accion === 'Space') simularEventoTeclado(tipoEvento, 's', 'KeyS'); // Botón A dispara
+}
+
+// Conectar toques tanto al presionar como al soltar el botón
+function vincularTouch(id, tecla) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        manejarAccion(tecla);
+        ejecutarComandoDoom(tecla, 'keydown');
+    }, { passive: false });
+
+    el.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        ejecutarComandoDoom(tecla, 'keyup');
+    }, { passive: false });
+
+    el.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        manejarAccion(tecla);
+        ejecutarComandoDoom(tecla, 'keydown');
+    });
+
+    el.addEventListener('mouseup', (e) => {
+        e.preventDefault();
+        ejecutarComandoDoom(tecla, 'keyup');
+    });
 }
 
 
