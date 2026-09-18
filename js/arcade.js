@@ -453,11 +453,11 @@ function cargarDoom() {
         dosboxInstance = new Dosbox({
             id: "dosbox",
             onload: function (dosbox) {
-                // Opción 1: Ejecutar directamente sin './'
-                dosbox.run("https://js-dos.com/cdn/upload/DOOM-@evilution.zip", "DOOM.EXE");
+                // Monta el zip y ejecuta el script/binario 'doom' de la raíz
+                dosbox.run("https://js-dos.com/cdn/upload/DOOM-@evilution.zip", "./doom");
             },
             onrun: function (dosbox, app) {
-                console.log("DOOM 1993 iniciado correctamente.");
+                console.log("DOOM iniciado correctamente.");
             }
         });
     }
