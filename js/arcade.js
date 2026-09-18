@@ -446,14 +446,27 @@ function cargarDoom() {
     if (!dosboxWrapper) {
         dosboxWrapper = document.createElement('div');
         dosboxWrapper.id = 'dosboxWrapper';
+        // Proporción 4:3 grande para monitor
         dosboxWrapper.style.width = '100%';
-        dosboxWrapper.style.maxWidth = '640px';
-        dosboxWrapper.style.height = '420px';
+        dosboxWrapper.style.maxWidth = '720px';
+        dosboxWrapper.style.aspectRatio = '4 / 3';
         dosboxWrapper.style.borderRadius = '8px';
         dosboxWrapper.style.overflow = 'hidden';
         dosboxWrapper.style.background = '#000';
-        dosboxWrapper.innerHTML = '<div id="dosbox"></div>';
+        dosboxWrapper.style.position = 'relative';
+        
+        dosboxWrapper.innerHTML = `
+            <button id="btnDoomFS" class="btn-doom-fullscreen" type="button">⛶ Pantalla Completa</button>
+            <div id="dosbox" style="width:100%; height:100%;"></div>
+        `;
         contenedorJuego.appendChild(dosboxWrapper);
+
+        document.getElementById('btnDoomFS').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (dosboxInstance) {
+                dosboxInstance.requestFullScreen();
+            }
+        });
     } else {
         dosboxWrapper.style.display = 'block';
     }
