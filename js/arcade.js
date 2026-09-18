@@ -430,11 +430,9 @@ canvas.addEventListener('contextmenu', (e) => {
 // ==========================================
 // 4. MOTOR DOOM (EMBEBIDO)
 // ==========================================
-let dosRuntime = null;
-
 function cargarDoom() {
     limpiarLoops();
-    labelInstruccion.textContent = 'DOOM Shareware (Wasm)';
+    labelInstruccion.textContent = 'Haz clic dentro de la pantalla para jugar (WASD / Flechas / Ctrl)';
     labelScore.textContent = 'Modo Campaña';
 
     canvas.style.display = 'none';
@@ -444,6 +442,7 @@ function cargarDoom() {
         doomContainer = document.createElement('div');
         doomContainer.id = 'doomContainer';
         doomContainer.style.width = '100%';
+        doomContainer.style.maxWidth = '480px';
         doomContainer.style.height = '400px';
         doomContainer.style.borderRadius = '8px';
         doomContainer.style.overflow = 'hidden';
@@ -453,25 +452,15 @@ function cargarDoom() {
         doomContainer.style.display = 'block';
     }
 
-    // Inicializar DosBox v7
-    if (!dosRuntime && typeof Dos !== 'undefined') {
-        const doomCanvas = document.createElement('canvas');
-        doomCanvas.id = 'jsdosCanvas';
-        doomCanvas.style.width = '100%';
-        doomCanvas.style.height = '100%';
-        doomContainer.appendChild(doomCanvas);
-
-        // Dos() de v7 usa run() directamente con el bundle comprimido
-        Dos(doomCanvas)
-            .run('https://v8.js-dos.com/bundles/doom.jsdos')
-            .then(runtime => {
-                dosRuntime = runtime;
-            })
-            .catch(err => {
-                console.error('Error cargando DOOM:', err);
-                doomContainer.innerHTML = '<p style="color:#ed4245;text-align:center;padding-top:40px;">No se pudo inicializar DOOM.</p>';
-            });
-    }
+    // Usar emulador web sin restricciones de CSP
+    doomContainer.innerHTML = `
+        <iframe 
+            src="https://dosbox.club/game/doom" 
+            style="width: 100%; height: 100%; border: none;"
+            allow="autoplay; fullscreen; keyboard"
+            loading="lazy">
+        </iframe>
+    `;
 }
 
 function limpiarLoops() {
@@ -482,6 +471,7 @@ function limpiarLoops() {
     const doomContainer = document.getElementById('doomContainer');
     if (doomContainer) {
         doomContainer.style.display = 'none';
+        doomContainer.innerHTML = ''; // Limpia el iframe al salir del tab
     }
 }
 
