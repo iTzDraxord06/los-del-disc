@@ -437,6 +437,7 @@ let dosboxInstance = null;
 
 function cargarDoom() {
     limpiarLoops();
+    juegoActual = 'doom';
     labelInstruccion.textContent = 'Mover: Flechas | Disparar: S / Ctrl | Abrir: W / Espacio | Haz clic para capturar teclado';
     labelScore.textContent = 'DOOM (1993) Campaña';
 
@@ -454,7 +455,7 @@ function cargarDoom() {
         dosboxWrapper.style.overflow = 'hidden';
         dosboxWrapper.style.background = '#000';
         dosboxWrapper.style.position = 'relative';
-        
+
         dosboxWrapper.innerHTML = `
             <button id="btnDoomFS" class="btn-doom-fullscreen" type="button">⛶ Pantalla Completa</button>
             <div id="dosbox" style="width:100%; height:100%;"></div>
@@ -483,8 +484,11 @@ function cargarDoom() {
             }
         });
     }
-}
 
+    // Activa la botonera móvil de DOOM y conecta sus toques
+    actualizarVisibilidadControles();
+    inicializarControlesDoom();
+}
 function limpiarLoops() {
     clearInterval(loopJuego);
     juegoCorriendo = false;
@@ -494,33 +498,98 @@ function limpiarLoops() {
     if (dosboxWrapper) {
         dosboxWrapper.style.display = 'none';
     }
+
+    // Restaura la cruceta básica al salir de DOOM
+    actualizarVisibilidadControles();
 }
 
-function simularEventoTeclado(tipo, tecla, codigo) {
-    const canvasDoom = document.querySelector('#dosbox canvas');
-    const objetivo = canvasDoom || window;
+// ==========================================
+// CONTROLES TÁCTILES - DOOM Y MODO BÁSICO
+// ==========================================
 
-    const evento = new KeyboardEvent(tipo, {
+// Inyecta eventos de teclado directamente en el Canvas de DOSBox
+function presionarTeclaDosbox(tecla, keyCode, tipo) {
+    const canvasDoom = document.querySelector('#dosbox canvas');
+    const target = canvasDoom || window;
+
+    const evt = new KeyboardEvent(tipo, {
         key: tecla,
-        code: codigo,
+        code: tecla,
+        keyCode: keyCode,
+        which: keyCode,
         bubbles: true,
         cancelable: true
     });
-    objetivo.dispatchEvent(evento);
+    target.dispatchEvent(evt);
 }
 
-// Enlace de las acciones del D-Pad a los controles de DOOM
-function ejecutarComandoDoom(accion, tipoEvento) {
-    if (juegoActual !== 'doom') return;
+// Vincula pulsaciones táctiles y clics del ratón a los botones de DOOM
+function vincularBotonDoom(idElemento, teclaStr, keyCodeNum) {
+    const btn = document.getElementById(idElemento);
+    if (!btn) return;
 
-    if (accion === 'ArrowUp') simularEventoTeclado(tipoEvento, 'ArrowUp', 'ArrowUp');
-    if (accion === 'ArrowDown') simularEventoTeclado(tipoEvento, 'ArrowDown', 'ArrowDown');
-    if (accion === 'ArrowLeft') simularEventoTeclado(tipoEvento, 'ArrowLeft', 'ArrowLeft');
-    if (accion === 'ArrowRight') simularEventoTeclado(tipoEvento, 'ArrowRight', 'ArrowRight');
-    if (accion === 'Space') simularEventoTeclado(tipoEvento, 's', 'KeyS'); // Botón A dispara
+    btn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        presionarTeclaDosbox(teclaStr, keyCodeNum, 'keydown');
+    }, { passive: false });
+
+    btn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        presionarTeclaDosbox(teclaStr, keyCodeNum, 'keyup');
+    }, { passive: false });
+
+    btn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        presionarTeclaDosbox(teclaStr, keyCodeNum, 'keydown');
+    });
+
+    btn.addEventListener('mouseup', (e) => {
+        e.preventDefault();
+        presionarTeclaDosbox(teclaStr, keyCodeNum, 'keyup');
+    });
 }
 
-// Conectar toques tanto al presionar como al soltar el botón
+// Inicializa todos los botones del panel avanzado de DOOM
+function inicializarControlesDoom() {
+    // Movimiento básico (Flechas de dirección)
+    vincularBotonDoom('dBtnUp', 'ArrowUp', 38);
+    vincularBotonDoom('dBtnDown', 'ArrowDown', 40);
+    vincularBotonDoom('dBtnLeft', 'ArrowLeft', 37);
+    vincularBotonDoom('dBtnRight', 'ArrowRight', 39);
+
+    // Desplazamiento lateral (Strafe con teclas A y D)[cite: 11]
+    vincularBotonDoom('dBtnStrafeL', 'a', 65);
+    vincularBotonDoom('dBtnStrafeR', 'd', 68);
+
+    // Acciones principales de juego y navegación[cite: 11]
+    vincularBotonDoom('dBtnFire', 's', 83);       // Disparar (tecla S)[cite: 11]
+    vincularBotonDoom('dBtnUse', 'w', 87);        // Usar / Abrir puertas (tecla W)[cite: 11]
+    vincularBotonDoom('dBtnRun', ' ', 32);        // Correr (Barra espaciadora)[cite: 11]
+    vincularBotonDoom('dBtnEsc', 'Escape', 27);   // Menú / Salir al menú principal
+    vincularBotonDoom('dBtnEnter', 'Enter', 13);  // Aceptar / Confirmar en menús
+
+    // Acceso rápido al cambio de armas
+    vincularBotonDoom('dBtnW1', '1', 49);
+    vincularBotonDoom('dBtnW2', '2', 50);
+    vincularBotonDoom('dBtnW3', '3', 51);
+    vincularBotonDoom('dBtnW4', '4', 52);
+}
+
+// Alterna la visibilidad entre el D-Pad simple y el panel completo de DOOM
+function actualizarVisibilidadControles() {
+    const padBasico = document.getElementById('dpadModoBasico');
+    const padDoom = document.getElementById('dpadModoDoom');
+
+    if (juegoActual === 'doom') {
+        if (padBasico) padBasico.classList.add('oculto');
+        if (padDoom) padDoom.classList.remove('oculto');
+    } else {
+        if (padBasico) padBasico.classList.remove('oculto');
+        if (padDoom) padDoom.classList.add('oculto');
+    }
+}
+
+// Vinculación estándar para los minijuegos clásicos (Snake, Tetris, Buscaminas)
 function vincularTouch(id, tecla) {
     const el = document.getElementById(id);
     if (!el) return;
@@ -528,23 +597,11 @@ function vincularTouch(id, tecla) {
     el.addEventListener('touchstart', (e) => {
         e.preventDefault();
         manejarAccion(tecla);
-        ejecutarComandoDoom(tecla, 'keydown');
-    }, { passive: false });
-
-    el.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        ejecutarComandoDoom(tecla, 'keyup');
     }, { passive: false });
 
     el.addEventListener('mousedown', (e) => {
         e.preventDefault();
         manejarAccion(tecla);
-        ejecutarComandoDoom(tecla, 'keydown');
-    });
-
-    el.addEventListener('mouseup', (e) => {
-        e.preventDefault();
-        ejecutarComandoDoom(tecla, 'keyup');
     });
 }
 
@@ -683,7 +740,7 @@ function manejarAccion(tecla) {
         else if ((tecla === 'ArrowDown' || tecla === 'KeyS') && snakeDir.y === 0) snakeDir = { x: 0, y: 1 };
         else if ((tecla === 'ArrowLeft' || tecla === 'KeyA') && snakeDir.x === 0) snakeDir = { x: -1, y: 0 };
         else if ((tecla === 'ArrowRight' || tecla === 'KeyD') && snakeDir.x === 0) snakeDir = { x: 1, y: 0 };
-    } 
+    }
     else if (juegoActual === 'tetris') {
         if (tecla === 'ArrowLeft' || tecla === 'KeyA') {
             if (!colisionTetris(piezaActual.shape, piezaX - 1, piezaY)) piezaX--;
@@ -697,7 +754,7 @@ function manejarAccion(tecla) {
             if (!colisionTetris(rotada, piezaX, piezaY)) piezaActual.shape = rotada;
         }
         dibujarTetris();
-    } 
+    }
     else if (juegoActual === 'buscaminas') {
         if (tecla === 'Space' || tecla === 'KeyF') {
             modoBandera = !modoBandera;

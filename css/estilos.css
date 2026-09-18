@@ -1681,6 +1681,97 @@ body {
     box-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
 }
 
+.doom-touch-layout {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 520px;
+    margin: 12px auto 0 auto;
+    gap: 12px;
+    user-select: none;
+    touch-action: manipulation;
+}
+
+.doom-dpad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 46px);
+    grid-template-rows: repeat(3, 44px);
+    gap: 4px;
+}
+
+.doom-btn {
+    background: #181b22;
+    border: 1px solid #353a45;
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #0a0b0e;
+}
+
+.doom-btn:active {
+    background: #00e5ff;
+    color: #000;
+    transform: translateY(2px);
+    box-shadow: none;
+}
+
+.doom-btn-esc { background: #3a2025; border-color: #ff3366; color: #ff3366; font-size: 0.72rem; }
+.doom-btn-run { background: #232a35; font-size: 0.7rem; }
+.doom-btn-enter { background: #1c2b25; font-size: 0.85rem; }
+
+.doom-actions-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    max-width: 200px;
+}
+
+.doom-armas-row {
+    display: flex;
+    gap: 4px;
+    justify-content: space-between;
+}
+
+.doom-btn-small {
+    flex: 1;
+    height: 32px;
+    background: #181b22;
+    border: 1px solid #353a45;
+    color: #00e5ff;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.doom-btn-small:active { background: #00e5ff; color: #000; }
+
+.doom-main-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.doom-action-btn {
+    flex: 1;
+    height: 56px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 800;
+    font-size: 0.78rem;
+    color: #fff;
+    box-shadow: 0 4px 0 #000;
+}
+
+.doom-action-btn:active { transform: translateY(2px); box-shadow: none; }
+.btn-use { background: #2f37c9; }
+.btn-fire { background: #e52521; }
+
 @keyframes popupEntrada {
     from {
         transform: translateY(40px);
@@ -1698,6 +1789,8 @@ body {
 
 /* ================= RESPONSIVE MÓVIL ================= */
 @media (max-width: 768px) {
+
+    .doom-touch-layout { display: flex; }
 
     .dpad-container {
         display: block;

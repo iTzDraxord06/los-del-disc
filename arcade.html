@@ -97,22 +97,49 @@
 
                     <!-- Controles táctiles virtuales para celulares -->
                     <div class="dpad-container" id="dpadControles">
-                        <div class="dpad-layout">
-                            <!-- Cruceta de dirección -->
+                        <!-- 1. MODO BÁSICO (Snake, Tetris, Buscaminas) -->
+                        <div class="dpad-layout" id="dpadModoBasico">
                             <div class="dpad-cruceta">
                                 <button type="button" class="dpad-btn dpad-arriba" id="btnTouchArriba">▲</button>
                                 <button type="button" class="dpad-btn dpad-izquierda" id="btnTouchIzq">◀</button>
                                 <button type="button" class="dpad-btn dpad-derecha" id="btnTouchDer">▶</button>
                                 <button type="button" class="dpad-btn dpad-abajo" id="btnTouchAbajo">▼</button>
                             </div>
-
-                            <!-- Botón de acción / giro (útil para rotar en Tetris o reiniciar) -->
                             <div class="dpad-acciones">
                                 <button type="button" class="dpad-btn dpad-btn-accion" id="btnTouchAccion">A</button>
                             </div>
                         </div>
+
+                        <!-- 2. MODO DOOM (Movimiento, Strafe, Disparo, Usar y Menú) -->
+                        <div class="doom-touch-layout oculto" id="dpadModoDoom">
+                            <div class="doom-dpad-grid">
+                                <button type="button" class="doom-btn" id="dBtnStrafeL">↶</button>
+                                <button type="button" class="doom-btn" id="dBtnUp">▲</button>
+                                <button type="button" class="doom-btn" id="dBtnStrafeR">↷</button>
+
+                                <button type="button" class="doom-btn" id="dBtnLeft">◀</button>
+                                <button type="button" class="doom-btn doom-btn-esc" id="dBtnEsc">ESC</button>
+                                <button type="button" class="doom-btn" id="dBtnRight">▶</button>
+
+                                <button type="button" class="doom-btn doom-btn-run" id="dBtnRun">RUN</button>
+                                <button type="button" class="doom-btn" id="dBtnDown">▼</button>
+                                <button type="button" class="doom-btn doom-btn-enter" id="dBtnEnter">↵</button>
+                            </div>
+
+                            <div class="doom-actions-grid">
+                                <div class="doom-armas-row">
+                                    <button type="button" class="doom-btn-small" id="dBtnW1">1</button>
+                                    <button type="button" class="doom-btn-small" id="dBtnW2">2</button>
+                                    <button type="button" class="doom-btn-small" id="dBtnW3">3</button>
+                                    <button type="button" class="doom-btn-small" id="dBtnW4">4</button>
+                                </div>
+                                <div class="doom-main-actions">
+                                    <button type="button" class="doom-action-btn btn-use" id="dBtnUse">USAR (W)</button>
+                                    <button type="button" class="doom-action-btn btn-fire" id="dBtnFire">FUEGO (S)</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
                 <!-- Tabla de puntuaciones -->
                 <div class="leaderboard-card">
