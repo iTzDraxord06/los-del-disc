@@ -430,12 +430,10 @@ canvas.addEventListener('contextmenu', (e) => {
 // ==========================================
 // 4. MOTOR DOOM (EMBEBIDO)
 // ==========================================
-let dosboxInstance = null;
-
 function cargarDoom() {
     limpiarLoops();
     labelInstruccion.textContent = 'Mover: Flechas | Disparar: S | Usar/Puertas: W | Correr: Espacio';
-    labelScore.textContent = 'Modo Campaña (DOOM 1993)';
+    labelScore.textContent = 'DOOM (1993) Campaña';
 
     canvas.style.display = 'none';
 
@@ -443,26 +441,26 @@ function cargarDoom() {
     if (!dosboxWrapper) {
         dosboxWrapper = document.createElement('div');
         dosboxWrapper.id = 'dosboxWrapper';
-        dosboxWrapper.innerHTML = '<div id="dosbox"></div>';
+        dosboxWrapper.style.width = '100%';
+        dosboxWrapper.style.maxWidth = '640px';
+        dosboxWrapper.style.height = '440px';
+        dosboxWrapper.style.borderRadius = '8px';
+        dosboxWrapper.style.overflow = 'hidden';
+        dosboxWrapper.style.background = '#000';
+        dosboxWrapper.style.position = 'relative';
         contenedorJuego.appendChild(dosboxWrapper);
     } else {
         dosboxWrapper.style.display = 'block';
     }
 
-    if (!dosboxInstance && typeof Dosbox !== 'undefined') {
-        dosboxInstance = new Dosbox({
-            id: "dosbox",
-            onload: function (dosbox) {
-                dosbox.run("https://js-dos.com/cdn/upload/DOOM-@evilution.zip", [
-                    "c:",
-                    "doom.exe"
-                ]);
-            },
-            onrun: function (dosbox, app) {
-                console.log("DOOM iniciado correctamente.");
-            }
-        });
-    }
+    // Incrusta la instancia que corre el juego directamente sin pasar por Z:\>
+    dosboxWrapper.innerHTML = `
+        <iframe 
+            src="https://js-dos.com/games/doom.html" 
+            style="width: 100%; height: 100%; border: none; background: #000;"
+            allow="autoplay; fullscreen; keyboard">
+        </iframe>
+    `;
 }
 
 function limpiarLoops() {
@@ -473,6 +471,7 @@ function limpiarLoops() {
     const dosboxWrapper = document.getElementById('dosboxWrapper');
     if (dosboxWrapper) {
         dosboxWrapper.style.display = 'none';
+        dosboxWrapper.innerHTML = ''; // Detiene el audio de DOOM al cambiar a otro minijuego
     }
 }
 
