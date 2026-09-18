@@ -430,27 +430,42 @@ canvas.addEventListener('contextmenu', (e) => {
 // ==========================================
 // 4. MOTOR DOOM (EMBEBIDO)
 // ==========================================
+let dosInstance = null;
+
 function cargarDoom() {
     limpiarLoops();
-    labelInstruccion.textContent = 'DOOM Shareware cargado con Emscripten';
+    labelInstruccion.textContent = 'DOOM Shareware cargado con js-dos';
     labelScore.textContent = 'Modo Campaña';
 
-    // Se reemplaza el canvas con un iframe seguro que corre DosBox / DOOM Wasm
     canvas.style.display = 'none';
-    
-    let doomFrame = document.getElementById('doomFrame');
-    if (!doomFrame) {
-        doomFrame = document.createElement('iframe');
-        doomFrame.id = 'doomFrame';
-        doomFrame.src = 'https://dos.zone/player/?bundleUrl=https%3A%2F%2Fcdn.dos.zone%2Fcustom%2Fdos%2Fdoom.jsdos?anonymous=1';
-        doomFrame.style.width = '100%';
-        doomFrame.style.height = '400px';
-        doomFrame.style.border = 'none';
-        doomFrame.style.borderRadius = '8px';
-        doomFrame.allow = 'autoplay; fullscreen';
-        contenedorJuego.appendChild(doomFrame);
+
+    let doomContainer = document.getElementById('doomContainer');
+    if (!doomContainer) {
+        doomContainer = document.createElement('div');
+        doomContainer.id = 'doomContainer';
+        doomContainer.style.width = '100%';
+        doomContainer.style.height = '400px';
+        doomContainer.style.borderRadius = '8px';
+        doomContainer.style.overflow = 'hidden';
+        doomContainer.style.background = '#000';
+        contenedorJuego.appendChild(doomContainer);
     } else {
-        doomFrame.style.display = 'block';
+        doomContainer.style.display = 'block';
+    }
+
+    // Inicializar emulador si no está cargado
+    if (!dosInstance && typeof Dos !== 'undefined') {
+        const doomCanvas = document.createElement('canvas');
+        doomContainer.appendChild(doomCanvas);
+
+        Dos(doomCanvas, {
+            wdosboxUrl: 'https://v6.js-dos.com/6.22/current/wdosbox.js'
+        }).ready((fs, main) => {
+            dosInstance = { fs, main };
+            fs.extract('https://cdn.dos.zone/custom/dos/doom.jsdos').then(() => {
+                main(['-c', 'DOOM.EXE']);
+            });
+        });
     }
 }
 
@@ -458,8 +473,11 @@ function limpiarLoops() {
     clearInterval(loopJuego);
     juegoCorriendo = false;
     canvas.style.display = 'block';
-    const doomFrame = document.getElementById('doomFrame');
-    if (doomFrame) doomFrame.style.display = 'none';
+
+    const doomContainer = document.getElementById('doomContainer');
+    if (doomContainer) {
+        doomContainer.style.display = 'none';
+    }
 }
 
 // ==========================================
