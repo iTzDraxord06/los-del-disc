@@ -430,38 +430,43 @@ canvas.addEventListener('contextmenu', (e) => {
 // ==========================================
 // 4. MOTOR DOOM (EMBEBIDO)
 // ==========================================
+let dosboxInstance = null;
+
 function cargarDoom() {
     limpiarLoops();
-    labelInstruccion.textContent = 'Haz clic para capturar teclado | F2: Guardar | F3: Cargar';
-    labelScore.textContent = 'Modo Campaña';
+    labelInstruccion.textContent = 'Mover: Flechas | Disparo: S | Usar/Abrir: W | Correr: Espacio';
+    labelScore.textContent = 'DOOM (1993) Campaña';
 
     canvas.style.display = 'none';
 
-    let doomContainer = document.getElementById('doomContainer');
-    if (!doomContainer) {
-        doomContainer = document.createElement('div');
-        doomContainer.id = 'doomContainer';
-        doomContainer.style.width = '100%';
-        doomContainer.style.maxWidth = '480px';
-        doomContainer.style.height = '400px';
-        doomContainer.style.borderRadius = '8px';
-        doomContainer.style.overflow = 'hidden';
-        doomContainer.style.background = '#000';
-        contenedorJuego.appendChild(doomContainer);
+    let doomWrapper = document.getElementById('doomWrapper');
+    if (!doomWrapper) {
+        doomWrapper = document.createElement('div');
+        doomWrapper.id = 'doomWrapper';
+        doomWrapper.style.width = '100%';
+        doomWrapper.style.maxWidth = '480px';
+        doomWrapper.style.height = '400px';
+        doomWrapper.style.borderRadius = '8px';
+        doomWrapper.style.overflow = 'hidden';
+        doomWrapper.style.background = '#000';
+        doomWrapper.innerHTML = '<div id="dosbox"></div>';
+        contenedorJuego.appendChild(doomWrapper);
     } else {
-        doomContainer.style.display = 'block';
+        doomWrapper.style.display = 'block';
     }
 
-    // Emulador oficial de Archive.org (persistente y sin bloqueos de iframe)
-    doomContainer.innerHTML = `
-        <iframe 
-            src="https://archive.org/embed/doom-shareware" 
-            style="width: 100%; height: 100%; border: none;"
-            allowfullscreen="true"
-            webkitallowfullscreen="true"
-            mozallowfullscreen="true">
-        </iframe>
-    `;
+    // Inicializar el motor nativo de la página
+    if (!dosboxInstance && typeof Dosbox !== 'undefined') {
+        dosboxInstance = new Dosbox({
+            id: "dosbox",
+            onload: function (dosbox) {
+                dosbox.run("https://js-dos.com/cdn/upload/DOOM-@evilution.zip", "./doom");
+            },
+            onrun: function (dosbox, app) {
+                console.log("DOOM 1993 iniciado correctamente.");
+            }
+        });
+    }
 }
 
 function limpiarLoops() {
@@ -469,12 +474,12 @@ function limpiarLoops() {
     juegoCorriendo = false;
     canvas.style.display = 'block';
 
-    const doomContainer = document.getElementById('doomContainer');
-    if (doomContainer) {
-        doomContainer.style.display = 'none';
-        doomContainer.innerHTML = ''; // Limpia el iframe al salir del tab
+    const doomWrapper = document.getElementById('doomWrapper');
+    if (doomWrapper) {
+        doomWrapper.style.display = 'none';
     }
 }
+
 
 // ==========================================
 // PANTALLA GAME OVER & LEADERBOARD
