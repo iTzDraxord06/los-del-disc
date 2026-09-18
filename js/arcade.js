@@ -430,9 +430,14 @@ canvas.addEventListener('contextmenu', (e) => {
 // ==========================================
 // 4. MOTOR DOOM (EMBEBIDO)
 // ==========================================
+// ==========================================
+// 4. MOTOR DOOM (1993 Clásico js-dos)
+// ==========================================
+let dosboxInstance = null;
+
 function cargarDoom() {
     limpiarLoops();
-    labelInstruccion.textContent = 'Mover: Flechas | Disparar: S | Usar/Puertas: W | Correr: Espacio';
+    labelInstruccion.textContent = 'Mover: Flechas | Disparar: S / Ctrl | Abrir: W / Espacio | Haz clic para capturar teclado';
     labelScore.textContent = 'DOOM (1993) Campaña';
 
     canvas.style.display = 'none';
@@ -443,24 +448,28 @@ function cargarDoom() {
         dosboxWrapper.id = 'dosboxWrapper';
         dosboxWrapper.style.width = '100%';
         dosboxWrapper.style.maxWidth = '640px';
-        dosboxWrapper.style.height = '440px';
+        dosboxWrapper.style.height = '420px';
         dosboxWrapper.style.borderRadius = '8px';
         dosboxWrapper.style.overflow = 'hidden';
         dosboxWrapper.style.background = '#000';
-        dosboxWrapper.style.position = 'relative';
+        dosboxWrapper.innerHTML = '<div id="dosbox"></div>';
         contenedorJuego.appendChild(dosboxWrapper);
     } else {
         dosboxWrapper.style.display = 'block';
     }
 
-    // Incrusta la instancia que corre el juego directamente sin pasar por Z:\>
-    dosboxWrapper.innerHTML = `
-        <iframe 
-            src="https://js-dos.com/games/doom.html" 
-            style="width: 100%; height: 100%; border: none; background: #000;"
-            allow="autoplay; fullscreen; keyboard">
-        </iframe>
-    `;
+    if (!dosboxInstance && typeof Dosbox !== 'undefined') {
+        dosboxInstance = new Dosbox({
+            id: "dosbox",
+            onload: function (dosbox) {
+                // El archivo zip contiene la carpeta DOOM; se especifica la ruta al ejecutable
+                dosbox.run("https://js-dos.com/cdn/upload/DOOM-@evilution.zip", "./DOOM/DOOM.EXE");
+            },
+            onrun: function (dosbox, app) {
+                console.log("DOOM 1993 cargado con éxito.");
+            }
+        });
+    }
 }
 
 function limpiarLoops() {
@@ -471,7 +480,6 @@ function limpiarLoops() {
     const dosboxWrapper = document.getElementById('dosboxWrapper');
     if (dosboxWrapper) {
         dosboxWrapper.style.display = 'none';
-        dosboxWrapper.innerHTML = ''; // Detiene el audio de DOOM al cambiar a otro minijuego
     }
 }
 
