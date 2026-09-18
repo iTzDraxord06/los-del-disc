@@ -1439,6 +1439,188 @@ body {
     display: none !important;
 }
 
+/* ================= ARCADE ZONE ================= */
+.arcade-contenedor {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 20px;
+    max-width: 1100px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.pantalla-juego-card {
+    background-color: var(--fondo-tarjeta, #2b2d31);
+    border: 1px solid var(--borde, #35363c);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.arcade-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+}
+
+.btn-game-tab {
+    background-color: #1e1f22;
+    color: #dbdee1;
+    border: 1px solid #3f4147;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn-game-tab:hover {
+    background-color: #35373c;
+}
+
+.btn-game-tab.activo {
+    background-color: #5865F2;
+    color: #fff;
+    border-color: #5865F2;
+}
+
+.game-status-bar {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 480px;
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: #dbdee1;
+}
+
+.game-canvas-area {
+    background-color: #000;
+    border: 2px solid #3f4147;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    min-height: 400px;
+    width: 100%;
+    max-width: 480px;
+}
+
+.game-canvas-area canvas {
+    display: block;
+    background: #000;
+    max-width: 100%;
+    height: auto;
+    touch-action: none;
+}
+
+.dpad-container {
+    display: none;
+    margin-top: 15px;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.dpad-layout {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    justify-content: center;
+}
+
+.dpad-cruceta {
+    display: grid;
+    grid-template-columns: repeat(3, 50px);
+    grid-template-rows: repeat(3, 50px);
+    gap: 4px;
+}
+
+.dpad-btn {
+    background: #1e1f22;
+    border: 1px solid #3f4147;
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #111;
+}
+
+.dpad-btn:active {
+    background: #5865F2;
+    transform: translateY(2px);
+    box-shadow: none;
+}
+
+.dpad-arriba { grid-column: 2; grid-row: 1; }
+.dpad-izquierda { grid-column: 1; grid-row: 2; }
+.dpad-derecha { grid-column: 3; grid-row: 2; }
+.dpad-abajo { grid-column: 2; grid-row: 3; }
+
+.dpad-acciones {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.dpad-btn-accion {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #ed4245;
+    font-size: 1rem;
+}
+
+.dpad-btn-accion:active {
+    background: #c03537;
+}
+
+.leaderboard-card {
+    background-color: var(--fondo-tarjeta, #2b2d31);
+    border: 1px solid var(--borde, #35363c);
+    border-radius: 8px;
+    padding: 20px;
+    height: fit-content;
+}
+
+.leaderboard-lista {
+    list-style: none;
+    padding: 0;
+    margin: 15px 0 0 0;
+}
+
+.leaderboard-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: #1e1f22;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.leaderboard-item .posicion {
+    font-weight: bold;
+    margin-right: 8px;
+    color: #f1c40f;
+}
+
+.leaderboard-item .puntos {
+    font-weight: bold;
+    color: #5865F2;
+}
+
 @keyframes popupEntrada {
     from {
         transform: translateY(40px);
@@ -1456,6 +1638,15 @@ body {
 
 /* ================= RESPONSIVE MÓVIL ================= */
 @media (max-width: 768px) {
+
+    .dpad-container {
+        display: block;
+    }
+
+
+    .arcade-contenedor {
+        grid-template-columns: 1fr;
+    }
 
     .popup-anuncio {
         right: 16px;

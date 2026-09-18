@@ -1176,3 +1176,52 @@ app.listen(PORT, () => {
         }, INTERVALO_PING);
     }
 });
+
+
+// ===========     Juegos =======================
+app.post('/api/juegos/record', async (req, res) => {
+    const { usuarioId, juego, puntuacion } = req.body;
+    if (!usuarioId || !juego || puntuacion === undefined) {
+        return res.status(400).json({ error: 'Datos incompletos.' });
+    }
+
+    try {
+        await pool.request()
+            .input('uId', sql.Int, usuarioId)
+            .input('juego', sql.NVarChar, juego)
+            .input('score', sql.Int, puntuacion)
+            .query(`
+                INSERT INTO PuntuacionesJuegos (UsuarioId, Juego, Puntuacion, Fecha)
+                VALUES (@uId, @juego, @score, GETDATE())
+            `);
+
+        res.json({ mensaje: 'Puntuación guardada con éxito' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});     
+app.get('/api/juegos/leaderboard/:juego', async (req, res) => {
+    const { juego } = req.params;
+
+    try {
+        const result = await pool.request()
+            .input('juego', sql.NVarChar, (juego || '').toLowerCase().trim())
+            .query(`
+                SELECT TOP 10 
+                    MAX(p.Puntuacion) AS Puntuacion,
+                    MAX(p.Fecha) AS Fecha,
+                    u.Username,
+                    u.NombreVisible
+                FROM PuntuacionesJuegos p
+                INNER JOIN UsuariosWeb u ON p.UsuarioId = u.Id
+                WHERE LOWER(p.Juego) = LOWER(@juego)
+                GROUP BY u.Id, u.Username, u.NombreVisible
+                ORDER BY Puntuacion DESC
+            `);
+
+        res.json(result.recordset);
+    } catch (err) {
+        console.error('Error al obtener leaderboard:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
