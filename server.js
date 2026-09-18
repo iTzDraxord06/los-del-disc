@@ -1225,3 +1225,53 @@ app.get('/api/juegos/leaderboard/:juego', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+
+// ===========  DOOM =======================
+app.post('/api/juegos/doom/guardar', async (req, res) => {
+    const { usuarioId, slot, datosBase64 } = req.body || {};
+    if (!usuarioId || slot === undefined || !datosBase64) {
+        return res.status(400).json({ error: 'Faltan parámetros.' });
+    }
+
+    try {
+        const buffer = Buffer.from(datosBase64, 'base64');
+        await pool.request()
+            .input('uId', sql.Int, usuarioId)
+            .input('slot', sql.Int, slot)
+            .input('datos', sql.VarBinary(sql.MAX), buffer)
+            .query(`
+                MERGE PartidasDoom AS target
+                USING (SELECT @uId AS UsuarioId, @slot AS Slot) AS source
+                ON (target.UsuarioId = source.UsuarioId AND target.Slot = source.Slot)
+                WHEN MATCHED THEN
+                    UPDATE SET DatosPartida = @datos, FechaActualizacion = GETDATE()
+                WHEN NOT MATCHED THEN
+                    INSERT (UsuarioId, Slot, DatosPartida, FechaActualizacion)
+                    VALUES (@uId, @slot, @datos, GETDATE());
+            `);
+
+        res.json({ mensaje: 'Partida guardada en la base de datos' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Cargar partidas del usuario
+app.get('/api/juegos/doom/cargar/:usuarioId', async (req, res) => {
+    const { usuarioId } = req.params;
+    try {
+        const result = await pool.request()
+            .input('uId', sql.Int, usuarioId)
+            .query(`SELECT Slot, DatosPartida FROM PartidasDoom WHERE UsuarioId = @uId`);
+
+        const partidas = result.recordset.map(row => ({
+            slot: row.Slot,
+            datosBase64: row.DatosPartida.toString('base64')
+        }));
+
+        res.json(partidas);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});

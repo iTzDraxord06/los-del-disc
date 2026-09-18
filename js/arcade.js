@@ -453,7 +453,8 @@ function cargarDoom() {
         dosboxInstance = new Dosbox({
             id: "dosbox",
             onload: function (dosbox) {
-                dosbox.run("https://js-dos.com/cdn/upload/DOOM-@evilution.zip", "./doom");
+                // Opción 1: Ejecutar directamente sin './'
+                dosbox.run("https://js-dos.com/cdn/upload/DOOM-@evilution.zip", "DOOM.EXE");
             },
             onrun: function (dosbox, app) {
                 console.log("DOOM 1993 iniciado correctamente.");
@@ -523,6 +524,53 @@ function vincularTouch(id, tecla) {
         e.preventDefault();
         ejecutarComandoDoom(tecla, 'keyup');
     });
+}
+
+async function restaurarPartidasDoom(usuarioId) {
+    try {
+        const res = await fetch(`${BASE_API}/juegos/doom/cargar/${usuarioId}`);
+        const partidas = await res.json();
+
+        if (Array.isArray(partidas) && typeof FS !== 'undefined') {
+            partidas.forEach(p => {
+                const binario = Uint8Array.from(atob(p.datosBase64), c => c.charCodeAt(0));
+                // DOOMSAV0.DSG representa la primera ranura
+                FS.writeFile(`DOOMSAV${p.slot}.DSG`, binario);
+            });
+            console.log("Partidas sincronizadas desde la base de datos.");
+        }
+    } catch (e) {
+        console.warn("No se pudieron restaurar partidas:", e);
+    }
+}
+
+// Sincronizar un save local hacia SQL Server
+async function sincronizarSaveASql(usuarioId, slot = 0) {
+    if (typeof FS === 'undefined') return;
+    try {
+        const nombreArchivo = `DOOMSAV${slot}.DSG`;
+        if (FS.analyzePath(nombreArchivo).exists) {
+            const data = FS.readFile(nombreArchivo);
+            let binary = '';
+            for (let i = 0; i < data.byteLength; i++) {
+                binary += String.fromCharCode(data[i]);
+            }
+            const base64 = btoa(binary);
+
+            await fetch(`${BASE_API}/juegos/doom/guardar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    usuarioId: usuarioId,
+                    slot: slot,
+                    datosBase64: base64
+                })
+            });
+            console.log(`Partida (Slot ${slot}) respaldada en la nube.`);
+        }
+    } catch (e) {
+        console.error("Error al subir save de Doom:", e);
+    }
 }
 
 
