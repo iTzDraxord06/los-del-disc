@@ -432,7 +432,7 @@ canvas.addEventListener('contextmenu', (e) => {
 // ==========================================
 function cargarDoom() {
     limpiarLoops();
-    labelInstruccion.textContent = 'Haz clic dentro de la pantalla para jugar (WASD / Flechas / Ctrl)';
+    labelInstruccion.textContent = 'Haz clic para capturar teclado | F2: Guardar | F3: Cargar';
     labelScore.textContent = 'Modo Campaña';
 
     canvas.style.display = 'none';
@@ -452,13 +452,14 @@ function cargarDoom() {
         doomContainer.style.display = 'block';
     }
 
-    // Usar emulador web sin restricciones de CSP
+    // Emulador oficial de Archive.org (persistente y sin bloqueos de iframe)
     doomContainer.innerHTML = `
         <iframe 
-            src="https://dosbox.club/game/doom" 
+            src="https://archive.org/embed/doom-shareware" 
             style="width: 100%; height: 100%; border: none;"
-            allow="autoplay; fullscreen; keyboard"
-            loading="lazy">
+            allowfullscreen="true"
+            webkitallowfullscreen="true"
+            mozallowfullscreen="true">
         </iframe>
     `;
 }
