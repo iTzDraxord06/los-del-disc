@@ -51,16 +51,25 @@ async function subirMediaInteligente(file, prefijo) {
 
     const esVideo = file.mimetype.startsWith('video/') || 
                     file.originalname.match(/\.(mp4|webm|mov|mkv|avi)$/i);
-    const superaLimiteCloudinary = file.size > 10 * 1024 * 1024; // Más de 10 MB
 
-    // Videos o fotos gigantes (>10MB) van a Drive
-    if (esVideo || superaLimiteCloudinary) {
-        console.log(`[DRIVE] Archivo pesado (${(file.size / (1024 * 1024)).toFixed(2)} MB). Enviando a Google Drive...`);
+    // Solo los videos reales van a Google Drive
+    if (esVideo) {
         const nombreUnico = `${prefijo}_${Date.now()}_${file.originalname}`;
         return await subirADrive(file.buffer, nombreUnico, file.mimetype);
     }
 
-    // Fotos normales (<=10MB) van a Cloudinary
+    // Si es imagen, se procesa para Cloudinary
+    let bufferAEnviar = file.buffer;
+
+    // Si supera los 9.5 MB, la comprime en RAM para que pese ~2-3 MB sin perder calidad
+    if (file.size > 9.5 * 1024 * 1024) {
+        console.log(`[COMPRIMIENDO] Imagen de ${(file.size / (1024 * 1024)).toFixed(2)} MB para Cloudinary...`);
+        bufferAEnviar = await sharp(file.buffer)
+            .resize({ width: 2560, withoutEnlargement: true })
+            .jpeg({ quality: 82 })
+            .toBuffer();
+    }
+
     return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
             { folder: 'los-del-disc', resource_type: 'image' },
@@ -69,7 +78,7 @@ async function subirMediaInteligente(file, prefijo) {
                 resolve(result.secure_url);
             }
         );
-        stream.end(file.buffer);
+        stream.end(bufferAEnviar);
     });
 }
 
