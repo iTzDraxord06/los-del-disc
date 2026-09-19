@@ -5,7 +5,6 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const {
     subirADrive,
     obtenerVideoDrive,
@@ -19,8 +18,8 @@ process.on('unhandledRejection', (err) => console.error('PROMESA NO CONTROLADA:'
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '30mb' }));
-app.use(express.urlencoded({ extended: true, limit: '30mb' }));
+app.use(express.json({ limit: '35mb' }));
+app.use(express.urlencoded({ extended: true, limit: '35mb' }));
 
 // 1. Configuración de Cloudinary
 cloudinary.config({
@@ -29,35 +28,54 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET || 'RBJuAR6QFd4D0EjOGvvwmBPtiGg'
 });
 
-// 2. Storage de Multer flexible para imágenes (Cloudinary)
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'los-del-disc',
-        resource_type: 'auto'
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 30 * 1024 * 1024 } // 30 MB
-});
-
-// Multer en memoria para archivos pesados / Google Drive (hasta 30 MB)
+// 2. Multer en memoria (recibe todo hasta 35 MB)
 const uploadMemory = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 30 * 1024 * 1024 }
+    limits: { fileSize: 35 * 1024 * 1024 }
 });
 
 const manejarSubida = (req, res, next) => {
-    upload.any()(req, res, (err) => {
+    uploadMemory.any()(req, res, (err) => {
         if (err) {
-            console.error('Error al procesar archivos en Cloudinary/Multer:', err);
-            return res.status(400).json({ error: 'Error al subir la imagen: ' + err.message });
+            console.error('Error al procesar archivos en Multer:', err);
+            return res.status(400).json({ error: 'Error al procesar archivo: ' + err.message });
         }
         next();
     });
 };
+
+// 3. Subida inteligente: Drive para archivos pesados (>10MB o videos), Cloudinary para el resto
+async function subirMediaInteligente(file, prefijo) {
+    if (!file) return null;
+
+    const esVideo = file.mimetype.startsWith('video/') || 
+                    file.originalname.match(/\.(mp4|webm|mov|mkv|avi)$/i);
+    const superaLimiteCloudinary = file.size > 10 * 1024 * 1024; // Límite gratuito de 10 MB
+
+    if (superaLimiteCloudinary || esVideo) {
+        console.log(`[MEDIA INTELIGENTE] Archivo pesado (${(file.size / (1024 * 1024)).toFixed(2)} MB). Subiendo a Drive...`);
+        const nombreUnico = `${prefijo}_${Date.now()}_${file.originalname}`;
+        return await subirADrive(file.buffer, nombreUnico, file.mimetype);
+    } else {
+        return new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                { folder: 'los-del-disc', resource_type: 'auto' },
+                (error, result) => {
+                    if (error) {
+                        console.warn('[MEDIA INTELIGENTE] Falló Cloudinary, usando Drive de respaldo:', error.message);
+                        const nombreUnico = `${prefijo}_${Date.now()}_${file.originalname}`;
+                        subirADrive(file.buffer, nombreUnico, file.mimetype)
+                            .then(resolve)
+                            .catch(reject);
+                    } else {
+                        resolve(result.secure_url);
+                    }
+                }
+            );
+            stream.end(file.buffer);
+        });
+    }
+}
 
 const rutaImagenes = path.join(__dirname, 'imagenes');
 if (!fs.existsSync(rutaImagenes)) {
@@ -74,7 +92,7 @@ const dbConfig = {
     database: process.env.DB_DATABASE || 'DiscordFriendsDB',
     options: {
         encrypt: true,
-        trustServerCertificate: true // <-- Cambia false por true
+        trustServerCertificate: true
     }
 };
 
@@ -93,123 +111,40 @@ app.get('/muro', (req, res) => res.sendFile(path.join(__dirname, 'muro.html')));
 app.get('/anuncios', (req, res) => res.sendFile(path.join(__dirname, 'anuncios.html')));
 app.get('/configuracion', (req, res) => res.sendFile(path.join(__dirname, 'configuracion.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
-
 app.get('/ping', (req, res) => res.status(200).send('pong'));
 
 // ================= GOOGLE DRIVE OAUTH =================
-
-// Paso 1: iniciar autorización con Google
 app.get('/api/drive/auth', (req, res) => {
     try {
         const url = obtenerUrlAutorizacion();
-
         res.redirect(url);
     } catch (err) {
         console.error('Error iniciando OAuth de Google Drive:', err);
-        res.status(500).send(`
-            <h1>Error iniciando autorización</h1>
-            <p>${err.message}</p>
-        `);
+        res.status(500).send(`<h1>Error iniciando autorización</h1><p>${err.message}</p>`);
     }
 });
 
-// Paso 2: Google devuelve el código de autorización
 app.get('/api/drive/callback', async (req, res) => {
     try {
         const { code } = req.query;
-
-        if (!code) {
-            return res.status(400).send(`
-                <h1>Error de autorización</h1>
-                <p>Google no devolvió el código de autorización.</p>
-            `);
-        }
+        if (!code) return res.status(400).send(`<h1>Error de autorización</h1><p>Código no devuelto.</p>`);
 
         const tokens = await procesarCallback(code);
-
         if (!tokens.refresh_token) {
-            return res.status(500).send(`
-                <h1>No se obtuvo el Refresh Token</h1>
-                <p>
-                    Google no devolvió un refresh token.
-                    Vuelve a iniciar el proceso de autorización.
-                </p>
-            `);
+            return res.status(500).send(`<h1>No se obtuvo el Refresh Token</h1><p>Vuelve a iniciar el proceso.</p>`);
         }
 
         res.send(`
             <!DOCTYPE html>
             <html lang="es">
-            <head>
-                <meta charset="UTF-8">
-                <title>Google Drive autorizado</title>
-                <style>
-                    body {
-                        font-family: Arial, sans-serif;
-                        background: #111;
-                        color: white;
-                        padding: 40px;
-                    }
-
-                    .contenedor {
-                        max-width: 800px;
-                        margin: auto;
-                        background: #222;
-                        padding: 30px;
-                        border-radius: 12px;
-                    }
-
-                    code {
-                        display: block;
-                        background: #000;
-                        padding: 15px;
-                        margin-top: 15px;
-                        word-break: break-all;
-                        border-radius: 8px;
-                    }
-
-                    .advertencia {
-                        color: #ffcc00;
-                    }
-                </style>
-            </head>
-
-            <body>
-                <div class="contenedor">
-                    <h1>✅ Google Drive autorizado</h1>
-
-                    <p>
-                        Google autorizó correctamente el acceso a tu Drive.
-                    </p>
-
-                    <p>
-                        Copia el siguiente valor y agrégalo en Render como:
-                    </p>
-
-                    <h2>GOOGLE_REFRESH_TOKEN</h2>
-
-                    <code>${tokens.refresh_token}</code>
-
-                    <p class="advertencia">
-                        ⚠️ No compartas este token con nadie.
-                    </p>
-
-                    <p>
-                        Después de agregarlo en Render, haz un nuevo deploy
-                        y prueba subir un video.
-                    </p>
-                </div>
-            </body>
+            <head><meta charset="UTF-8"><title>Google Drive autorizado</title>
+            <style>body{font-family:Arial;background:#111;color:white;padding:40px;}.box{max-width:800px;margin:auto;background:#222;padding:30px;border-radius:12px;}code{display:block;background:#000;padding:15px;margin-top:15px;word-break:break-all;border-radius:8px;}</style></head>
+            <body><div class="box"><h1>✅ Google Drive autorizado</h1><p>Copia el valor en Render como <b>GOOGLE_REFRESH_TOKEN</b>:</p><code>${tokens.refresh_token}</code></div></body>
             </html>
         `);
-
     } catch (err) {
         console.error('Error en callback OAuth de Google Drive:', err);
-
-        res.status(500).send(`
-            <h1>Error durante la autorización</h1>
-            <p>${err.message}</p>
-        `);
+        res.status(500).send(`<h1>Error durante la autorización</h1><p>${err.message}</p>`);
     }
 });
 
@@ -250,8 +185,7 @@ app.post('/api/register', async (req, res) => {
             .input('n', sql.NVarChar, nLimpio)
             .input('r', sql.NVarChar, 'Lector')
             .query(`INSERT INTO UsuariosWeb (Username, Password, NombreVisible, RolApp) 
-                    OUTPUT INSERTED.Id 
-                    VALUES (@u, @p, @n, @r)`);
+                    OUTPUT INSERTED.Id VALUES (@u, @p, @n, @r)`);
 
         const nuevoUserId = insertUser.recordset[0].Id;
 
@@ -381,7 +315,7 @@ app.post('/api/amigos', manejarSubida, async (req, res) => {
 
         const avatarF = files.find(f => f.fieldname === 'avatarFile');
         const waifuFiles = files.filter(f => f.fieldname === 'waifuFiles');
-        const fotoRuta = avatarF ? avatarF.path : 'imagenes/default.png';
+        const fotoRuta = avatarF ? await subirMediaInteligente(avatarF, 'avatar') : 'imagenes/default.png';
 
         const insertRes = await pool.request()
             .input('tag', sql.NVarChar, body.discordUsername || '')
@@ -394,9 +328,10 @@ app.post('/api/amigos', manejarSubida, async (req, res) => {
 
         const amigoId = insertRes.recordset[0].Id;
         for (const file of waifuFiles) {
+            const urlFoto = await subirMediaInteligente(file, 'waifu');
             await pool.request()
                 .input('amigoId', sql.Int, amigoId)
-                .input('fotoUrl', sql.NVarChar, file.path)
+                .input('fotoUrl', sql.NVarChar, urlFoto)
                 .query('INSERT INTO FotosAmigo (AmigoId, FotoUrl) VALUES (@amigoId, @fotoUrl)');
         }
 
@@ -434,7 +369,7 @@ app.put('/api/amigos/:id', manejarSubida, async (req, res) => {
 
         const avatarF = files.find(f => f.fieldname === 'avatarFile');
         const waifuFiles = files.filter(f => f.fieldname === 'waifuFiles');
-        const fotoRuta = avatarF ? avatarF.path : (body.avatarUrlActual || amigoActual.FotoRuta || 'imagenes/default.png');
+        const fotoRuta = avatarF ? await subirMediaInteligente(avatarF, 'avatar') : (body.avatarUrlActual || amigoActual.FotoRuta || 'imagenes/default.png');
 
         let queryUpdate = `UPDATE Amigos SET DiscordTag = @tag, NombreVisible = @nombre, FotoRuta = @foto, Descripcion = @desc`;
         if (esAdmin) queryUpdate += `, RolServidor = @rol `;
@@ -451,9 +386,10 @@ app.put('/api/amigos/:id', manejarSubida, async (req, res) => {
         await requestUpdate.query(queryUpdate);
 
         for (const file of waifuFiles) {
+            const urlFoto = await subirMediaInteligente(file, 'waifu');
             await pool.request()
                 .input('amigoId', sql.Int, id)
-                .input('fotoUrl', sql.NVarChar, file.path)
+                .input('fotoUrl', sql.NVarChar, urlFoto)
                 .query('INSERT INTO FotosAmigo (AmigoId, FotoUrl) VALUES (@amigoId, @fotoUrl)');
         }
 
@@ -498,17 +434,13 @@ app.delete('/api/fotos/:id', async (req, res) => {
                 WHERE f.Id = @id
             `);
 
-        if (check.recordset.length === 0) {
-            return res.status(404).json({ error: 'Foto no encontrada.' });
-        }
+        if (check.recordset.length === 0) return res.status(404).json({ error: 'Foto no encontrada.' });
 
         const fotoInfo = check.recordset[0];
         const esAdmin = rolSolicitante === 'Admin';
         const esDueno = solicitanteId && parseInt(solicitanteId) === fotoInfo.UsuarioId;
 
-        if (!esAdmin && !esDueno) {
-            return res.status(403).json({ error: 'No tienes permiso para borrar esta foto.' });
-        }
+        if (!esAdmin && !esDueno) return res.status(403).json({ error: 'No tienes permiso para borrar esta foto.' });
 
         await pool.request().input('id', sql.Int, id).query('DELETE FROM FotosAmigo WHERE Id = @id');
         res.json({ mensaje: 'Foto eliminada correctamente' });
@@ -528,14 +460,12 @@ app.get('/api/publicaciones-globales', async (req, res) => {
     }
 });
 
-app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req, res) => {
+app.post('/api/publicaciones-globales', uploadMemory.single('imagenPost'), async (req, res) => {
     const { autor, contenido, respuestaAId, imagenUrlDirecta, usuarioId } = req.body || {};
     try {
-        const imgUrl = req.file ? req.file.path : (imagenUrlDirecta || null);
+        const imgUrl = req.file ? await subirMediaInteligente(req.file, 'muro') : (imagenUrlDirecta || null);
 
-        // 1. Obtener ID del usuario que publica (recibido o buscado como respaldo)
         let autorUsuarioId = usuarioId ? parseInt(usuarioId) : null;
-
         if (!autorUsuarioId && autor) {
             try {
                 const userCheck = await pool.request()
@@ -546,15 +476,12 @@ app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req,
                         WHERE NombreVisible LIKE '%' + @nom + '%'
                           AND UsuarioId IS NOT NULL
                     `);
-                if (userCheck.recordset.length > 0) {
-                    autorUsuarioId = userCheck.recordset[0].UsuarioId;
-                }
+                if (userCheck.recordset.length > 0) autorUsuarioId = userCheck.recordset[0].UsuarioId;
             } catch (queryErr) {
                 console.warn('Aviso buscando autor en Amigos:', queryErr.message);
             }
         }
 
-        // 2. Insertar publicación global
         const insertRes = await pool.request()
             .input('autor', sql.NVarChar, autor)
             .input('texto', sql.NVarChar, contenido || '')
@@ -568,7 +495,6 @@ app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req,
 
         const newPostId = insertRes.recordset[0].Id;
 
-        // 3. Notificación si es respuesta
         if (respuestaAId) {
             const padreInfo = await pool.request()
                 .input('pId', sql.Int, respuestaAId)
@@ -576,8 +502,6 @@ app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req,
 
             if (padreInfo.recordset.length > 0) {
                 const nombrePadre = padreInfo.recordset[0].Autor;
-
-                // Buscar el UsuarioId del autor original del post
                 const destCheck = await pool.request()
                     .input('nom', sql.NVarChar, nombrePadre.trim())
                     .query(`
@@ -587,12 +511,8 @@ app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req,
                           AND UsuarioId IS NOT NULL
                     `);
 
-                let usuarioDestinoId = (destCheck.recordset.length > 0) 
-                    ? destCheck.recordset[0].UsuarioId 
-                    : null;
+                let usuarioDestinoId = (destCheck.recordset.length > 0) ? destCheck.recordset[0].UsuarioId : null;
 
-                // Si quien responde es el mismo autor del post padre,
-                // buscamos al último participante distinto dentro del hilo
                 if (usuarioDestinoId && autorUsuarioId && usuarioDestinoId === autorUsuarioId) {
                     const ultimoParticipante = await pool.request()
                         .input('pId', sql.Int, respuestaAId)
@@ -612,7 +532,6 @@ app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req,
                     }
                 }
 
-                // Insertar notificación sin notificarse a uno mismo
                 if (usuarioDestinoId && usuarioDestinoId !== autorUsuarioId) {
                     await pool.request()
                         .input('uDest', sql.Int, usuarioDestinoId)
@@ -639,7 +558,6 @@ app.post('/api/publicaciones-globales', upload.single('imagenPost'), async (req,
 app.put('/api/publicaciones-globales/:id', async (req, res) => {
     const { id } = req.params;
     const { texto, rolSolicitante, solicitanteNombre } = req.body || {};
-
     if (!texto || !texto.trim()) return res.status(400).json({ error: 'El texto no puede estar vacío.' });
 
     try {
@@ -680,8 +598,8 @@ app.delete('/api/publicaciones-globales/:id', async (req, res) => {
         res.status(500).json({ error: 'Error al eliminar publicación.' });
     }
 });
-// ================= COMENTARIOS EN PERFILES =================
 
+// ================= COMENTARIOS EN PERFILES =================
 app.get('/api/comentarios/:amigoId', async (req, res) => {
     try {
         const result = await pool.request()
@@ -692,32 +610,24 @@ app.get('/api/comentarios/:amigoId', async (req, res) => {
                 WHERE AmigoId = @amigoId
                 ORDER BY Id DESC
             `);
-
         res.json(result.recordset);
-
     } catch (err) {
         console.error('ERROR GET /api/comentarios:', err);
-
-        res.status(500).json({
-            error: err.message
-        });
+        res.status(500).json({ error: err.message });
     }
 });
 
-app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res) => {
+app.post('/api/comentarios', uploadMemory.single('imagenComentario'), async (req, res) => {
     const { amigoId, autor, contenido, respuestaAId, imagenUrlDirecta, usuarioId } = req.body || {};
 
     try {
-        const imgUrl = req.file ? req.file.path : (imagenUrlDirecta || null);
+        const imgUrl = req.file ? await subirMediaInteligente(req.file, 'coment') : (imagenUrlDirecta || null);
 
         if ((!contenido || !contenido.trim()) && !imgUrl) {
-            return res.status(400).json({
-                error: 'El comentario no puede estar vacío.'
-            });
+            return res.status(400).json({ error: 'El comentario no puede estar vacío.' });
         }
 
         let autorUsuarioId = usuarioId ? parseInt(usuarioId) : null;
-
         if (!autorUsuarioId && autor) {
             try {
                 const autorCheck = await pool.request()
@@ -728,36 +638,12 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
                         WHERE NombreVisible LIKE '%' + @aut + '%'
                         AND UsuarioId IS NOT NULL
                     `);
-
-                if (autorCheck.recordset.length > 0) {
-                    autorUsuarioId = autorCheck.recordset[0].UsuarioId;
-                }
+                if (autorCheck.recordset.length > 0) autorUsuarioId = autorCheck.recordset[0].UsuarioId;
             } catch (queryErr) {
                 console.warn('Advertencia buscando en Amigos:', queryErr.message);
             }
         }
 
-        if (!autorUsuarioId && autor) {
-            try {
-                const userCheck = await pool.request()
-                    .input('aut', sql.NVarChar, autor.trim())
-                    .query(`
-                        SELECT TOP 1 Id
-                        FROM Usuarios
-                        WHERE Username = @aut OR NombreVisible = @aut
-                    `);
-
-                if (userCheck.recordset.length > 0) {
-                    autorUsuarioId = userCheck.recordset[0].Id;
-                }
-            } catch (err) {
-            }
-        }
-
-        console.log('DEBUG PERFIL - Autor:', autor);
-        console.log('DEBUG PERFIL - UsuarioId autor final:', autorUsuarioId);
-
-        // ================= INSERTAR COMENTARIO =================
         const insertRes = await pool.request()
             .input('amigoId', sql.Int, amigoId)
             .input('autor', sql.NVarChar, autor)
@@ -775,37 +661,20 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
 
         const newComId = insertRes.recordset[0].Id;
 
-        // ================= DUEÑO DEL PERFIL =================
         const duenoCheck = await pool.request()
             .input('aId', sql.Int, amigoId)
-            .query(`
-                SELECT UsuarioId
-                FROM Amigos
-                WHERE Id = @aId
-            `);
+            .query(`SELECT UsuarioId FROM Amigos WHERE Id = @aId`);
 
-        const duenoUsuarioId = duenoCheck.recordset.length > 0
-            ? duenoCheck.recordset[0].UsuarioId
-            : null;
+        const duenoUsuarioId = duenoCheck.recordset.length > 0 ? duenoCheck.recordset[0].UsuarioId : null;
 
-        // ============================================================
-        // 1. SI ES RESPUESTA A OTRO COMENTARIO (CÓDIGO NUEVO)
-        // ============================================================
         if (respuestaAId) {
             const padreInfo = await pool.request()
                 .input('pId', sql.Int, respuestaAId)
-                .query(`
-                    SELECT Id, Autor, UsuarioId, AmigoId
-                    FROM Comentarios
-                    WHERE Id = @pId
-                `);
-
-            console.log('DEBUG PERFIL - Comentario padre:', padreInfo.recordset);
+                .query(`SELECT Id, Autor, UsuarioId, AmigoId FROM Comentarios WHERE Id = @pId`);
 
             if (padreInfo.recordset.length > 0) {
                 let usuarioDestinoId = padreInfo.recordset[0].UsuarioId;
 
-                // Si quien responde es el dueño del comentario original, notificar al último participante
                 if (usuarioDestinoId === autorUsuarioId) {
                     const ultimoParticipante = await pool.request()
                         .input('pId', sql.Int, respuestaAId)
@@ -818,15 +687,11 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
                               AND UsuarioId IS NOT NULL
                             ORDER BY Fecha DESC
                         `);
-
                     if (ultimoParticipante.recordset.length > 0) {
                         usuarioDestinoId = ultimoParticipante.recordset[0].UsuarioId;
                     }
                 }
 
-                console.log('DEBUG PERFIL - Usuario destino final:', usuarioDestinoId);
-
-                // No notificarse a uno mismo
                 if (usuarioDestinoId && usuarioDestinoId !== autorUsuarioId) {
                     await pool.request()
                         .input('uDest', sql.Int, usuarioDestinoId)
@@ -842,15 +707,7 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
                         `);
                 }
             }
-        }
-
-        // ============================================================
-        // 2. SI NO ES RESPUESTA, NOTIFICAR AL DUEÑO DEL PERFIL (SE QUEDA IGUAL)
-        // ============================================================
-        else if (
-            duenoUsuarioId &&
-            duenoUsuarioId !== autorUsuarioId
-        ) {
+        } else if (duenoUsuarioId && duenoUsuarioId !== autorUsuarioId) {
             await pool.request()
                 .input('uDest', sql.Int, duenoUsuarioId)
                 .input('autor', sql.NVarChar, autor || 'Alguien')
@@ -865,23 +722,16 @@ app.post('/api/comentarios', upload.single('imagenComentario'), async (req, res)
                 `);
         }
 
-        res.json({
-            mensaje: 'Comentario publicado exitosamente'
-        });
-
+        res.json({ mensaje: 'Comentario publicado exitosamente' });
     } catch (err) {
         console.error('Error POST /api/comentarios:', err);
-
-        res.status(500).json({
-            error: err.message
-        });
+        res.status(500).json({ error: err.message });
     }
 });
 
 app.put('/api/comentarios/:id', async (req, res) => {
     const { id } = req.params;
     const { texto, rolSolicitante, solicitanteNombre } = req.body || {};
-
     if (!texto || !texto.trim()) return res.status(400).json({ error: 'El texto no puede estar vacío.' });
 
     try {
@@ -923,12 +773,10 @@ app.delete('/api/comentarios/:id', async (req, res) => {
     }
 });
 
-// ================= GOOGLE DRIVE MEDIA (VIDEOS/ARCHIVOS PESADOS) =================
+// ================= GOOGLE DRIVE MEDIA (DIRECTO) =================
 app.post('/api/media-drive', uploadMemory.single('archivo'), async (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No se envió ningún archivo.' });
-        }
+        if (!req.file) return res.status(400).json({ error: 'No se envió ningún archivo.' });
         const nombreUnico = `media_${Date.now()}_${req.file.originalname}`;
         const driveUrl = await subirADrive(req.file.buffer, nombreUnico, req.file.mimetype);
         res.json({ mensaje: 'Subido a Google Drive con éxito', url: driveUrl });
@@ -942,35 +790,23 @@ app.get('/api/media-drive/:id', async (req, res) => {
     try {
         const fileId = req.params.id;
         const range = req.headers.range;
-
         const info = await obtenerInfoVideoDrive(fileId);
         const tamaño = Number(info.size);
 
-        if (!tamaño) {
-            return res.status(500).json({
-                error: 'No se pudo obtener el tamaño del video.'
-            });
-        }
+        if (!tamaño) return res.status(500).json({ error: 'No se pudo obtener el tamaño del archivo.' });
 
         if (!range) {
             const response = await obtenerVideoDrive(fileId);
-
             res.status(200);
-            res.setHeader('Content-Type', info.mimeType || 'video/mp4');
+            res.setHeader('Content-Type', info.mimeType || 'application/octet-stream');
             res.setHeader('Content-Length', tamaño);
             res.setHeader('Accept-Ranges', 'bytes');
-
             response.data.pipe(res);
             return;
         }
 
         const match = range.match(/bytes=(\d+)-(\d*)/);
-
-        if (!match) {
-            return res.status(416).json({
-                error: 'Rango de video no válido.'
-            });
-        }
+        if (!match) return res.status(416).json({ error: 'Rango no válido.' });
 
         const inicio = Number(match[1]);
         let fin = match[2] ? Number(match[2]) : tamaño - 1;
@@ -981,39 +817,21 @@ app.get('/api/media-drive/:id', async (req, res) => {
             return res.end();
         }
 
-        if (fin >= tamaño) {
-            fin = tamaño - 1;
-        }
+        if (fin >= tamaño) fin = tamaño - 1;
 
         const rangoDrive = `bytes=${inicio}-${fin}`;
-
-        const response = await obtenerVideoDrive(
-            fileId,
-            rangoDrive
-        );
-
+        const response = await obtenerVideoDrive(fileId, rangoDrive);
         const longitud = fin - inicio + 1;
 
         res.status(206);
-        res.setHeader(
-            'Content-Range',
-            `bytes ${inicio}-${fin}/${tamaño}`
-        );
+        res.setHeader('Content-Range', `bytes ${inicio}-${fin}/${tamaño}`);
         res.setHeader('Accept-Ranges', 'bytes');
         res.setHeader('Content-Length', longitud);
-        res.setHeader(
-            'Content-Type',
-            info.mimeType || 'video/mp4'
-        );
-
+        res.setHeader('Content-Type', info.mimeType || 'application/octet-stream');
         response.data.pipe(res);
-
     } catch (err) {
-        console.error('Error reproduciendo video de Drive:', err);
-
-        res.status(500).json({
-            error: 'No se pudo reproducir el video.'
-        });
+        console.error('Error reproduciendo archivo de Drive:', err);
+        res.status(500).json({ error: 'No se pudo cargar el archivo.' });
     }
 });
 
@@ -1051,54 +869,19 @@ app.get('/api/anuncio', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
 app.post('/api/anuncio', uploadMemory.single('imagenAfiche'), async (req, res) => {
     const { titulo, descripcion, rolSolicitante, imagenUrlDirecta } = req.body || {};
-
     if (rolSolicitante !== 'Admin') {
         return res.status(403).json({ error: 'Solo administradores pueden publicar anuncios.' });
     }
 
     try {
-        // Si el frontend ya subió el video a Drive y envió la URL directa, la tomamos; si no, null
         let mediaUrl = imagenUrlDirecta || null;
-
         if (req.file) {
-            const esVideo = req.file.mimetype.startsWith('video/') || 
-                            req.file.originalname.match(/\.(mp4|webm|mov|mkv|avi)$/i);
-
-            if (esVideo) {
-                // Si es video, directo a Drive
-                const nombreUnico = `anuncio_video_${Date.now()}_${req.file.originalname}`;
-                mediaUrl = await subirADrive(req.file.buffer, nombreUnico, req.file.mimetype);
-            } else {
-                // Si la imagen supera los 10 MB, Cloudinary la rechazará; se envía a Drive
-                if (req.file.size > 10 * 1024 * 1024) {
-                    console.log('Imagen > 10 MB detectada. Subiendo directo a Google Drive...');
-                    const nombreUnico = `anuncio_img_${Date.now()}_${req.file.originalname}`;
-                    mediaUrl = await subirADrive(req.file.buffer, nombreUnico, req.file.mimetype);
-                } else {
-                    try {
-                        const uploadPromise = new Promise((resolve, reject) => {
-                            const uploadStream = cloudinary.uploader.upload_stream(
-                                { folder: 'los-del-disc', resource_type: 'auto' },
-                                (error, result) => {
-                                    if (error) return reject(error);
-                                    resolve(result.secure_url);
-                                }
-                            );
-                            uploadStream.end(req.file.buffer);
-                        });
-                        mediaUrl = await uploadPromise;
-                    } catch (cErr) {
-                        console.warn('Aviso: Cloudinary falló, guardando en Google Drive:', cErr.message);
-                        const nombreUnico = `anuncio_img_${Date.now()}_${req.file.originalname}`;
-                        mediaUrl = await subirADrive(req.file.buffer, nombreUnico, req.file.mimetype);
-                    }
-                }
-            }
+            mediaUrl = await subirMediaInteligente(req.file, 'anuncio');
         }
 
-        // Guardar en la base de datos
         const insertRes = await pool.request()
             .input('tit', sql.NVarChar, (titulo || 'Nuevo Anuncio').trim())
             .input('desc', sql.NVarChar, (descripcion || '').trim())
@@ -1111,10 +894,8 @@ app.post('/api/anuncio', uploadMemory.single('imagenAfiche'), async (req, res) =
 
         const newAnuncioId = insertRes.recordset[0].Id;
 
-        // Notificaciones masivas para los miembros
         try {
             const usuariosList = await pool.request().query('SELECT Id FROM UsuariosWeb');
-
             for (const user of usuariosList.recordset) {
                 await pool.request()
                     .input('uDest', sql.Int, user.Id)
@@ -1145,46 +926,17 @@ app.delete('/api/anuncio/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const { rolSolicitante } = req.query;
+        if (rolSolicitante !== 'Admin') return res.status(403).json({ error: 'Solo Admin.' });
 
-        if (rolSolicitante !== 'Admin') {
-            return res.status(403).json({ error: 'Solo Admin.' });
-        }
-
-        await pool.request()
-            .input('id', sql.Int, id)
-            .query(`
-                DELETE FROM AnuncioGlobal
-                WHERE Id = @id
-            `);
-
+        await pool.request().input('id', sql.Int, id).query('DELETE FROM AnuncioGlobal WHERE Id = @id');
         res.json({ mensaje: 'Anuncio eliminado correctamente' });
-
     } catch (err) {
         console.error('Error eliminando anuncio:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Servidor corriendo en el puerto ${PORT}`);
-    const INTERVALO_PING = 10 * 60 * 1000;
-    const URL_SERVICIO = process.env.RENDER_EXTERNAL_URL;
-
-    if (URL_SERVICIO) {
-        setInterval(async () => {
-            try {
-                const respuesta = await fetch(`${URL_SERVICIO}/ping`);
-                console.log(`[KEEP-ALIVE] Ping: ${respuesta.status} - ${new Date().toLocaleTimeString()}`);
-            } catch (err) {
-                console.warn('[KEEP-ALIVE] Ping fallido:', err.message);
-            }
-        }, INTERVALO_PING);
-    }
-});
-
-
-// ===========     Juegos =======================
+// =========== JUEGOS =======================
 app.post('/api/juegos/record', async (req, res) => {
     const { usuarioId, juego, puntuacion } = req.body;
     if (!usuarioId || !juego || puntuacion === undefined) {
@@ -1205,10 +957,10 @@ app.post('/api/juegos/record', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
-});     
+});
+
 app.get('/api/juegos/leaderboard/:juego', async (req, res) => {
     const { juego } = req.params;
-
     try {
         const result = await pool.request()
             .input('juego', sql.NVarChar, (juego || '').toLowerCase().trim())
@@ -1232,8 +984,7 @@ app.get('/api/juegos/leaderboard/:juego', async (req, res) => {
     }
 });
 
-
-// ===========  DOOM =======================
+// =========== DOOM =======================
 app.post('/api/juegos/doom/guardar', async (req, res) => {
     const { usuarioId, slot, datosBase64 } = req.body || {};
     if (!usuarioId || slot === undefined || !datosBase64) {
@@ -1263,7 +1014,6 @@ app.post('/api/juegos/doom/guardar', async (req, res) => {
     }
 });
 
-// Cargar partidas del usuario
 app.get('/api/juegos/doom/cargar/:usuarioId', async (req, res) => {
     const { usuarioId } = req.params;
     try {
@@ -1279,5 +1029,23 @@ app.get('/api/juegos/doom/cargar/:usuarioId', async (req, res) => {
         res.json(partidas);
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Servidor corriendo en el puerto ${PORT}`);
+    const INTERVALO_PING = 10 * 60 * 1000;
+    const URL_SERVICIO = process.env.RENDER_EXTERNAL_URL;
+
+    if (URL_SERVICIO) {
+        setInterval(async () => {
+            try {
+                const respuesta = await fetch(`${URL_SERVICIO}/ping`);
+                console.log(`[KEEP-ALIVE] Ping: ${respuesta.status} - ${new Date().toLocaleTimeString()}`);
+            } catch (err) {
+                console.warn('[KEEP-ALIVE] Ping fallido:', err.message);
+            }
+        }, INTERVALO_PING);
     }
 });
