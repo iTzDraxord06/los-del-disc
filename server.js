@@ -40,7 +40,7 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 25 * 1024 * 1024 }
+    limits: { fileSize: 30 * 1024 * 1024 } // 30 MB
 });
 
 // Multer en memoria para archivos pesados / Google Drive (hasta 30 MB)
@@ -1067,27 +1067,33 @@ app.post('/api/anuncio', uploadMemory.single('imagenAfiche'), async (req, res) =
                             req.file.originalname.match(/\.(mp4|webm|mov|mkv|avi)$/i);
 
             if (esVideo) {
-                // Si es video enviado directamente en la petición
+                // Si es video, directo a Drive
                 const nombreUnico = `anuncio_video_${Date.now()}_${req.file.originalname}`;
                 mediaUrl = await subirADrive(req.file.buffer, nombreUnico, req.file.mimetype);
             } else {
-                // Si es imagen, la mandamos a Cloudinary (y si falla, a Drive como respaldo)
-                try {
-                    const uploadPromise = new Promise((resolve, reject) => {
-                        const uploadStream = cloudinary.uploader.upload_stream(
-                            { folder: 'los-del-disc' },
-                            (error, result) => {
-                                if (error) return reject(error);
-                                resolve(result.secure_url);
-                            }
-                        );
-                        uploadStream.end(req.file.buffer);
-                    });
-                    mediaUrl = await uploadPromise;
-                } catch (cErr) {
-                    console.warn('Aviso: Cloudinary falló, guardando imagen en Google Drive:', cErr.message);
+                // Si la imagen supera los 10 MB, Cloudinary la rechazará; se envía a Drive
+                if (req.file.size > 10 * 1024 * 1024) {
+                    console.log('Imagen > 10 MB detectada. Subiendo directo a Google Drive...');
                     const nombreUnico = `anuncio_img_${Date.now()}_${req.file.originalname}`;
                     mediaUrl = await subirADrive(req.file.buffer, nombreUnico, req.file.mimetype);
+                } else {
+                    try {
+                        const uploadPromise = new Promise((resolve, reject) => {
+                            const uploadStream = cloudinary.uploader.upload_stream(
+                                { folder: 'los-del-disc', resource_type: 'auto' },
+                                (error, result) => {
+                                    if (error) return reject(error);
+                                    resolve(result.secure_url);
+                                }
+                            );
+                            uploadStream.end(req.file.buffer);
+                        });
+                        mediaUrl = await uploadPromise;
+                    } catch (cErr) {
+                        console.warn('Aviso: Cloudinary falló, guardando en Google Drive:', cErr.message);
+                        const nombreUnico = `anuncio_img_${Date.now()}_${req.file.originalname}`;
+                        mediaUrl = await subirADrive(req.file.buffer, nombreUnico, req.file.mimetype);
+                    }
                 }
             }
         }
