@@ -1,4 +1,5 @@
 const express = require('express');
+const sharp = require('sharp');
 const sql = require('mssql');
 const cors = require('cors');
 const path = require('path');
@@ -50,31 +51,26 @@ async function subirMediaInteligente(file, prefijo) {
 
     const esVideo = file.mimetype.startsWith('video/') || 
                     file.originalname.match(/\.(mp4|webm|mov|mkv|avi)$/i);
-    const superaLimiteCloudinary = file.size > 10 * 1024 * 1024; // Límite gratuito de 10 MB
+    const superaLimiteCloudinary = file.size > 10 * 1024 * 1024; // Más de 10 MB
 
-    if (superaLimiteCloudinary || esVideo) {
-        console.log(`[MEDIA INTELIGENTE] Archivo pesado (${(file.size / (1024 * 1024)).toFixed(2)} MB). Subiendo a Drive...`);
+    // Videos o fotos gigantes (>10MB) van a Drive
+    if (esVideo || superaLimiteCloudinary) {
+        console.log(`[DRIVE] Archivo pesado (${(file.size / (1024 * 1024)).toFixed(2)} MB). Enviando a Google Drive...`);
         const nombreUnico = `${prefijo}_${Date.now()}_${file.originalname}`;
         return await subirADrive(file.buffer, nombreUnico, file.mimetype);
-    } else {
-        return new Promise((resolve, reject) => {
-            const stream = cloudinary.uploader.upload_stream(
-                { folder: 'los-del-disc', resource_type: 'auto' },
-                (error, result) => {
-                    if (error) {
-                        console.warn('[MEDIA INTELIGENTE] Falló Cloudinary, usando Drive de respaldo:', error.message);
-                        const nombreUnico = `${prefijo}_${Date.now()}_${file.originalname}`;
-                        subirADrive(file.buffer, nombreUnico, file.mimetype)
-                            .then(resolve)
-                            .catch(reject);
-                    } else {
-                        resolve(result.secure_url);
-                    }
-                }
-            );
-            stream.end(file.buffer);
-        });
     }
+
+    // Fotos normales (<=10MB) van a Cloudinary
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            { folder: 'los-del-disc', resource_type: 'image' },
+            (error, result) => {
+                if (error) return reject(error);
+                resolve(result.secure_url);
+            }
+        );
+        stream.end(file.buffer);
+    });
 }
 
 const rutaImagenes = path.join(__dirname, 'imagenes');
