@@ -520,10 +520,12 @@
     line-height: 1;
 }
 
+
 .btn-responder-comentario {
     color: #8fa1b8 !important;
     font-size: 13px;
 }
+
 
 .btn-responder-comentario:hover {
     color: #00e5ff !important;
@@ -550,6 +552,7 @@
     gap: 8px;
 }
 
+
 @media (max-width:768px) {
     .btn-responder-comentario,
     .btn-editar-comentario,
@@ -566,7 +569,6 @@
         padding: 6px 8px;
     }
 }
-
 @media(max-width:768px){
     .overlay-sidebar{
         position:fixed;

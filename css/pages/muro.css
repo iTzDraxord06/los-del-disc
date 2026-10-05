@@ -6,6 +6,13 @@
     margin-bottom: 1.5rem;
 }
 
+.columna-feed-global {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
 .caja-crear-post h3 {
     font-size: 1rem;
     color: var(--text-principal);
@@ -28,6 +35,7 @@
     outline: none;
     font-size: .92rem;
     width: 100%;
+    box-sizing: border-box;
 }
 
 .form-comentario input:focus,
@@ -64,16 +72,19 @@
 .lista-comentarios {
     display: flex;
     flex-direction: column;
-    gap: .9rem;
+    gap: .75rem;
 }
 
 .comentario-wrapper {
     display: flex;
     flex-direction: column;
     gap: 6px;
+    width: 100%;
 }
 
 .comentario-item {
+    width: 100%;
+    box-sizing: border-box;
     background-color: var(--bg-lateral);
     padding: .95rem;
     border-radius: 10px;
@@ -112,9 +123,9 @@
 .comentario-imagen {
     display: block;
     margin-top: 10px;
-    max-width: 100%;
-    max-height: 480px;
     width: auto;
+    max-width: min(100%,500px);
+    max-height: 520px;
     height: auto;
     object-fit: contain;
     border-radius: 8px;
@@ -124,21 +135,25 @@
 
 .media-reproductor {
     display: block;
-    margin-top: 10px;
-    width: 100%;
-    max-height: 500px;
+    margin: 10px auto 0;
+    width: auto;
+    max-width: 100%;
+    max-height: 600px;
+    height: auto;
     border-radius: 8px;
     background: #000;
 }
 
 .btn-responder-comentario {
-    background: none;
+    appearance: none;
+    background: transparent;
     border: none;
     color: var(--text-secundario);
     font-size: .78rem;
     cursor: pointer;
     font-weight: 600;
     padding: 2px 6px;
+    box-shadow: none;
 }
 
 .btn-responder-comentario:hover {
@@ -146,25 +161,102 @@
 }
 
 .comentario-hijo {
+    width: calc(100% - 26px);
     margin-left: 26px;
     background-color: #12141a;
     border-left: 3px solid var(--accent-secondary);
 }
 
+.barra-adjuntos-comentario {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+#btnEnviarPostGlobal {
+    margin-left: auto;
+}
+
 @media (max-width:768px) {
+    .columna-feed-global {
+        max-width: 100%;
+        padding: 10px;
+    }
+
     .comentario-item {
         padding: 12px 14px;
     }
 
-    .comentario-imagen,
+    .comentario-imagen {
+        width: auto;
+        max-width: min(100%,320px);
+        max-height: 360px;
+    }
+
     .media-reproductor {
-        max-width: 280px;
-        width: 100%;
-        height: auto;
-        max-height: 260px;
+        width: auto;
+        max-width: 100%;
+        max-height: 480px;
     }
 
     .comentario-hijo {
+        width: calc(100% - 12px);
         margin-left: 12px;
+    }
+
+    .barra-adjuntos-comentario {
+        gap: 8px;
+    }
+}
+
+@media (max-width:480px) {
+    .columna-feed-global {
+        padding: 8px;
+    }
+
+    .caja-crear-post {
+        padding: 1rem;
+    }
+
+    .barra-adjuntos-comentario {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .grupo-adjunto,
+    .input-grupo-media {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .btn-adjunto,
+    .lbl-video-trigger {
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #btnEnviarPostGlobal {
+        grid-column: 1/-1;
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .comentario-hijo {
+        width: calc(100% - 8px);
+        margin-left: 8px;
+    }
+
+    .comentario-imagen {
+        max-width: 100%;
+        max-height: 420px;
+    }
+
+    .media-reproductor {
+        width: 100%;
+        max-height: 420px;
     }
 }
