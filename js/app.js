@@ -161,8 +161,8 @@ export async function navegarA(pagina, parametros = {}, opciones = {}) {
         const html = await cargarHTML(config.html);
 
         cargarCSSPagina(config.css);
-        contenedor.innerHTML = html;
 
+        contenedor.innerHTML = html;
         paginaActual = pagina;
         parametrosActuales = parametros;
 

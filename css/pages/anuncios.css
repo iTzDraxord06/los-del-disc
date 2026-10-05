@@ -1,355 +1,72 @@
-/* Vista Arcade */
-/* ================= ARCADE ZONE ================= */
-.arcade-contenedor {
-    display: grid;
-    grid-template-columns: 1fr 320px;
-    gap: 20px;
-    max-width: 1100px;
-    margin: 0 auto;
-    width: 100%;
-}
-
-.pantalla-juego-card {
-    background-color: var(--fondo-tarjeta, #2b2d31);
-    border: 1px solid var(--borde, #35363c);
-    border-radius: 8px;
-    padding: 20px;
+.feed-afiches {
     display: flex;
     flex-direction: column;
     align-items: center;
-}
-
-.arcade-selector {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    justify-content: center;
+    gap: 20px;
     width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
 }
 
-.btn-game-tab {
-    background-color: #1e1f22;
-    color: #dbdee1;
-    border: 1px solid #3f4147;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.2s ease;
-}
-
-.btn-game-tab:hover {
-    background-color: #35373c;
-}
-
-.btn-game-tab.activo {
-    background-color: #5865F2;
-    color: #fff;
-    border-color: #5865F2;
-}
-
-.game-status-bar {
-    display: flex;
-    justify-content: space-between;
+.tarjeta-afiche {
+    background: var(--bg-lateral);
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.35);
     width: 100%;
-    max-width: 480px;
-    margin-bottom: 10px;
-    font-weight: 600;
-    color: #dbdee1;
+    transition: border-color .2s ease;
 }
 
-.game-canvas-area {
-    background-color: #000;
-    border: 2px solid #3f4147;
-    border-radius: 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    min-height: 400px;
-    width: 100%;
-    max-width: 480px;
+.tarjeta-afiche:hover {
+    border-color: var(--accent-primary);
 }
 
-.game-canvas-area canvas {
+.tarjeta-afiche img {
     display: block;
-    background: #000;
+    margin: 0 auto 14px;
     max-width: 100%;
     height: auto;
-    touch-action: none;
-}
-
-.dpad-container {
-    display: none;
-    margin-top: 15px;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: manipulation;
-}
-
-.dpad-layout {
-    display: flex;
-    gap: 30px;
-    align-items: center;
-    justify-content: center;
-}
-
-.dpad-cruceta {
-    display: grid;
-    grid-template-columns: repeat(3, 50px);
-    grid-template-rows: repeat(3, 50px);
-    gap: 4px;
-}
-
-.dpad-btn {
-    background: #1e1f22;
-    border: 1px solid #3f4147;
-    color: #fff;
-    font-size: 1.2rem;
-    font-weight: bold;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    max-height: 480px;
+    object-fit: contain;
+    border-radius: 10px;
     cursor: pointer;
-    box-shadow: 0 3px 0 #111;
 }
 
-.dpad-btn:active {
-    background: #5865F2;
-    transform: translateY(2px);
-    box-shadow: none;
-}
-
-.dpad-arriba { grid-column: 2; grid-row: 1; }
-.dpad-izquierda { grid-column: 1; grid-row: 2; }
-.dpad-derecha { grid-column: 3; grid-row: 2; }
-.dpad-abajo { grid-column: 2; grid-row: 3; }
-
-.dpad-acciones {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.dpad-btn-accion {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: #ed4245;
-    font-size: 1rem;
-}
-
-.dpad-btn-accion:active {
-    background: #c03537;
-}
-
-.leaderboard-card {
-    background-color: var(--fondo-tarjeta, #2b2d31);
-    border: 1px solid var(--borde, #35363c);
-    border-radius: 8px;
-    padding: 20px;
-    height: fit-content;
-}
-
-.leaderboard-lista {
-    list-style: none;
-    padding: 0;
-    margin: 15px 0 0 0;
-}
-
-.leaderboard-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    border-radius: 6px;
-    background: #1e1f22;
-    margin-bottom: 8px;
-    font-size: 0.9rem;
-}
-
-.leaderboard-item .posicion {
-    font-weight: bold;
-    margin-right: 8px;
-    color: #f1c40f;
-}
-
-.leaderboard-item .puntos {
-    font-weight: bold;
-    color: #5865F2;
-}
-
-.arcade-contenedor {
-    display: grid;
-    grid-template-columns: 1fr 280px;
-    gap: 20px;
-    max-width: 1180px;
-    margin: 0 auto;
+.tarjeta-afiche video {
+    display: block;
     width: 100%;
+    max-height: 500px;
+    margin: 0 auto 14px;
+    border-radius: 10px;
+    background: #000;
 }
 
-.game-canvas-area {
-    max-width: 720px !important;
-    width: 100% !important;
+.tarjeta-afiche h2 {
+    color: var(--text-principal);
+    margin-top: 8px;
+    font-size: 1.25rem;
+    text-align: center;
 }
 
-/* Forzar que js-dos y su canvas ocupen todo el espacio 4:3 */
-#dosboxWrapper {
-    width: 100% !important;
-    max-width: 720px !important;
-    height: auto !important;
-    aspect-ratio: 4 / 3;
+.tarjeta-afiche p {
+    color: var(--text-secundario);
+    font-size: .9rem;
+    text-align: center;
+    margin-top: 6px;
+    line-height: 1.5;
 }
 
-#dosbox, 
-.dosbox-container {
-    width: 100% !important;
-    height: 100% !important;
-}
-
-.dosbox-container canvas {
-    width: 100% !important;
-    height: 100% !important;
-    display: block !important;
-    object-fit: fill;
-    image-rendering: pixelated; /* Pixeles limpios retro sin efecto borroso */
-}
-
-/* Botón de pantalla completa elegante */
-.btn-doom-fullscreen {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 20;
-    background: rgba(14, 16, 21, 0.85);
-    color: #00e5ff;
-    border: 1px solid rgba(0, 229, 255, 0.4);
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    cursor: pointer;
-    backdrop-filter: blur(4px);
-    transition: all 0.2s ease;
-}
-
-.btn-doom-fullscreen:hover {
-    background: #00e5ff;
-    color: #000;
-    box-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
-}
-
-.doom-touch-layout {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    max-width: 520px;
-    margin: 12px auto 0 auto;
-    gap: 12px;
-    user-select: none;
-    touch-action: manipulation;
-}
-
-.doom-dpad-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 46px);
-    grid-template-rows: repeat(3, 44px);
-    gap: 4px;
-}
-
-.doom-btn {
-    background: #181b22;
-    border: 1px solid #353a45;
-    color: #fff;
-    font-weight: 700;
-    font-size: 0.95rem;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 3px 0 #0a0b0e;
-}
-
-.doom-btn:active {
-    background: #00e5ff;
-    color: #000;
-    transform: translateY(2px);
-    box-shadow: none;
-}
-
-.doom-btn-esc { background: #3a2025; border-color: #ff3366; color: #ff3366; font-size: 0.72rem; }
-.doom-btn-run { background: #232a35; font-size: 0.7rem; }
-.doom-btn-enter { background: #1c2b25; font-size: 0.85rem; }
-
-.doom-actions-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    flex: 1;
-    max-width: 200px;
-}
-
-.doom-armas-row {
-    display: flex;
-    gap: 4px;
-    justify-content: space-between;
-}
-
-.doom-btn-small {
-    flex: 1;
-    height: 32px;
-    background: #181b22;
-    border: 1px solid #353a45;
-    color: #00e5ff;
-    border-radius: 4px;
-    font-weight: 700;
-    font-size: 0.85rem;
-}
-
-.doom-btn-small:active { background: #00e5ff; color: #000; }
-
-.doom-main-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.doom-action-btn {
-    flex: 1;
-    height: 56px;
-    border-radius: 8px;
-    border: none;
-    font-weight: 800;
-    font-size: 0.78rem;
-    color: #fff;
-    box-shadow: 0 4px 0 #000;
-}
-
-.doom-action-btn:active { transform: translateY(2px); box-shadow: none; }
-.btn-use { background: #2f37c9; }
-.btn-fire { background: #e52521; }
-
-@keyframes popupEntrada {
-    from {
-        transform: translateY(40px);
-        opacity: 0;
+@media (max-width:768px) {
+    .feed-afiches {
+        max-width: 100%;
     }
-    to {
-        transform: translateY(0);
-        opacity: 1;
+
+    .tarjeta-afiche {
+        padding: 12px;
     }
-}
-@keyframes popupAparecer {
-    from { transform: translateY(50px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
 
-
-@media (max-width: 768px) {
-    .doom-touch-layout { display: flex; }
-    .dpad-container { display: block; }
-    .arcade-contenedor { grid-template-columns: 1fr; }
+    .tarjeta-afiche img {
+        max-height: 380px;
+    }
 }

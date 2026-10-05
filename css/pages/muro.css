@@ -1,48 +1,170 @@
-/* Vista Anuncios */
-/* ================= AFICHES / ANUNCIOS ================= */
-.feed-afiches {
+.caja-crear-post {
+    background-color: var(--bg-lateral);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+    padding: 1.2rem;
+    margin-bottom: 1.5rem;
+}
+
+.caja-crear-post h3 {
+    font-size: 1rem;
+    color: var(--text-principal);
+    margin-bottom: .75rem;
+}
+
+.form-comentario {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 20px;
-    width: 100%;
+    gap: .75rem;
 }
 
-.tarjeta-afiche {
-    background: var(--bg-lateral);
+.form-comentario input,
+.form-comentario textarea {
+    background-color: var(--bg-input);
     border: 1px solid var(--borde);
-    border-radius: 14px;
-    padding: 18px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    color: var(--text-principal);
+    padding: .75rem;
+    border-radius: 8px;
+    outline: none;
+    font-size: .92rem;
     width: 100%;
-    transition: border-color 0.2s ease;
 }
 
-.tarjeta-afiche:hover {
+.form-comentario input:focus,
+.form-comentario textarea:focus {
     border-color: var(--accent-primary);
+    box-shadow: 0 0 10px rgba(0,229,255,.2);
 }
 
-.tarjeta-afiche img {
-    display: block;
-    margin: 0 auto 14px auto;
-    max-width: 100%;
-    height: auto;
-    max-height: 480px;
-    object-fit: contain;
+.form-comentario textarea {
+    resize: vertical;
+    min-height: 75px;
+}
+
+.banner-respondiendo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: var(--bg-lateral);
+    border-left: 3px solid var(--accent-primary);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: .82rem;
+    color: var(--text-principal);
+}
+
+.banner-respondiendo button {
+    background: none;
+    border: none;
+    color: #ff3366;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.lista-comentarios {
+    display: flex;
+    flex-direction: column;
+    gap: .9rem;
+}
+
+.comentario-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.comentario-item {
+    background-color: var(--bg-lateral);
+    padding: .95rem;
     border-radius: 10px;
+    border: 1px solid var(--borde);
+    border-left: 3px solid var(--accent-primary);
 }
 
-.tarjeta-afiche h2 {
-    color: #ffffff;
-    margin-top: 8px;
-    font-size: 1.25rem;
-    text-align: center;
+.comentario-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: .35rem;
+    gap: .5rem;
 }
 
-.tarjeta-afiche p {
+.comentario-autor {
+    font-weight: 700;
+    color: var(--text-principal);
+    font-size: .88rem;
+}
+
+.comentario-fecha {
+    font-size: .72rem;
     color: var(--text-secundario);
-    font-size: 0.9rem;
-    text-align: center;
-    margin-top: 6px;
+    margin-left: 6px;
 }
 
+.comentario-texto {
+    color: #d1d5db;
+    line-height: 1.45;
+    font-size: .88rem;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+.comentario-imagen {
+    display: block;
+    margin-top: 10px;
+    max-width: 100%;
+    max-height: 480px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid var(--borde);
+    cursor: pointer;
+}
+
+.media-reproductor {
+    display: block;
+    margin-top: 10px;
+    width: 100%;
+    max-height: 500px;
+    border-radius: 8px;
+    background: #000;
+}
+
+.btn-responder-comentario {
+    background: none;
+    border: none;
+    color: var(--text-secundario);
+    font-size: .78rem;
+    cursor: pointer;
+    font-weight: 600;
+    padding: 2px 6px;
+}
+
+.btn-responder-comentario:hover {
+    color: var(--accent-primary);
+}
+
+.comentario-hijo {
+    margin-left: 26px;
+    background-color: #12141a;
+    border-left: 3px solid var(--accent-secondary);
+}
+
+@media (max-width:768px) {
+    .comentario-item {
+        padding: 12px 14px;
+    }
+
+    .comentario-imagen,
+    .media-reproductor {
+        max-width: 280px;
+        width: 100%;
+        height: auto;
+        max-height: 260px;
+    }
+
+    .comentario-hijo {
+        margin-left: 12px;
+    }
+}

@@ -6,11 +6,11 @@
     --accent-primary: #00e5ff;
     --accent-primary-hover: #00b4cc;
     --accent-secondary: #7c4dff;
-    --accent-gradient: linear-gradient(135deg, #00e5ff 0%, #7c4dff 100%);
-    --text-principal: #ffffff;
+    --accent-gradient: linear-gradient(135deg,#00e5ff 0%,#7c4dff 100%);
+    --text-principal: #fff;
     --text-secundario: #8b949e;
     --borde: #242933;
-    --borde-brillante: rgba(0, 229, 255, 0.35);
+    --borde-brillante: rgba(0,229,255,.35);
     --badge-admin: #ff9100;
     --badge-default: #7c4dff;
 }
@@ -19,9 +19,33 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter',system-ui,-apple-system,sans-serif;
     scrollbar-width: thin;
     scrollbar-color: #242933 var(--bg-base);
+}
+
+html,body {
+    width: 100%;
+    min-height: 100%;
+}
+
+body {
+    background-color: var(--bg-base);
+    color: var(--text-principal);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+button,input,textarea,select {
+    font: inherit;
+}
+
+button {
+    color: inherit;
+}
+
+img,video,canvas {
+    max-width: 100%;
 }
 
 ::-webkit-scrollbar {
@@ -42,10 +66,6 @@
     background-color: var(--accent-primary-hover);
 }
 
-body {
-    background-color: var(--bg-base);
-    color: var(--text-principal);
-    min-height: 100vh;
-    overflow-x: hidden;
+.oculto {
+    display: none !important;
 }
-

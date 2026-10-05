@@ -1,163 +1,70 @@
-<!DOCTYPE html>
-<html lang="es">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Los del Disc - Arcade Zone</title>
-    <link rel="icon" type="image/png" href="imagenes/Logo Pagina Web.png">
-    <link rel="stylesheet" href="css/estilos.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/js-dos@7.7.8/dist/js-dos.css">
-    <!-- Reemplazar las dos líneas de js-dos v7 por esta: -->
-    <script src="https://js-dos.com/cdn/js-dos-api.js"></script>
-</head>
-
-<body>
-    <!-- BARRA DE NAVEGACIÓN -->
-    <header class="navbar">
-        <div class="logo" onclick="window.location.href='index.html'" style="cursor: pointer;">
-            <button id="btnMenu" class="btn-hamburguesa" aria-label="Abrir menú">☰</button>
-            <img src="imagenes/Logo Pagina Web.png" alt="Logo Los del Disc" class="disc-logo-img">
-            <h2>Los del Disc</h2>
+<div class="arcade-contenedor">
+    <div class="pantalla-juego-card">
+        <div class="arcade-selector">
+            <button class="btn-game-tab activo" data-game="snake">🐍 Snake</button>
+            <button class="btn-game-tab" data-game="tetris">🧱 Tetris</button>
+            <button class="btn-game-tab" data-game="buscaminas">💣 Buscaminas</button>
+            <button class="btn-game-tab" data-game="doom">💀 DOOM (1993)</button>
         </div>
 
-        <div class="nav-derecha">
-            <a href="index.html" class="btn-secundario">🏠 Inicio</a>
-            <a href="miembros.html" class="btn-secundario">👥 Miembros</a>
-            <a href="muro.html" class="btn-secundario">💬 Muro</a>
-            <a href="anuncios.html" class="btn-secundario">📢 Anuncios</a>
+        <div class="game-status-bar">
+            <span id="labelScoreActual">Puntaje: 0</span>
+            <span id="labelInstruccion">Usa las flechas del teclado</span>
+        </div>
 
-            <div class="nav-notificaciones">
-                <button id="btnNotis" class="btn-secundario btn-notificaciones-trigger" title="Notificaciones">
-                    🔔 <span id="badgeNotis" class="badge-notificaciones oculto">0</span>
-                </button>
-                <div id="dropdownNotis" class="dropdown-notificaciones oculto">
-                    <div class="dropdown-notificaciones-header">Notificaciones</div>
-                    <div id="listaNotis" class="dropdown-notificaciones-lista"></div>
+        <div class="game-canvas-area" id="contenedorJuego">
+            <canvas id="arcadeCanvas" width="400" height="400"></canvas>
+        </div>
+
+        <div class="dpad-container" id="dpadControles">
+            <div class="dpad-layout" id="dpadModoBasico">
+                <div class="dpad-cruceta">
+                    <button type="button" class="dpad-btn dpad-arriba" id="btnTouchArriba">▲</button>
+                    <button type="button" class="dpad-btn dpad-izquierda" id="btnTouchIzq">◀</button>
+                    <button type="button" class="dpad-btn dpad-derecha" id="btnTouchDer">▶</button>
+                    <button type="button" class="dpad-btn dpad-abajo" id="btnTouchAbajo">▼</button>
+                </div>
+
+                <div class="dpad-acciones">
+                    <button type="button" class="dpad-btn dpad-btn-accion" id="btnTouchAccion">A</button>
+                </div>
+            </div>
+
+            <div class="doom-touch-layout oculto" id="dpadModoDoom">
+                <div class="doom-dpad-grid">
+                    <button type="button" class="doom-btn" id="dBtnStrafeL">↶</button>
+                    <button type="button" class="doom-btn" id="dBtnUp">▲</button>
+                    <button type="button" class="doom-btn" id="dBtnStrafeR">↷</button>
+                    <button type="button" class="doom-btn" id="dBtnLeft">◀</button>
+                    <button type="button" class="doom-btn doom-btn-esc" id="dBtnEsc">ESC</button>
+                    <button type="button" class="doom-btn" id="dBtnRight">▶</button>
+                    <button type="button" class="doom-btn doom-btn-run" id="dBtnRun">RUN</button>
+                    <button type="button" class="doom-btn" id="dBtnDown">▼</button>
+                    <button type="button" class="doom-btn doom-btn-enter" id="dBtnEnter">↵</button>
+                </div>
+
+                <div class="doom-actions-grid">
+                    <div class="doom-armas-row">
+                        <button type="button" class="doom-btn-small" id="dBtnW1">1</button>
+                        <button type="button" class="doom-btn-small" id="dBtnW2">2</button>
+                        <button type="button" class="doom-btn-small" id="dBtnW3">3</button>
+                        <button type="button" class="doom-btn-small" id="dBtnW4">4</button>
+                    </div>
+
+                    <div class="doom-main-actions">
+                        <button type="button" class="doom-action-btn btn-use" id="dBtnUse">USAR (W)</button>
+                        <button type="button" class="doom-action-btn btn-fire" id="dBtnFire">FUEGO (S)</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </header>
+    </div>
 
-    <main class="contenedor-principal">
-        <!-- BARRA LATERAL -->
-        <aside class="seccion-amigos" id="barraLateral">
-            <div class="canales-servidor">
-                <span class="categoria-canales">CANALES</span>
-                <a href="index.html" class="btn-canal">🏠 #inicio</a>
-                <a href="miembros.html" class="btn-canal">👥 #miembros</a>
-                <a href="muro.html" class="btn-canal">💬 #muro-general</a>
-                <a href="anuncios.html" class="btn-canal">📢 #anuncios</a>
-                <a href="arcade.html" class="btn-canal canal-activo">🕹️ #arcade-zone</a>
-            </div>
-
-            <div class="panel-usuario-inferior" id="panelUsuarioInferior">
-                <div id="menuDesplegableUsuario" class="menu-popup-usuario oculto">
-                    <a href="configuracion.html" class="item-popup">
-                        <span class="icono-item-popup">⚙️</span> Ajustes de Cuenta
-                    </a>
-                    <div class="separador-popup"></div>
-                    <button id="btnCerrarSesion" class="item-popup item-popup-rojo">
-                        <span class="icono-item-popup">🚪</span> Cerrar Sesión
-                    </button>
-                </div>
-
-                <div class="cuerpo-usuario" id="btnToggleMenuUsuario" title="Opciones de cuenta">
-                    <div class="sesion-info">
-                        <span id="labelUsuario" class="nombre-usuario-texto">Cargando...</span>
-                        <span class="subtexto-estado">🟢 En línea</span>
-                    </div>
-                    <span class="icono-flecha">▲</span>
-                </div>
-            </div>
-        </aside>
-
-        <!-- CONTENIDO CENTRAL DE JUEGOS -->
-        <section class="seccion-muro">
-            <div class="arcade-contenedor">
-
-                <!-- Área de juego -->
-                <div class="pantalla-juego-card">
-                    <div class="arcade-selector">
-                        <button class="btn-game-tab activo" data-game="snake">🐍 Snake</button>
-                        <button class="btn-game-tab" data-game="tetris">🧱 Tetris</button>
-                        <button class="btn-game-tab" data-game="buscaminas">💣 Buscaminas</button>
-                        <button class="btn-game-tab" data-game="doom">💀 DOOM (1993)</button>
-                    </div>
-
-                    <div class="game-status-bar">
-                        <span id="labelScoreActual">Puntaje: 0</span>
-                        <span id="labelInstruccion">Usa las flechas del teclado</span>
-                    </div>
-
-                    <div class="game-canvas-area" id="contenedorJuego">
-                        <canvas id="arcadeCanvas" width="400" height="400"></canvas>
-                    </div>
-
-                    <!-- Controles táctiles virtuales para celulares -->
-                    <div class="dpad-container" id="dpadControles">
-                        <!-- 1. MODO BÁSICO (Snake, Tetris, Buscaminas) -->
-                        <div class="dpad-layout" id="dpadModoBasico">
-                            <div class="dpad-cruceta">
-                                <button type="button" class="dpad-btn dpad-arriba" id="btnTouchArriba">▲</button>
-                                <button type="button" class="dpad-btn dpad-izquierda" id="btnTouchIzq">◀</button>
-                                <button type="button" class="dpad-btn dpad-derecha" id="btnTouchDer">▶</button>
-                                <button type="button" class="dpad-btn dpad-abajo" id="btnTouchAbajo">▼</button>
-                            </div>
-                            <div class="dpad-acciones">
-                                <button type="button" class="dpad-btn dpad-btn-accion" id="btnTouchAccion">A</button>
-                            </div>
-                        </div>
-
-                        <!-- 2. MODO DOOM (Movimiento, Strafe, Disparo, Usar y Menú) -->
-                        <div class="doom-touch-layout oculto" id="dpadModoDoom">
-                            <div class="doom-dpad-grid">
-                                <button type="button" class="doom-btn" id="dBtnStrafeL">↶</button>
-                                <button type="button" class="doom-btn" id="dBtnUp">▲</button>
-                                <button type="button" class="doom-btn" id="dBtnStrafeR">↷</button>
-
-                                <button type="button" class="doom-btn" id="dBtnLeft">◀</button>
-                                <button type="button" class="doom-btn doom-btn-esc" id="dBtnEsc">ESC</button>
-                                <button type="button" class="doom-btn" id="dBtnRight">▶</button>
-
-                                <button type="button" class="doom-btn doom-btn-run" id="dBtnRun">RUN</button>
-                                <button type="button" class="doom-btn" id="dBtnDown">▼</button>
-                                <button type="button" class="doom-btn doom-btn-enter" id="dBtnEnter">↵</button>
-                            </div>
-
-                            <div class="doom-actions-grid">
-                                <div class="doom-armas-row">
-                                    <button type="button" class="doom-btn-small" id="dBtnW1">1</button>
-                                    <button type="button" class="doom-btn-small" id="dBtnW2">2</button>
-                                    <button type="button" class="doom-btn-small" id="dBtnW3">3</button>
-                                    <button type="button" class="doom-btn-small" id="dBtnW4">4</button>
-                                </div>
-                                <div class="doom-main-actions">
-                                    <button type="button" class="doom-action-btn btn-use" id="dBtnUse">USAR (W)</button>
-                                    <button type="button" class="doom-action-btn btn-fire" id="dBtnFire">FUEGO (S)</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                <!-- Tabla de puntuaciones -->
-                <div class="leaderboard-card">
-                    <h3 style="margin: 0; color: #fff; font-size: 1.2rem;">🏆 Récords Top 10</h3>
-                    <p style="color: #949ba4; font-size: 0.85rem; margin-top: 4px;" id="subtituloLeaderboard">Snake</p>
-
-                    <ul class="leaderboard-lista" id="listaLeaderboard">
-                        <li class="leaderboard-item" style="color: #949ba4;">Cargando marcas...</li>
-                    </ul>
-                </div>
-
-            </div>
-        </section>
-    </main>
-
-    <script src="js/session.js"></script>
-    <script src="js/notificacion.js"></script>
-    <script src="js/arcade.js"></script>
-</body>
-
-</html>
+    <div class="leaderboard-card">
+        <h3>🏆 Récords Top 10</h3>
+        <p id="subtituloLeaderboard">Snake</p>
+        <ul class="leaderboard-lista" id="listaLeaderboard">
+            <li class="leaderboard-item">Cargando marcas...</li>
+        </ul>
+    </div>
+</div>
