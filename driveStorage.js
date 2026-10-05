@@ -7,19 +7,23 @@ const FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID || '1oRs20DVKv7xbG2Ey9PNjTX
 let oauth2Client = null;
 
 function crearOAuthClient() {
-    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-        throw new Error('Faltan GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET en las variables de entorno.');
+    const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI?.trim();
+
+    if (!clientId || !clientSecret) {
+        throw new Error('Faltan GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET.');
     }
 
-    if (!process.env.GOOGLE_REDIRECT_URI) {
-        throw new Error('Falta GOOGLE_REDIRECT_URI en las variables de entorno.');
+    if (!redirectUri) {
+        throw new Error('Falta GOOGLE_REDIRECT_URI.');
     }
 
     if (!oauth2Client) {
         oauth2Client = new google.auth.OAuth2(
-            process.env.GOOGLE_CLIENT_ID,
-            process.env.GOOGLE_CLIENT_SECRET,
-            process.env.GOOGLE_REDIRECT_URI
+            clientId,
+            clientSecret,
+            redirectUri
         );
     }
 
@@ -54,7 +58,7 @@ async function procesarCallback(codigo) {
 
 function obtenerClienteDrive() {
     const client = crearOAuthClient();
-    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN?.trim();
 
     if (!refreshToken) {
         throw new Error('Falta GOOGLE_REFRESH_TOKEN.');

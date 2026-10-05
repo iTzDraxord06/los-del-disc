@@ -358,125 +358,246 @@
     border-color: var(--accent-primary);
 }
 
-#formComentario .controles-media,
-#formComentario .acciones-media,
-#formComentario .media-actions {
-    grid-column: 1/-1;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
+#formComentario{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    width:100%;
+    margin-bottom:18px;
 }
 
-#formComentario button {
-    border-radius: 7px;
-    cursor: pointer;
-    font-weight: 700;
+#inputAutor,
+#inputComentario{
+    width:100%;
+    box-sizing:border-box;
+    background:var(--bg-principal);
+    border:1px solid var(--borde);
+    color:var(--text-principal);
+    border-radius:8px;
+    padding:11px 12px;
+    outline:none;
+    font-family:inherit;
+    font-size:.92rem;
 }
 
-#btnEnviarComentario {
-    grid-column: 1/-1;
-    justify-self: start;
-    background: var(--accent-gradient);
-    color: #050608;
-    border: none;
-    padding: 10px 18px;
+#inputAutor{
+    height:44px;
 }
 
-.lista-comentarios {
-    display: flex;
-    flex-direction: column;
-    gap: .75rem;
+#inputComentario{
+    min-height:85px;
+    resize:vertical;
 }
 
-.comentario-item {
-    background-color: var(--bg-lateral);
-    padding: .95rem;
-    border-radius: 10px;
-    border: 1px solid var(--borde);
-    border-left: 3px solid var(--accent-primary);
+#inputAutor:focus,
+#inputComentario:focus{
+    border-color:var(--accent-primary);
 }
 
-.comentario-hijo {
-    margin-left: 26px;
-    background-color: #12141a;
-    border-left: 3px solid var(--accent-secondary);
+.barra-adjuntos-comentario{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    width:100%;
+    flex-wrap:wrap;
 }
 
-.comentario-imagen {
-    display: block;
-    margin-top: 10px;
-    width: auto;
-    max-width: min(100%,500px);
-    max-height: 420px;
-    object-fit: contain;
-    border-radius: 8px;
-    border: 1px solid var(--borde);
-    cursor: pointer;
+.grupo-adjunto,
+.input-grupo-media{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    min-width:0;
 }
 
-.comentario-item video {
-    display: block;
-    margin-top: 10px;
-    width: 100%;
-    max-width: 600px;
-    max-height: 420px;
-    background: #000;
-    border-radius: 8px;
+.btn-adjunto,
+.lbl-video-trigger{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:38px;
+    padding:8px 13px;
+    border-radius:7px;
+    white-space:nowrap;
+    cursor:pointer;
+    font-weight:700;
+    font-size:.86rem;
 }
 
-@media (max-width:768px) {
-    .grid-tarjetas-miembros {
-        grid-template-columns: 1fr;
+.nombre-foto-adjunta,
+.nombre-archivo-video{
+    max-width:180px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    color:var(--text-secundario);
+    font-size:.8rem;
+}
+
+#formComentario button{
+    border-radius:7px;
+    cursor:pointer;
+    font-weight:700;
+}
+
+#btnQuitarFotoComentario{
+    flex:0 0 auto;
+}
+
+#btnEnviarComentario{
+    margin-left:auto;
+    background:var(--accent-gradient);
+    color:#050608;
+    border:none;
+    padding:10px 18px;
+    min-height:38px;
+    white-space:nowrap;
+}
+
+#btnEnviarComentario:hover{
+    filter:brightness(1.08);
+}
+
+.lista-comentarios{
+    display:flex;
+    flex-direction:column;
+    gap:.75rem;
+}
+
+.comentario-item{
+    background-color:var(--bg-lateral);
+    padding:.95rem;
+    border-radius:10px;
+    border:1px solid var(--borde);
+    border-left:3px solid var(--accent-primary);
+}
+
+.comentario-hijo{
+    margin-left:26px;
+    background-color:#12141a;
+    border-left:3px solid var(--accent-secondary);
+}
+
+.comentario-imagen{
+    display:block;
+    margin-top:10px;
+    width:auto;
+    max-width:min(100%,500px);
+    max-height:420px;
+    object-fit:contain;
+    border-radius:8px;
+    border:1px solid var(--borde);
+    cursor:pointer;
+}
+
+.comentario-item video{
+    display:block;
+    margin-top:10px;
+    width:100%;
+    max-width:600px;
+    max-height:420px;
+    background:#000;
+    border-radius:8px;
+}
+
+@media(max-width:768px){
+    .grid-tarjetas-miembros{
+        grid-template-columns:1fr;
     }
 
-    .perfil-avatar-wrapper {
-        top: -35px;
-        left: 15px;
+    .perfil-avatar-wrapper{
+        top:-35px;
+        left:15px;
     }
 
-    .perfil-avatar-wrapper img {
-        width: 68px;
-        height: 68px;
+    .perfil-avatar-wrapper img{
+        width:68px;
+        height:68px;
     }
 
-    .perfil-textos {
-        margin-top: 36px;
+    .perfil-textos{
+        margin-top:36px;
     }
 
-    .grid-waifus {
-        grid-template-columns: repeat(2,minmax(0,1fr));
-        gap: 10px;
+    .grid-waifus{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:10px;
     }
 
     .item-foto-galeria img,
-    .item-foto-galeria video {
-        height: 210px;
+    .item-foto-galeria video{
+        height:210px;
     }
 
-    #formComentario {
-        grid-template-columns: 1fr;
-    }
-
-    #formComentario .controles-media,
-    #formComentario .acciones-media,
-    #formComentario .media-actions,
-    #btnEnviarComentario {
-        grid-column: 1;
-    }
-
-    .comentario-hijo {
-        margin-left: 12px;
+    .comentario-hijo{
+        margin-left:12px;
     }
 }
 
-@media (max-width:480px) {
-    .grid-waifus {
-        grid-template-columns: 1fr;
+@media(max-width:600px){
+    #formComentario{
+        gap:10px;
+    }
+
+    .barra-adjuntos-comentario{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:8px;
+    }
+
+    .grupo-adjunto,
+    .input-grupo-media{
+        width:100%;
+        min-width:0;
+    }
+
+    .btn-adjunto,
+    .lbl-video-trigger{
+        width:100%;
+        box-sizing:border-box;
+    }
+
+    .nombre-foto-adjunta,
+    .nombre-archivo-video{
+        max-width:100px;
+    }
+
+    #btnEnviarComentario{
+        grid-column:1/-1;
+        width:100%;
+        margin-left:0;
+    }
+
+    .comentario-imagen,
+    .comentario-item video{
+        max-width:100%;
+        height:auto;
+    }
+}
+
+@media(max-width:480px){
+    .grid-waifus{
+        grid-template-columns:1fr;
     }
 
     .item-foto-galeria img,
-    .item-foto-galeria video {
-        height: auto;
-        max-height: 320px;
+    .item-foto-galeria video{
+        height:auto;
+        max-height:320px;
+    }
+}
+
+@media(max-width:380px){
+    .barra-adjuntos-comentario{
+        grid-template-columns:1fr;
+    }
+
+    #btnEnviarComentario{
+        grid-column:1;
+    }
+
+    .nombre-foto-adjunta,
+    .nombre-archivo-video{
+        max-width:100%;
     }
 }
