@@ -14,78 +14,92 @@ const {
     procesarCallback
 } = require('./driveStorage');
 
-process.on('uncaughtException', (err) => console.error('ERROR NO CONTROLADO:', err));
-process.on('unhandledRejection', (err) => console.error('PROMESA NO CONTROLADA:', err));
+process.on('uncaughtException', err => console.error('ERROR NO CONTROLADO:', err));
+process.on('unhandledRejection', err => console.error('PROMESA NO CONTROLADA:', err));
 
 const app = express();
+
 app.use(cors());
 app.use(express.json({ limit: '35mb' }));
 app.use(express.urlencoded({ extended: true, limit: '35mb' }));
 
-// 1. Configuración de Cloudinary
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 't0q7ltll',
     api_key: process.env.CLOUDINARY_API_KEY || '421676215584541',
-    api_secret: process.env.CLOUDINARY_API_SECRET || 'RBJuAR6QFd4D0EjOGvvwmBPtiGg'
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// 2. Multer en memoria (recibe todo hasta 35 MB)
 const uploadMemory = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 35 * 1024 * 1024 }
 });
 
 const manejarSubida = (req, res, next) => {
-    uploadMemory.any()(req, res, (err) => {
+    uploadMemory.any()(req, res, err => {
         if (err) {
             console.error('Error al procesar archivos en Multer:', err);
-            return res.status(400).json({ error: 'Error al procesar archivo: ' + err.message });
+            return res.status(400).json({
+                error: 'Error al procesar archivo: ' + err.message
+            });
         }
         next();
     });
 };
 
-// 3. Subida inteligente: Drive para archivos pesados (>10MB o videos), Cloudinary para el resto
 async function subirMediaInteligente(file, prefijo) {
     if (!file) return null;
 
-    const esVideo = file.mimetype.startsWith('video/') || 
-                    file.originalname.match(/\.(mp4|webm|mov|mkv|avi)$/i);
+    const esVideo =
+        file.mimetype.startsWith('video/') ||
+        file.originalname.match(/\.(mp4|webm|mov|mkv|avi)$/i);
 
-    // Solo los videos reales van a Google Drive
     if (esVideo) {
         const nombreUnico = `${prefijo}_${Date.now()}_${file.originalname}`;
-        return await subirADrive(file.buffer, nombreUnico, file.mimetype);
+        return await subirADrive(
+            file.buffer,
+            nombreUnico,
+            file.mimetype
+        );
     }
 
-    // Si es imagen, se procesa para Cloudinary
     let bufferAEnviar = file.buffer;
 
-    // Si supera los 9.5 MB, la comprime en RAM para que pese ~2-3 MB sin perder calidad
     if (file.size > 9.5 * 1024 * 1024) {
-        console.log(`[COMPRIMIENDO] Imagen de ${(file.size / (1024 * 1024)).toFixed(2)} MB para Cloudinary...`);
+        console.log(
+            `[COMPRIMIENDO] Imagen de ${(file.size / (1024 * 1024)).toFixed(2)} MB para Cloudinary...`
+        );
+
         bufferAEnviar = await sharp(file.buffer)
-            .resize({ width: 2560, withoutEnlargement: true })
+            .resize({
+                width: 2560,
+                withoutEnlargement: true
+            })
             .jpeg({ quality: 82 })
             .toBuffer();
     }
 
     return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-            { folder: 'los-del-disc', resource_type: 'image' },
+            {
+                folder: 'los-del-disc',
+                resource_type: 'image'
+            },
             (error, result) => {
                 if (error) return reject(error);
                 resolve(result.secure_url);
             }
         );
+
         stream.end(bufferAEnviar);
     });
 }
 
 const rutaImagenes = path.join(__dirname, 'imagenes');
+
 if (!fs.existsSync(rutaImagenes)) {
     fs.mkdirSync(rutaImagenes, { recursive: true });
 }
+
 app.use('/imagenes', express.static(rutaImagenes));
 app.use(express.static(path.join(__dirname)));
 
@@ -102,6 +116,7 @@ const dbConfig = {
 };
 
 let pool;
+
 sql.connect(dbConfig)
     .then(p => {
         pool = p;
@@ -109,79 +124,158 @@ sql.connect(dbConfig)
     })
     .catch(err => console.error('Error BD:', err.message));
 
-// ================= RUTAS DE VISTAS =================
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.get('/miembros', (req, res) => res.sendFile(path.join(__dirname, 'miembros.html')));
-app.get('/muro', (req, res) => res.sendFile(path.join(__dirname, 'muro.html')));
-app.get('/anuncios', (req, res) => res.sendFile(path.join(__dirname, 'anuncios.html')));
-app.get('/configuracion', (req, res) => res.sendFile(path.join(__dirname, 'configuracion.html')));
-app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'login.html')));
-app.get('/ping', (req, res) => res.status(200).send('pong'));
+app.get('/', (req, res) =>
+    res.sendFile(path.join(__dirname, 'index.html'))
+);
 
-// ================= GOOGLE DRIVE OAUTH =================
+app.get('/miembros', (req, res) =>
+    res.sendFile(path.join(__dirname, 'html', 'miembros.html'))
+);
+
+app.get('/muro', (req, res) =>
+    res.sendFile(path.join(__dirname, 'html', 'muro.html'))
+);
+
+app.get('/anuncios', (req, res) =>
+    res.sendFile(path.join(__dirname, 'html', 'anuncios.html'))
+);
+
+app.get('/arcade', (req, res) =>
+    res.sendFile(path.join(__dirname, 'html', 'arcade.html'))
+);
+
+app.get('/configuracion', (req, res) =>
+    res.sendFile(path.join(__dirname, 'html', 'configuracion.html'))
+);
+
+app.get('/login', (req, res) =>
+    res.sendFile(path.join(__dirname, 'login.html'))
+);
+
+app.get('/ping', (req, res) =>
+    res.status(200).send('pong')
+);
+
 app.get('/api/drive/auth', (req, res) => {
     try {
         const url = obtenerUrlAutorizacion();
         res.redirect(url);
     } catch (err) {
-        console.error('Error iniciando OAuth de Google Drive:', err);
-        res.status(500).send(`<h1>Error iniciando autorización</h1><p>${err.message}</p>`);
+        console.error(
+            'Error iniciando OAuth de Google Drive:',
+            err
+        );
+
+        res.status(500).send(
+            `<h1>Error iniciando autorización</h1><p>${err.message}</p>`
+        );
     }
 });
 
 app.get('/api/drive/callback', async (req, res) => {
     try {
         const { code } = req.query;
-        if (!code) return res.status(400).send(`<h1>Error de autorización</h1><p>Código no devuelto.</p>`);
+
+        if (!code) {
+            return res.status(400).send(
+                '<h1>Error de autorización</h1><p>Código no devuelto.</p>'
+            );
+        }
 
         const tokens = await procesarCallback(code);
+
         if (!tokens.refresh_token) {
-            return res.status(500).send(`<h1>No se obtuvo el Refresh Token</h1><p>Vuelve a iniciar el proceso.</p>`);
+            return res.status(500).send(
+                '<h1>No se obtuvo el Refresh Token</h1><p>Vuelve a iniciar el proceso.</p>'
+            );
         }
 
         res.send(`
             <!DOCTYPE html>
             <html lang="es">
-            <head><meta charset="UTF-8"><title>Google Drive autorizado</title>
-            <style>body{font-family:Arial;background:#111;color:white;padding:40px;}.box{max-width:800px;margin:auto;background:#222;padding:30px;border-radius:12px;}code{display:block;background:#000;padding:15px;margin-top:15px;word-break:break-all;border-radius:8px;}</style></head>
-            <body><div class="box"><h1>✅ Google Drive autorizado</h1><p>Copia el valor en Render como <b>GOOGLE_REFRESH_TOKEN</b>:</p><code>${tokens.refresh_token}</code></div></body>
+            <head>
+                <meta charset="UTF-8">
+                <title>Google Drive autorizado</title>
+                <style>
+                    body{font-family:Arial;background:#111;color:white;padding:40px}
+                    .box{max-width:800px;margin:auto;background:#222;padding:30px;border-radius:12px}
+                    code{display:block;background:#000;padding:15px;margin-top:15px;word-break:break-all;border-radius:8px}
+                </style>
+            </head>
+            <body>
+                <div class="box">
+                    <h1>✅ Google Drive autorizado</h1>
+                    <p>Copia el valor en Render como <b>GOOGLE_REFRESH_TOKEN</b>:</p>
+                    <code>${tokens.refresh_token}</code>
+                </div>
+            </body>
             </html>
         `);
     } catch (err) {
-        console.error('Error en callback OAuth de Google Drive:', err);
-        res.status(500).send(`<h1>Error durante la autorización</h1><p>${err.message}</p>`);
+        console.error(
+            'Error en callback OAuth de Google Drive:',
+            err
+        );
+
+        res.status(500).send(
+            `<h1>Error durante la autorización</h1><p>${err.message}</p>`
+        );
     }
 });
 
-// ================= AUTENTICACIÓN Y PERFIL =================
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body || {};
+
     try {
         const result = await pool.request()
             .input('u', sql.NVarChar, username)
             .input('p', sql.NVarChar, password)
-            .query('SELECT Id, Username, NombreVisible, RolApp FROM UsuariosWeb WHERE Username = @u AND Password = @p');
+            .query(`
+                SELECT Id, Username, NombreVisible, RolApp
+                FROM UsuariosWeb
+                WHERE Username = @u AND Password = @p
+            `);
 
         if (result.recordset.length > 0) {
-            res.json({ exito: true, usuario: result.recordset[0] });
+            res.json({
+                exito: true,
+                usuario: result.recordset[0]
+            });
         } else {
-            res.status(401).json({ exito: false, mensaje: 'Usuario o contraseña incorrectos' });
+            res.status(401).json({
+                exito: false,
+                mensaje: 'Usuario o contraseña incorrectos'
+            });
         }
     } catch (err) {
         console.error('Error en /api/login:', err);
-        res.status(500).json({ error: err.message });
+
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
 app.post('/api/register', async (req, res) => {
-    const { username, password, nombreVisible } = req.body || {};
+    const {
+        username,
+        password,
+        nombreVisible
+    } = req.body || {};
+
     try {
         const uLimpio = (username || '').trim();
         const pLimpio = (password || '').trim();
         const nLimpio = (nombreVisible || '').trim();
 
-        if (uLimpio.length < 4 || pLimpio.length < 6 || nLimpio.length < 3) {
-            return res.status(400).json({ error: 'Datos no válidos para el registro.' });
+        if (
+            uLimpio.length < 4 ||
+            pLimpio.length < 6 ||
+            nLimpio.length < 3
+        ) {
+            return res.status(400).json({
+                error: 'Datos no válidos para el registro.'
+            });
         }
 
         const insertUser = await pool.request()
@@ -189,8 +283,12 @@ app.post('/api/register', async (req, res) => {
             .input('p', sql.NVarChar, pLimpio)
             .input('n', sql.NVarChar, nLimpio)
             .input('r', sql.NVarChar, 'Lector')
-            .query(`INSERT INTO UsuariosWeb (Username, Password, NombreVisible, RolApp) 
-                    OUTPUT INSERTED.Id VALUES (@u, @p, @n, @r)`);
+            .query(`
+                INSERT INTO UsuariosWeb
+                (Username, Password, NombreVisible, RolApp)
+                OUTPUT INSERTED.Id
+                VALUES (@u, @p, @n, @r)
+            `);
 
         const nuevoUserId = insertUser.recordset[0].Id;
 
@@ -199,55 +297,141 @@ app.post('/api/register', async (req, res) => {
             .input('nombre', sql.NVarChar, nLimpio)
             .input('rol', sql.NVarChar, 'Miembro')
             .input('foto', sql.NVarChar, 'imagenes/default.png')
-            .input('desc', sql.NVarChar, '¡Nuevo miembro en el servidor!')
+            .input(
+                'desc',
+                sql.NVarChar,
+                '¡Nuevo miembro en el servidor!'
+            )
             .input('userId', sql.Int, nuevoUserId)
-            .query(`INSERT INTO Amigos (DiscordTag, NombreVisible, RolServidor, FotoRuta, Descripcion, UsuarioId)
-                    VALUES (@tag, @nombre, @rol, @foto, @desc, @userId)`);
+            .query(`
+                INSERT INTO Amigos
+                (
+                    DiscordTag,
+                    NombreVisible,
+                    RolServidor,
+                    FotoRuta,
+                    Descripcion,
+                    UsuarioId
+                )
+                VALUES
+                (@tag, @nombre, @rol, @foto, @desc, @userId)
+            `);
 
-        res.json({ exito: true, mensaje: 'Usuario y perfil creados con éxito.' });
+        res.json({
+            exito: true,
+            mensaje: 'Usuario y perfil creados con éxito.'
+        });
     } catch (err) {
         console.error('Error en /api/register:', err);
-        res.status(400).json({ error: 'El usuario ya existe o hubo un problema.' });
+
+        res.status(400).json({
+            error: 'El usuario ya existe o hubo un problema.'
+        });
     }
 });
 
 app.put('/api/usuarios/perfil', async (req, res) => {
     try {
-        const { userId, newUsername, nombreVisible, passwordActual, nuevoPassword } = req.body || {};
-        if (!userId) return res.status(400).json({ error: 'Falta el ID del usuario.' });
+        const {
+            userId,
+            newUsername,
+            nombreVisible,
+            passwordActual,
+            nuevoPassword
+        } = req.body || {};
+
+        if (!userId) {
+            return res.status(400).json({
+                error: 'Falta el ID del usuario.'
+            });
+        }
 
         const userCheck = await pool.request()
             .input('id', sql.Int, userId)
-            .query('SELECT Id, Username, Password, RolApp, NombreVisible FROM UsuariosWeb WHERE Id = @id');
+            .query(`
+                SELECT
+                    Id,
+                    Username,
+                    Password,
+                    RolApp,
+                    NombreVisible
+                FROM UsuariosWeb
+                WHERE Id = @id
+            `);
 
-        if (userCheck.recordset.length === 0) return res.status(404).json({ error: 'Usuario no encontrado.' });
+        if (userCheck.recordset.length === 0) {
+            return res.status(404).json({
+                error: 'Usuario no encontrado.'
+            });
+        }
 
         const usuarioDB = userCheck.recordset[0];
         const oldNombreVisible = usuarioDB.NombreVisible;
 
         let usernameFinal = usuarioDB.Username;
+
         if (newUsername && newUsername.trim() !== '') {
             const cleanUser = newUsername.trim();
-            if (cleanUser.length < 4) return res.status(400).json({ error: 'El usuario debe tener al menos 4 caracteres.' });
 
-            if (cleanUser.toLowerCase() !== usuarioDB.Username.toLowerCase()) {
+            if (cleanUser.length < 4) {
+                return res.status(400).json({
+                    error: 'El usuario debe tener al menos 4 caracteres.'
+                });
+            }
+
+            if (
+                cleanUser.toLowerCase() !==
+                usuarioDB.Username.toLowerCase()
+            ) {
                 const existe = await pool.request()
                     .input('u', sql.NVarChar, cleanUser)
                     .input('id', sql.Int, userId)
-                    .query('SELECT Id FROM UsuariosWeb WHERE LOWER(Username) = LOWER(@u) AND Id <> @id');
+                    .query(`
+                        SELECT Id
+                        FROM UsuariosWeb
+                        WHERE LOWER(Username) = LOWER(@u)
+                        AND Id <> @id
+                    `);
 
-                if (existe.recordset.length > 0) return res.status(400).json({ error: 'Ese usuario ya está en uso.' });
+                if (existe.recordset.length > 0) {
+                    return res.status(400).json({
+                        error: 'Ese usuario ya está en uso.'
+                    });
+                }
             }
+
             usernameFinal = cleanUser;
         }
 
-        const nombreFinal = (nombreVisible && nombreVisible.trim() !== '') ? nombreVisible.trim() : usuarioDB.NombreVisible;
-        if (nombreFinal.length < 3) return res.status(400).json({ error: 'El apodo debe tener al menos 3 caracteres.' });
+        const nombreFinal =
+            nombreVisible && nombreVisible.trim() !== ''
+                ? nombreVisible.trim()
+                : usuarioDB.NombreVisible;
+
+        if (nombreFinal.length < 3) {
+            return res.status(400).json({
+                error: 'El apodo debe tener al menos 3 caracteres.'
+            });
+        }
 
         let passwordFinal = usuarioDB.Password;
+
         if (nuevoPassword && nuevoPassword.trim() !== '') {
-            if (nuevoPassword.trim().length < 6) return res.status(400).json({ error: 'La contraseña debe tener mínimo 6 caracteres.' });
-            if (!passwordActual || passwordActual !== usuarioDB.Password) return res.status(400).json({ error: 'Contraseña actual incorrecta.' });
+            if (nuevoPassword.trim().length < 6) {
+                return res.status(400).json({
+                    error: 'La contraseña debe tener mínimo 6 caracteres.'
+                });
+            }
+
+            if (
+                !passwordActual ||
+                passwordActual !== usuarioDB.Password
+            ) {
+                return res.status(400).json({
+                    error: 'Contraseña actual incorrecta.'
+                });
+            }
+
             passwordFinal = nuevoPassword.trim();
         }
 
@@ -256,45 +440,93 @@ app.put('/api/usuarios/perfil', async (req, res) => {
             .input('u', sql.NVarChar, usernameFinal)
             .input('nombre', sql.NVarChar, nombreFinal)
             .input('pass', sql.NVarChar, passwordFinal)
-            .query('UPDATE UsuariosWeb SET Username = @u, NombreVisible = @nombre, Password = @pass WHERE Id = @id');
+            .query(`
+                UPDATE UsuariosWeb
+                SET
+                    Username = @u,
+                    NombreVisible = @nombre,
+                    Password = @pass
+                WHERE Id = @id
+            `);
 
-        if (oldNombreVisible && oldNombreVisible !== nombreFinal) {
+        if (
+            oldNombreVisible &&
+            oldNombreVisible !== nombreFinal
+        ) {
             await pool.request()
                 .input('nuevoAutor', sql.NVarChar, nombreFinal)
                 .input('viejoAutor', sql.NVarChar, oldNombreVisible)
+                .input('userId', sql.Int, userId)
                 .query(`
-                    UPDATE Comentarios SET Autor = @nuevoAutor WHERE Autor = @viejoAutor;
-                    UPDATE PublicacionesGlobales SET Autor = @nuevoAutor WHERE Autor = @viejoAutor;
-                    UPDATE Amigos SET NombreVisible = @nuevoAutor WHERE UsuarioId = ${userId};
+                    UPDATE Comentarios
+                    SET Autor = @nuevoAutor
+                    WHERE Autor = @viejoAutor;
+
+                    UPDATE PublicacionesGlobales
+                    SET Autor = @nuevoAutor
+                    WHERE Autor = @viejoAutor;
+
+                    UPDATE Amigos
+                    SET NombreVisible = @nuevoAutor
+                    WHERE UsuarioId = @userId;
                 `);
         }
 
         res.json({
             exito: true,
             mensaje: 'Datos actualizados.',
-            usuario: { Id: usuarioDB.Id, Username: usernameFinal, NombreVisible: nombreFinal, RolApp: usuarioDB.RolApp }
+            usuario: {
+                Id: usuarioDB.Id,
+                Username: usernameFinal,
+                NombreVisible: nombreFinal,
+                RolApp: usuarioDB.RolApp
+            }
         });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ error: 'Error interno en la BD.' });
+
+        res.status(500).json({
+            error: 'Error interno en la BD.'
+        });
     }
 });
-
-// ================= AMIGOS / INTEGRANTES =================
 app.get('/api/amigos', async (req, res) => {
     try {
-        const amigosResult = await pool.request().query('SELECT * FROM Amigos ORDER BY Id ASC');
-        const fotosResult = await pool.request().query('SELECT Id, AmigoId, FotoUrl FROM FotosAmigo ORDER BY Id ASC');
+        const amigosResult = await pool.request()
+            .query('SELECT * FROM Amigos ORDER BY Id ASC');
+
+        const fotosResult = await pool.request()
+            .query('SELECT Id, AmigoId, FotoUrl FROM FotosAmigo ORDER BY Id ASC');
 
         const amigos = amigosResult.recordset.map(amigo => {
             let fotos = fotosResult.recordset
                 .filter(f => f.AmigoId === amigo.Id)
-                .map(f => ({ id: f.Id, url: f.FotoUrl }));
+                .map(f => ({
+                    id: f.Id,
+                    url: f.FotoUrl
+                }));
 
             if (fotos.length === 0) {
-                if (amigo.Waifu1) fotos.push({ id: null, url: amigo.Waifu1 });
-                if (amigo.Waifu2) fotos.push({ id: null, url: amigo.Waifu2 });
-                if (amigo.Waifu3) fotos.push({ id: null, url: amigo.Waifu3 });
+                if (amigo.Waifu1) {
+                    fotos.push({
+                        id: null,
+                        url: amigo.Waifu1
+                    });
+                }
+
+                if (amigo.Waifu2) {
+                    fotos.push({
+                        id: null,
+                        url: amigo.Waifu2
+                    });
+                }
+
+                if (amigo.Waifu3) {
+                    fotos.push({
+                        id: null,
+                        url: amigo.Waifu3
+                    });
+                }
             }
 
             return {
@@ -306,9 +538,14 @@ app.get('/api/amigos', async (req, res) => {
                 Fotos: fotos
             };
         });
+
         res.json(amigos);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Error GET /api/amigos:', err);
+
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
@@ -316,44 +553,135 @@ app.post('/api/amigos', manejarSubida, async (req, res) => {
     try {
         const body = req.body || {};
         const files = req.files || [];
-        if (body.rolSolicitante !== 'Admin') return res.status(403).json({ error: 'Solo Admin puede agregar amigos.' });
 
-        const avatarF = files.find(f => f.fieldname === 'avatarFile');
-        const waifuFiles = files.filter(f => f.fieldname === 'waifuFiles');
-        const fotoRuta = avatarF ? await subirMediaInteligente(avatarF, 'avatar') : 'imagenes/default.png';
+        if (body.rolSolicitante !== 'Admin') {
+            return res.status(403).json({
+                error: 'Solo Admin puede agregar amigos.'
+            });
+        }
+
+        const avatarF = files.find(
+            f => f.fieldname === 'avatarFile'
+        );
+
+        const waifuFiles = files.filter(
+            f => f.fieldname === 'waifuFiles'
+        );
+
+        const fotoRuta = avatarF
+            ? await subirMediaInteligente(avatarF, 'avatar')
+            : 'imagenes/default.png';
 
         const insertRes = await pool.request()
-            .input('tag', sql.NVarChar, body.discordUsername || '')
-            .input('nombre', sql.NVarChar, body.apodo || '')
-            .input('rol', sql.NVarChar, body.rol || 'Miembro')
-            .input('foto', sql.NVarChar, fotoRuta)
-            .input('desc', sql.NVarChar, body.descripcion || '')
-            .query(`INSERT INTO Amigos (DiscordTag, NombreVisible, RolServidor, FotoRuta, Descripcion) 
-                    OUTPUT INSERTED.Id VALUES (@tag, @nombre, @rol, @foto, @desc)`);
+            .input(
+                'tag',
+                sql.NVarChar,
+                body.discordUsername || ''
+            )
+            .input(
+                'nombre',
+                sql.NVarChar,
+                body.apodo || ''
+            )
+            .input(
+                'rol',
+                sql.NVarChar,
+                body.rol || 'Miembro'
+            )
+            .input(
+                'foto',
+                sql.NVarChar,
+                fotoRuta
+            )
+            .input(
+                'desc',
+                sql.NVarChar,
+                body.descripcion || ''
+            )
+            .query(`
+                INSERT INTO Amigos
+                (
+                    DiscordTag,
+                    NombreVisible,
+                    RolServidor,
+                    FotoRuta,
+                    Descripcion
+                )
+                OUTPUT INSERTED.Id
+                VALUES
+                (
+                    @tag,
+                    @nombre,
+                    @rol,
+                    @foto,
+                    @desc
+                )
+            `);
 
         const amigoId = insertRes.recordset[0].Id;
+
         for (const file of waifuFiles) {
-            const urlFoto = await subirMediaInteligente(file, 'waifu');
+            const urlFoto = await subirMediaInteligente(
+                file,
+                'waifu'
+            );
+
             await pool.request()
-                .input('amigoId', sql.Int, amigoId)
-                .input('fotoUrl', sql.NVarChar, urlFoto)
-                .query('INSERT INTO FotosAmigo (AmigoId, FotoUrl) VALUES (@amigoId, @fotoUrl)');
+                .input(
+                    'amigoId',
+                    sql.Int,
+                    amigoId
+                )
+                .input(
+                    'fotoUrl',
+                    sql.NVarChar,
+                    urlFoto
+                )
+                .query(`
+                    INSERT INTO FotosAmigo
+                    (AmigoId, FotoUrl)
+                    VALUES (@amigoId, @fotoUrl)
+                `);
         }
 
-        const waifuUrlDirectas = Array.isArray(body.waifuUrlDirectas)
+        const waifuUrlDirectas = Array.isArray(
+            body.waifuUrlDirectas
+        )
             ? body.waifuUrlDirectas
-            : (body.waifuUrlDirectas ? [body.waifuUrlDirectas] : []);
+            : body.waifuUrlDirectas
+                ? [body.waifuUrlDirectas]
+                : [];
+
         for (const url of waifuUrlDirectas) {
-            if (url) {
-                await pool.request()
-                    .input('amigoId', sql.Int, amigoId)
-                    .input('fotoUrl', sql.NVarChar, url)
-                    .query('INSERT INTO FotosAmigo (AmigoId, FotoUrl) VALUES (@amigoId, @fotoUrl)');
-            }
+            if (!url) continue;
+
+            await pool.request()
+                .input(
+                    'amigoId',
+                    sql.Int,
+                    amigoId
+                )
+                .input(
+                    'fotoUrl',
+                    sql.NVarChar,
+                    url
+                )
+                .query(`
+                    INSERT INTO FotosAmigo
+                    (AmigoId, FotoUrl)
+                    VALUES (@amigoId, @fotoUrl)
+                `);
         }
-        res.json({ mensaje: 'Amigo agregado exitosamente' });
+
+        res.json({
+            mensaje: 'Amigo agregado exitosamente'
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Error POST /api/amigos:', err);
+
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
@@ -363,114 +691,316 @@ app.put('/api/amigos/:id', manejarSubida, async (req, res) => {
         const body = req.body || {};
         const files = req.files || [];
 
-        const amigoCheck = await pool.request().input('id', sql.Int, id).query('SELECT Id, UsuarioId, FotoRuta FROM Amigos WHERE Id = @id');
-        if (amigoCheck.recordset.length === 0) return res.status(404).json({ error: 'Perfil no encontrado.' });
+        const amigoCheck = await pool.request()
+            .input('id', sql.Int, id)
+            .query(`
+                SELECT
+                    Id,
+                    UsuarioId,
+                    FotoRuta
+                FROM Amigos
+                WHERE Id = @id
+            `);
+
+        if (amigoCheck.recordset.length === 0) {
+            return res.status(404).json({
+                error: 'Perfil no encontrado.'
+            });
+        }
 
         const amigoActual = amigoCheck.recordset[0];
-        const esAdmin = body.rolSolicitante === 'Admin';
-        const esDueno = body.solicitanteId && parseInt(body.solicitanteId) === amigoActual.UsuarioId;
 
-        if (!esAdmin && !esDueno) return res.status(403).json({ error: 'Sin permiso para editar este perfil.' });
+        const esAdmin =
+            body.rolSolicitante === 'Admin';
 
-        const avatarF = files.find(f => f.fieldname === 'avatarFile');
-        const waifuFiles = files.filter(f => f.fieldname === 'waifuFiles');
-        const fotoRuta = avatarF ? await subirMediaInteligente(avatarF, 'avatar') : (body.avatarUrlActual || amigoActual.FotoRuta || 'imagenes/default.png');
+        const esDueno =
+            body.solicitanteId &&
+            parseInt(body.solicitanteId) ===
+            amigoActual.UsuarioId;
 
-        let queryUpdate = `UPDATE Amigos SET DiscordTag = @tag, NombreVisible = @nombre, FotoRuta = @foto, Descripcion = @desc`;
-        if (esAdmin) queryUpdate += `, RolServidor = @rol `;
-        queryUpdate += ` WHERE Id = @id`;
+        if (!esAdmin && !esDueno) {
+            return res.status(403).json({
+                error: 'Sin permiso para editar este perfil.'
+            });
+        }
+
+        const avatarF = files.find(
+            f => f.fieldname === 'avatarFile'
+        );
+
+        const waifuFiles = files.filter(
+            f => f.fieldname === 'waifuFiles'
+        );
+
+        const fotoRuta = avatarF
+            ? await subirMediaInteligente(
+                avatarF,
+                'avatar'
+            )
+            : body.avatarUrlActual ||
+              amigoActual.FotoRuta ||
+              'imagenes/default.png';
+
+        let queryUpdate = `
+            UPDATE Amigos
+            SET
+                DiscordTag = @tag,
+                NombreVisible = @nombre,
+                FotoRuta = @foto,
+                Descripcion = @desc
+        `;
+
+        if (esAdmin) {
+            queryUpdate += `,
+                RolServidor = @rol
+            `;
+        }
+
+        queryUpdate += `
+            WHERE Id = @id
+        `;
 
         const requestUpdate = pool.request()
-            .input('id', sql.Int, id)
-            .input('tag', sql.NVarChar, body.discordUsername || '')
-            .input('nombre', sql.NVarChar, body.apodo || '')
-            .input('foto', sql.NVarChar, fotoRuta)
-            .input('desc', sql.NVarChar, body.descripcion || '');
+            .input(
+                'id',
+                sql.Int,
+                id
+            )
+            .input(
+                'tag',
+                sql.NVarChar,
+                body.discordUsername || ''
+            )
+            .input(
+                'nombre',
+                sql.NVarChar,
+                body.apodo || ''
+            )
+            .input(
+                'foto',
+                sql.NVarChar,
+                fotoRuta
+            )
+            .input(
+                'desc',
+                sql.NVarChar,
+                body.descripcion || ''
+            );
 
-        if (esAdmin) requestUpdate.input('rol', sql.NVarChar, body.rol || 'Miembro');
+        if (esAdmin) {
+            requestUpdate.input(
+                'rol',
+                sql.NVarChar,
+                body.rol || 'Miembro'
+            );
+        }
+
         await requestUpdate.query(queryUpdate);
 
         for (const file of waifuFiles) {
-            const urlFoto = await subirMediaInteligente(file, 'waifu');
+            const urlFoto = await subirMediaInteligente(
+                file,
+                'waifu'
+            );
+
             await pool.request()
-                .input('amigoId', sql.Int, id)
-                .input('fotoUrl', sql.NVarChar, urlFoto)
-                .query('INSERT INTO FotosAmigo (AmigoId, FotoUrl) VALUES (@amigoId, @fotoUrl)');
+                .input(
+                    'amigoId',
+                    sql.Int,
+                    id
+                )
+                .input(
+                    'fotoUrl',
+                    sql.NVarChar,
+                    urlFoto
+                )
+                .query(`
+                    INSERT INTO FotosAmigo
+                    (AmigoId, FotoUrl)
+                    VALUES (@amigoId, @fotoUrl)
+                `);
         }
 
-        const waifuUrlDirectas = Array.isArray(body.waifuUrlDirectas)
+        const waifuUrlDirectas = Array.isArray(
+            body.waifuUrlDirectas
+        )
             ? body.waifuUrlDirectas
-            : (body.waifuUrlDirectas ? [body.waifuUrlDirectas] : []);
+            : body.waifuUrlDirectas
+                ? [body.waifuUrlDirectas]
+                : [];
+
         for (const url of waifuUrlDirectas) {
-            if (url) {
-                await pool.request()
-                    .input('amigoId', sql.Int, id)
-                    .input('fotoUrl', sql.NVarChar, url)
-                    .query('INSERT INTO FotosAmigo (AmigoId, FotoUrl) VALUES (@amigoId, @fotoUrl)');
-            }
+            if (!url) continue;
+
+            await pool.request()
+                .input(
+                    'amigoId',
+                    sql.Int,
+                    id
+                )
+                .input(
+                    'fotoUrl',
+                    sql.NVarChar,
+                    url
+                )
+                .query(`
+                    INSERT INTO FotosAmigo
+                    (AmigoId, FotoUrl)
+                    VALUES (@amigoId, @fotoUrl)
+                `);
         }
-        res.json({ mensaje: 'Perfil actualizado exitosamente' });
+
+        res.json({
+            mensaje: 'Perfil actualizado exitosamente'
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error(
+            'Error PUT /api/amigos/:id:',
+            err
+        );
+
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
 app.delete('/api/amigos/:id', async (req, res) => {
-    if (req.query.rolSolicitante !== 'Admin') return res.status(403).json({ error: 'Solo administradores.' });
+    if (req.query.rolSolicitante !== 'Admin') {
+        return res.status(403).json({
+            error: 'Solo administradores.'
+        });
+    }
+
     try {
-        await pool.request().input('id', sql.Int, req.params.id).query('DELETE FROM Amigos WHERE Id = @id');
-        res.json({ mensaje: 'Amigo eliminado' });
+        await pool.request()
+            .input(
+                'id',
+                sql.Int,
+                req.params.id
+            )
+            .query(`
+                DELETE FROM Amigos
+                WHERE Id = @id
+            `);
+
+        res.json({
+            mensaje: 'Amigo eliminado'
+        });
     } catch (err) {
-        res.status(500).json({ error: 'No se pudo eliminar.' });
+        console.error(
+            'Error DELETE /api/amigos/:id:',
+            err
+        );
+
+        res.status(500).json({
+            error: 'No se pudo eliminar.'
+        });
     }
 });
 
 app.delete('/api/fotos/:id', async (req, res) => {
     const { id } = req.params;
-    const { rolSolicitante, solicitanteId } = req.query;
+
+    const {
+        rolSolicitante,
+        solicitanteId
+    } = req.query;
 
     try {
         const check = await pool.request()
-            .input('id', sql.Int, id)
+            .input(
+                'id',
+                sql.Int,
+                id
+            )
             .query(`
-                SELECT f.Id, a.UsuarioId 
-                FROM FotosAmigo f 
-                INNER JOIN Amigos a ON f.AmigoId = a.Id 
+                SELECT
+                    f.Id,
+                    a.UsuarioId
+                FROM FotosAmigo f
+                INNER JOIN Amigos a
+                    ON f.AmigoId = a.Id
                 WHERE f.Id = @id
             `);
 
-        if (check.recordset.length === 0) return res.status(404).json({ error: 'Foto no encontrada.' });
+        if (check.recordset.length === 0) {
+            return res.status(404).json({
+                error: 'Foto no encontrada.'
+            });
+        }
 
         const fotoInfo = check.recordset[0];
-        const esAdmin = rolSolicitante === 'Admin';
-        const esDueno = solicitanteId && parseInt(solicitanteId) === fotoInfo.UsuarioId;
 
-        if (!esAdmin && !esDueno) return res.status(403).json({ error: 'No tienes permiso para borrar esta foto.' });
+        const esAdmin =
+            rolSolicitante === 'Admin';
 
-        await pool.request().input('id', sql.Int, id).query('DELETE FROM FotosAmigo WHERE Id = @id');
-        res.json({ mensaje: 'Foto eliminada correctamente' });
+        const esDueno =
+            solicitanteId &&
+            parseInt(solicitanteId) ===
+            fotoInfo.UsuarioId;
+
+        if (!esAdmin && !esDueno) {
+            return res.status(403).json({
+                error: 'No tienes permiso para borrar esta foto.'
+            });
+        }
+
+        await pool.request()
+            .input(
+                'id',
+                sql.Int,
+                id
+            )
+            .query(`
+                DELETE FROM FotosAmigo
+                WHERE Id = @id
+            `);
+
+        res.json({
+            mensaje: 'Foto eliminada correctamente'
+        });
     } catch (err) {
-        console.error('Error al borrar foto:', err);
-        res.status(500).json({ error: 'No se pudo eliminar la foto.' });
+        console.error(
+            'Error al borrar foto:',
+            err
+        );
+
+        res.status(500).json({
+            error: 'No se pudo eliminar la foto.'
+        });
     }
 });
-
-// ================= MURO GLOBAL =================
 app.get('/api/publicaciones-globales', async (req, res) => {
     try {
-        const result = await pool.request().query('SELECT * FROM PublicacionesGlobales ORDER BY Id DESC');
+        const result = await pool.request()
+            .query('SELECT * FROM PublicacionesGlobales ORDER BY Id DESC');
+
         res.json(result.recordset);
     } catch (err) {
+        console.error('Error GET /api/publicaciones-globales:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
 app.post('/api/publicaciones-globales', uploadMemory.single('imagenPost'), async (req, res) => {
-    const { autor, contenido, respuestaAId, imagenUrlDirecta, usuarioId } = req.body || {};
-    try {
-        const imgUrl = req.file ? await subirMediaInteligente(req.file, 'muro') : (imagenUrlDirecta || null);
+    const {
+        autor,
+        contenido,
+        respuestaAId,
+        imagenUrlDirecta,
+        usuarioId
+    } = req.body || {};
 
-        let autorUsuarioId = usuarioId ? parseInt(usuarioId) : null;
+    try {
+        const imgUrl = req.file
+            ? await subirMediaInteligente(req.file, 'muro')
+            : imagenUrlDirecta || null;
+
+        let autorUsuarioId = usuarioId
+            ? parseInt(usuarioId)
+            : null;
+
         if (!autorUsuarioId && autor) {
             try {
                 const userCheck = await pool.request()
@@ -479,11 +1009,18 @@ app.post('/api/publicaciones-globales', uploadMemory.single('imagenPost'), async
                         SELECT TOP 1 UsuarioId
                         FROM Amigos
                         WHERE NombreVisible LIKE '%' + @nom + '%'
-                          AND UsuarioId IS NOT NULL
+                        AND UsuarioId IS NOT NULL
                     `);
-                if (userCheck.recordset.length > 0) autorUsuarioId = userCheck.recordset[0].UsuarioId;
+
+                if (userCheck.recordset.length > 0) {
+                    autorUsuarioId =
+                        userCheck.recordset[0].UsuarioId;
+                }
             } catch (queryErr) {
-                console.warn('Aviso buscando autor en Amigos:', queryErr.message);
+                console.warn(
+                    'Aviso buscando autor en Amigos:',
+                    queryErr.message
+                );
             }
         }
 
@@ -491,303 +1028,824 @@ app.post('/api/publicaciones-globales', uploadMemory.single('imagenPost'), async
             .input('autor', sql.NVarChar, autor)
             .input('texto', sql.NVarChar, contenido || '')
             .input('img', sql.NVarChar, imgUrl)
-            .input('parent', sql.Int, respuestaAId ? parseInt(respuestaAId) : null)
+            .input(
+                'parent',
+                sql.Int,
+                respuestaAId
+                    ? parseInt(respuestaAId)
+                    : null
+            )
             .query(`
-                INSERT INTO PublicacionesGlobales (Autor, Texto, Fecha, ImagenUrl, RespuestaAId) 
-                OUTPUT INSERTED.Id 
-                VALUES (@autor, @texto, GETDATE(), @img, @parent)
+                INSERT INTO PublicacionesGlobales
+                (
+                    Autor,
+                    Texto,
+                    Fecha,
+                    ImagenUrl,
+                    RespuestaAId
+                )
+                OUTPUT INSERTED.Id
+                VALUES
+                (
+                    @autor,
+                    @texto,
+                    GETDATE(),
+                    @img,
+                    @parent
+                )
             `);
 
-        const newPostId = insertRes.recordset[0].Id;
+        const newPostId =
+            insertRes.recordset[0].Id;
 
         if (respuestaAId) {
             const padreInfo = await pool.request()
-                .input('pId', sql.Int, respuestaAId)
-                .query('SELECT Id, Autor FROM PublicacionesGlobales WHERE Id = @pId');
+                .input(
+                    'pId',
+                    sql.Int,
+                    respuestaAId
+                )
+                .query(`
+                    SELECT Id, Autor
+                    FROM PublicacionesGlobales
+                    WHERE Id = @pId
+                `);
 
             if (padreInfo.recordset.length > 0) {
-                const nombrePadre = padreInfo.recordset[0].Autor;
+                const nombrePadre =
+                    padreInfo.recordset[0].Autor;
+
                 const destCheck = await pool.request()
-                    .input('nom', sql.NVarChar, nombrePadre.trim())
+                    .input(
+                        'nom',
+                        sql.NVarChar,
+                        nombrePadre.trim()
+                    )
                     .query(`
                         SELECT TOP 1 UsuarioId
                         FROM Amigos
-                        WHERE (NombreVisible LIKE '%' + @nom + '%' OR NombreVisible = @nom)
-                          AND UsuarioId IS NOT NULL
+                        WHERE (
+                            NombreVisible LIKE '%' + @nom + '%'
+                            OR NombreVisible = @nom
+                        )
+                        AND UsuarioId IS NOT NULL
                     `);
 
-                let usuarioDestinoId = (destCheck.recordset.length > 0) ? destCheck.recordset[0].UsuarioId : null;
+                let usuarioDestinoId =
+                    destCheck.recordset.length > 0
+                        ? destCheck.recordset[0].UsuarioId
+                        : null;
 
-                if (usuarioDestinoId && autorUsuarioId && usuarioDestinoId === autorUsuarioId) {
-                    const ultimoParticipante = await pool.request()
-                        .input('pId', sql.Int, respuestaAId)
-                        .input('yo', sql.NVarChar, autor)
-                        .query(`
-                            SELECT TOP 1 p.Autor, a.UsuarioId
-                            FROM PublicacionesGlobales p
-                            INNER JOIN Amigos a ON a.NombreVisible LIKE '%' + p.Autor + '%'
-                            WHERE p.RespuestaAId = @pId
-                              AND p.Autor != @yo
-                              AND a.UsuarioId IS NOT NULL
-                            ORDER BY p.Fecha DESC
-                        `);
+                if (
+                    usuarioDestinoId &&
+                    autorUsuarioId &&
+                    usuarioDestinoId === autorUsuarioId
+                ) {
+                    const ultimoParticipante =
+                        await pool.request()
+                            .input(
+                                'pId',
+                                sql.Int,
+                                respuestaAId
+                            )
+                            .input(
+                                'yo',
+                                sql.NVarChar,
+                                autor
+                            )
+                            .query(`
+                                SELECT TOP 1
+                                    p.Autor,
+                                    a.UsuarioId
+                                FROM PublicacionesGlobales p
+                                INNER JOIN Amigos a
+                                    ON a.NombreVisible LIKE '%' + p.Autor + '%'
+                                WHERE p.RespuestaAId = @pId
+                                AND p.Autor != @yo
+                                AND a.UsuarioId IS NOT NULL
+                                ORDER BY p.Fecha DESC
+                            `);
 
-                    if (ultimoParticipante.recordset.length > 0) {
-                        usuarioDestinoId = ultimoParticipante.recordset[0].UsuarioId;
+                    if (
+                        ultimoParticipante.recordset.length > 0
+                    ) {
+                        usuarioDestinoId =
+                            ultimoParticipante
+                                .recordset[0]
+                                .UsuarioId;
                     }
                 }
 
-                if (usuarioDestinoId && usuarioDestinoId !== autorUsuarioId) {
+                if (
+                    usuarioDestinoId &&
+                    usuarioDestinoId !== autorUsuarioId
+                ) {
                     await pool.request()
-                        .input('uDest', sql.Int, usuarioDestinoId)
-                        .input('autor', sql.NVarChar, autor || 'Alguien')
-                        .input('comId', sql.Int, newPostId)
-                        .input('txt', sql.NVarChar, (contenido || '').trim().substring(0, 100))
+                        .input(
+                            'uDest',
+                            sql.Int,
+                            usuarioDestinoId
+                        )
+                        .input(
+                            'autor',
+                            sql.NVarChar,
+                            autor || 'Alguien'
+                        )
+                        .input(
+                            'comId',
+                            sql.Int,
+                            newPostId
+                        )
+                        .input(
+                            'txt',
+                            sql.NVarChar,
+                            (contenido || '')
+                                .trim()
+                                .substring(0, 100)
+                        )
                         .query(`
-                            INSERT INTO Notificaciones 
-                            (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
-                            VALUES 
-                            (@uDest, @autor, 'MURO', @comId, @comId, @txt)
+                            INSERT INTO Notificaciones
+                            (
+                                UsuarioDestinoId,
+                                AutorAccion,
+                                Tipo,
+                                DestinoId,
+                                ComentarioId,
+                                TextoPrevio
+                            )
+                            VALUES
+                            (
+                                @uDest,
+                                @autor,
+                                'MURO',
+                                @comId,
+                                @comId,
+                                @txt
+                            )
                         `);
                 }
             }
         }
 
-        res.json({ mensaje: 'Publicación enviada' });
+        res.json({
+            mensaje: 'Publicación enviada'
+        });
     } catch (err) {
-        console.error('Error POST /api/publicaciones-globales:', err);
-        res.status(500).json({ error: err.message });
+        console.error(
+            'Error POST /api/publicaciones-globales:',
+            err
+        );
+
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
 app.put('/api/publicaciones-globales/:id', async (req, res) => {
     const { id } = req.params;
-    const { texto, rolSolicitante, solicitanteNombre } = req.body || {};
-    if (!texto || !texto.trim()) return res.status(400).json({ error: 'El texto no puede estar vacío.' });
+
+    const {
+        texto,
+        rolSolicitante,
+        solicitanteNombre
+    } = req.body || {};
+
+    if (!texto || !texto.trim()) {
+        return res.status(400).json({
+            error: 'El texto no puede estar vacío.'
+        });
+    }
 
     try {
-        const check = await pool.request().input('id', sql.Int, id).query('SELECT Autor FROM PublicacionesGlobales WHERE Id = @id');
-        if (check.recordset.length === 0) return res.status(404).json({ error: 'Publicación no encontrada.' });
+        const check = await pool.request()
+            .input('id', sql.Int, id)
+            .query(`
+                SELECT Autor
+                FROM PublicacionesGlobales
+                WHERE Id = @id
+            `);
+
+        if (check.recordset.length === 0) {
+            return res.status(404).json({
+                error: 'Publicación no encontrada.'
+            });
+        }
 
         const autor = check.recordset[0].Autor;
-        if (rolSolicitante !== 'Admin' && solicitanteNombre !== autor) {
-            return res.status(403).json({ error: 'No tienes permiso para editar esta publicación.' });
+
+        if (
+            rolSolicitante !== 'Admin' &&
+            solicitanteNombre !== autor
+        ) {
+            return res.status(403).json({
+                error: 'No tienes permiso para editar esta publicación.'
+            });
         }
 
         await pool.request()
             .input('id', sql.Int, id)
-            .input('texto', sql.NVarChar, texto.trim())
-            .query('UPDATE PublicacionesGlobales SET Texto = @texto WHERE Id = @id');
+            .input(
+                'texto',
+                sql.NVarChar,
+                texto.trim()
+            )
+            .query(`
+                UPDATE PublicacionesGlobales
+                SET Texto = @texto
+                WHERE Id = @id
+            `);
 
-        res.json({ mensaje: 'Publicación editada correctamente' });
+        res.json({
+            mensaje: 'Publicación editada correctamente'
+        });
     } catch (err) {
-        res.status(500).json({ error: 'Error al editar publicación.' });
+        console.error(
+            'Error PUT /api/publicaciones-globales/:id:',
+            err
+        );
+
+        res.status(500).json({
+            error: 'Error al editar publicación.'
+        });
     }
 });
 
 app.delete('/api/publicaciones-globales/:id', async (req, res) => {
     const { id } = req.params;
-    const { rolSolicitante, solicitanteNombre } = req.query;
-    try {
-        const check = await pool.request().input('id', sql.Int, id).query('SELECT Autor FROM PublicacionesGlobales WHERE Id = @id');
-        if (check.recordset.length === 0) return res.status(404).json({ error: 'Publicación no encontrada.' });
 
-        const autor = check.recordset[0].Autor;
-        if (rolSolicitante !== 'Admin' && solicitanteNombre !== autor) {
-            return res.status(403).json({ error: 'Sin permiso para borrar esta publicación.' });
+    const {
+        rolSolicitante,
+        solicitanteNombre
+    } = req.query;
+
+    try {
+        const check = await pool.request()
+            .input('id', sql.Int, id)
+            .query(`
+                SELECT Autor
+                FROM PublicacionesGlobales
+                WHERE Id = @id
+            `);
+
+        if (check.recordset.length === 0) {
+            return res.status(404).json({
+                error: 'Publicación no encontrada.'
+            });
         }
 
-        await pool.request().input('id', sql.Int, id).query('DELETE FROM PublicacionesGlobales WHERE Id = @id');
-        res.json({ mensaje: 'Publicación eliminada' });
+        const autor = check.recordset[0].Autor;
+
+        if (
+            rolSolicitante !== 'Admin' &&
+            solicitanteNombre !== autor
+        ) {
+            return res.status(403).json({
+                error: 'Sin permiso para borrar esta publicación.'
+            });
+        }
+
+        await pool.request()
+            .input('id', sql.Int, id)
+            .query(`
+                DELETE FROM PublicacionesGlobales
+                WHERE Id = @id
+            `);
+
+        res.json({
+            mensaje: 'Publicación eliminada'
+        });
     } catch (err) {
-        res.status(500).json({ error: 'Error al eliminar publicación.' });
+        console.error(
+            'Error DELETE /api/publicaciones-globales/:id:',
+            err
+        );
+
+        res.status(500).json({
+            error: 'Error al eliminar publicación.'
+        });
     }
 });
 
-// ================= COMENTARIOS EN PERFILES =================
 app.get('/api/comentarios/:amigoId', async (req, res) => {
     try {
         const result = await pool.request()
-            .input('amigoId', sql.Int, req.params.amigoId)
+            .input(
+                'amigoId',
+                sql.Int,
+                req.params.amigoId
+            )
             .query(`
-                SELECT Id, AmigoId, Autor, UsuarioId, Texto, Fecha, RespuestaAId, ImagenUrl
+                SELECT
+                    Id,
+                    AmigoId,
+                    Autor,
+                    UsuarioId,
+                    Texto,
+                    Fecha,
+                    RespuestaAId,
+                    ImagenUrl
                 FROM Comentarios
                 WHERE AmigoId = @amigoId
                 ORDER BY Id DESC
             `);
+
         res.json(result.recordset);
     } catch (err) {
-        console.error('ERROR GET /api/comentarios:', err);
-        res.status(500).json({ error: err.message });
+        console.error(
+            'ERROR GET /api/comentarios:',
+            err
+        );
+
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
 app.post('/api/comentarios', uploadMemory.single('imagenComentario'), async (req, res) => {
-    const { amigoId, autor, contenido, respuestaAId, imagenUrlDirecta, usuarioId } = req.body || {};
+    const {
+        amigoId,
+        autor,
+        contenido,
+        respuestaAId,
+        imagenUrlDirecta,
+        usuarioId
+    } = req.body || {};
 
     try {
-        const imgUrl = req.file ? await subirMediaInteligente(req.file, 'coment') : (imagenUrlDirecta || null);
+        const imgUrl = req.file
+            ? await subirMediaInteligente(
+                req.file,
+                'coment'
+            )
+            : imagenUrlDirecta || null;
 
-        if ((!contenido || !contenido.trim()) && !imgUrl) {
-            return res.status(400).json({ error: 'El comentario no puede estar vacío.' });
+        if (
+            (!contenido || !contenido.trim()) &&
+            !imgUrl
+        ) {
+            return res.status(400).json({
+                error: 'El comentario no puede estar vacío.'
+            });
         }
 
-        let autorUsuarioId = usuarioId ? parseInt(usuarioId) : null;
+        let autorUsuarioId = usuarioId
+            ? parseInt(usuarioId)
+            : null;
+
         if (!autorUsuarioId && autor) {
             try {
-                const autorCheck = await pool.request()
-                    .input('aut', sql.NVarChar, autor.trim())
-                    .query(`
-                        SELECT TOP 1 UsuarioId
-                        FROM Amigos
-                        WHERE NombreVisible LIKE '%' + @aut + '%'
-                        AND UsuarioId IS NOT NULL
-                    `);
-                if (autorCheck.recordset.length > 0) autorUsuarioId = autorCheck.recordset[0].UsuarioId;
+                const autorCheck =
+                    await pool.request()
+                        .input(
+                            'aut',
+                            sql.NVarChar,
+                            autor.trim()
+                        )
+                        .query(`
+                            SELECT TOP 1 UsuarioId
+                            FROM Amigos
+                            WHERE NombreVisible LIKE '%' + @aut + '%'
+                            AND UsuarioId IS NOT NULL
+                        `);
+
+                if (
+                    autorCheck.recordset.length > 0
+                ) {
+                    autorUsuarioId =
+                        autorCheck
+                            .recordset[0]
+                            .UsuarioId;
+                }
             } catch (queryErr) {
-                console.warn('Advertencia buscando en Amigos:', queryErr.message);
+                console.warn(
+                    'Advertencia buscando en Amigos:',
+                    queryErr.message
+                );
             }
         }
 
         const insertRes = await pool.request()
-            .input('amigoId', sql.Int, amigoId)
-            .input('autor', sql.NVarChar, autor)
-            .input('usuarioId', sql.Int, autorUsuarioId)
-            .input('texto', sql.NVarChar, (contenido || '').trim())
-            .input('parent', sql.Int, respuestaAId ? parseInt(respuestaAId) : null)
-            .input('img', sql.NVarChar, imgUrl)
+            .input(
+                'amigoId',
+                sql.Int,
+                amigoId
+            )
+            .input(
+                'autor',
+                sql.NVarChar,
+                autor
+            )
+            .input(
+                'usuarioId',
+                sql.Int,
+                autorUsuarioId
+            )
+            .input(
+                'texto',
+                sql.NVarChar,
+                (contenido || '').trim()
+            )
+            .input(
+                'parent',
+                sql.Int,
+                respuestaAId
+                    ? parseInt(respuestaAId)
+                    : null
+            )
+            .input(
+                'img',
+                sql.NVarChar,
+                imgUrl
+            )
             .query(`
                 INSERT INTO Comentarios
-                (AmigoId, Autor, UsuarioId, Texto, Fecha, RespuestaAId, ImagenUrl)
+                (
+                    AmigoId,
+                    Autor,
+                    UsuarioId,
+                    Texto,
+                    Fecha,
+                    RespuestaAId,
+                    ImagenUrl
+                )
                 OUTPUT INSERTED.Id
                 VALUES
-                (@amigoId, @autor, @usuarioId, @texto, GETDATE(), @parent, @img)
+                (
+                    @amigoId,
+                    @autor,
+                    @usuarioId,
+                    @texto,
+                    GETDATE(),
+                    @parent,
+                    @img
+                )
             `);
 
-        const newComId = insertRes.recordset[0].Id;
+        const newComId =
+            insertRes.recordset[0].Id;
 
         const duenoCheck = await pool.request()
-            .input('aId', sql.Int, amigoId)
-            .query(`SELECT UsuarioId FROM Amigos WHERE Id = @aId`);
+            .input(
+                'aId',
+                sql.Int,
+                amigoId
+            )
+            .query(`
+                SELECT UsuarioId
+                FROM Amigos
+                WHERE Id = @aId
+            `);
 
-        const duenoUsuarioId = duenoCheck.recordset.length > 0 ? duenoCheck.recordset[0].UsuarioId : null;
+        const duenoUsuarioId =
+            duenoCheck.recordset.length > 0
+                ? duenoCheck.recordset[0].UsuarioId
+                : null;
 
         if (respuestaAId) {
             const padreInfo = await pool.request()
-                .input('pId', sql.Int, respuestaAId)
-                .query(`SELECT Id, Autor, UsuarioId, AmigoId FROM Comentarios WHERE Id = @pId`);
+                .input(
+                    'pId',
+                    sql.Int,
+                    respuestaAId
+                )
+                .query(`
+                    SELECT
+                        Id,
+                        Autor,
+                        UsuarioId,
+                        AmigoId
+                    FROM Comentarios
+                    WHERE Id = @pId
+                `);
 
-            if (padreInfo.recordset.length > 0) {
-                let usuarioDestinoId = padreInfo.recordset[0].UsuarioId;
+            if (
+                padreInfo.recordset.length > 0
+            ) {
+                let usuarioDestinoId =
+                    padreInfo
+                        .recordset[0]
+                        .UsuarioId;
 
-                if (usuarioDestinoId === autorUsuarioId) {
-                    const ultimoParticipante = await pool.request()
-                        .input('pId', sql.Int, respuestaAId)
-                        .input('yo', sql.Int, autorUsuarioId)
-                        .query(`
-                            SELECT TOP 1 UsuarioId 
-                            FROM Comentarios 
-                            WHERE RespuestaAId = @pId 
-                              AND UsuarioId != @yo 
-                              AND UsuarioId IS NOT NULL
-                            ORDER BY Fecha DESC
-                        `);
-                    if (ultimoParticipante.recordset.length > 0) {
-                        usuarioDestinoId = ultimoParticipante.recordset[0].UsuarioId;
+                if (
+                    usuarioDestinoId ===
+                    autorUsuarioId
+                ) {
+                    const ultimoParticipante =
+                        await pool.request()
+                            .input(
+                                'pId',
+                                sql.Int,
+                                respuestaAId
+                            )
+                            .input(
+                                'yo',
+                                sql.Int,
+                                autorUsuarioId
+                            )
+                            .query(`
+                                SELECT TOP 1 UsuarioId
+                                FROM Comentarios
+                                WHERE RespuestaAId = @pId
+                                AND UsuarioId != @yo
+                                AND UsuarioId IS NOT NULL
+                                ORDER BY Fecha DESC
+                            `);
+
+                    if (
+                        ultimoParticipante
+                            .recordset.length > 0
+                    ) {
+                        usuarioDestinoId =
+                            ultimoParticipante
+                                .recordset[0]
+                                .UsuarioId;
                     }
                 }
 
-                if (usuarioDestinoId && usuarioDestinoId !== autorUsuarioId) {
+                if (
+                    usuarioDestinoId &&
+                    usuarioDestinoId !==
+                    autorUsuarioId
+                ) {
                     await pool.request()
-                        .input('uDest', sql.Int, usuarioDestinoId)
-                        .input('autor', sql.NVarChar, autor || 'Alguien')
-                        .input('destId', sql.Int, amigoId)
-                        .input('comId', sql.Int, newComId)
-                        .input('txt', sql.NVarChar, (contenido || '').trim().substring(0, 100))
+                        .input(
+                            'uDest',
+                            sql.Int,
+                            usuarioDestinoId
+                        )
+                        .input(
+                            'autor',
+                            sql.NVarChar,
+                            autor || 'Alguien'
+                        )
+                        .input(
+                            'destId',
+                            sql.Int,
+                            amigoId
+                        )
+                        .input(
+                            'comId',
+                            sql.Int,
+                            newComId
+                        )
+                        .input(
+                            'txt',
+                            sql.NVarChar,
+                            (contenido || '')
+                                .trim()
+                                .substring(0, 100)
+                        )
                         .query(`
                             INSERT INTO Notificaciones
-                            (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
+                            (
+                                UsuarioDestinoId,
+                                AutorAccion,
+                                Tipo,
+                                DestinoId,
+                                ComentarioId,
+                                TextoPrevio
+                            )
                             VALUES
-                            (@uDest, @autor, 'PERFIL', @destId, @comId, @txt)
+                            (
+                                @uDest,
+                                @autor,
+                                'PERFIL',
+                                @destId,
+                                @comId,
+                                @txt
+                            )
                         `);
                 }
             }
-        } else if (duenoUsuarioId && duenoUsuarioId !== autorUsuarioId) {
+        } else if (
+            duenoUsuarioId &&
+            duenoUsuarioId !== autorUsuarioId
+        ) {
             await pool.request()
-                .input('uDest', sql.Int, duenoUsuarioId)
-                .input('autor', sql.NVarChar, autor || 'Alguien')
-                .input('destId', sql.Int, amigoId)
-                .input('comId', sql.Int, newComId)
-                .input('txt', sql.NVarChar, (contenido || '').trim().substring(0, 100))
+                .input(
+                    'uDest',
+                    sql.Int,
+                    duenoUsuarioId
+                )
+                .input(
+                    'autor',
+                    sql.NVarChar,
+                    autor || 'Alguien'
+                )
+                .input(
+                    'destId',
+                    sql.Int,
+                    amigoId
+                )
+                .input(
+                    'comId',
+                    sql.Int,
+                    newComId
+                )
+                .input(
+                    'txt',
+                    sql.NVarChar,
+                    (contenido || '')
+                        .trim()
+                        .substring(0, 100)
+                )
                 .query(`
                     INSERT INTO Notificaciones
-                    (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
+                    (
+                        UsuarioDestinoId,
+                        AutorAccion,
+                        Tipo,
+                        DestinoId,
+                        ComentarioId,
+                        TextoPrevio
+                    )
                     VALUES
-                    (@uDest, @autor, 'PERFIL', @destId, @comId, @txt)
+                    (
+                        @uDest,
+                        @autor,
+                        'PERFIL',
+                        @destId,
+                        @comId,
+                        @txt
+                    )
                 `);
         }
 
-        res.json({ mensaje: 'Comentario publicado exitosamente' });
+        res.json({
+            mensaje: 'Comentario publicado exitosamente'
+        });
     } catch (err) {
-        console.error('Error POST /api/comentarios:', err);
-        res.status(500).json({ error: err.message });
+        console.error(
+            'Error POST /api/comentarios:',
+            err
+        );
+
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
 app.put('/api/comentarios/:id', async (req, res) => {
     const { id } = req.params;
-    const { texto, rolSolicitante, solicitanteNombre } = req.body || {};
-    if (!texto || !texto.trim()) return res.status(400).json({ error: 'El texto no puede estar vacío.' });
+
+    const {
+        texto,
+        rolSolicitante,
+        solicitanteNombre
+    } = req.body || {};
+
+    if (!texto || !texto.trim()) {
+        return res.status(400).json({
+            error: 'El texto no puede estar vacío.'
+        });
+    }
 
     try {
-        const check = await pool.request().input('id', sql.Int, id).query('SELECT Autor FROM Comentarios WHERE Id = @id');
-        if (check.recordset.length === 0) return res.status(404).json({ error: 'Comentario no encontrado.' });
+        const check = await pool.request()
+            .input('id', sql.Int, id)
+            .query(`
+                SELECT Autor
+                FROM Comentarios
+                WHERE Id = @id
+            `);
 
-        const autor = check.recordset[0].Autor;
-        if (rolSolicitante !== 'Admin' && solicitanteNombre !== autor) {
-            return res.status(403).json({ error: 'No tienes permiso para editar este comentario.' });
+        if (check.recordset.length === 0) {
+            return res.status(404).json({
+                error: 'Comentario no encontrado.'
+            });
+        }
+
+        const autor =
+            check.recordset[0].Autor;
+
+        if (
+            rolSolicitante !== 'Admin' &&
+            solicitanteNombre !== autor
+        ) {
+            return res.status(403).json({
+                error: 'No tienes permiso para editar este comentario.'
+            });
         }
 
         await pool.request()
             .input('id', sql.Int, id)
-            .input('texto', sql.NVarChar, texto.trim())
-            .query('UPDATE Comentarios SET Texto = @texto WHERE Id = @id');
+            .input(
+                'texto',
+                sql.NVarChar,
+                texto.trim()
+            )
+            .query(`
+                UPDATE Comentarios
+                SET Texto = @texto
+                WHERE Id = @id
+            `);
 
-        res.json({ mensaje: 'Comentario editado correctamente' });
+        res.json({
+            mensaje: 'Comentario editado correctamente'
+        });
     } catch (err) {
-        res.status(500).json({ error: 'Error al editar comentario.' });
+        console.error(
+            'Error PUT /api/comentarios/:id:',
+            err
+        );
+
+        res.status(500).json({
+            error: 'Error al editar comentario.'
+        });
     }
 });
 
 app.delete('/api/comentarios/:id', async (req, res) => {
     const { id } = req.params;
-    const { rolSolicitante, solicitanteNombre } = req.query;
-    try {
-        const check = await pool.request().input('id', sql.Int, id).query('SELECT Autor FROM Comentarios WHERE Id = @id');
-        if (check.recordset.length === 0) return res.status(404).json({ error: 'Comentario no encontrado.' });
 
-        const autor = check.recordset[0].Autor;
-        if (rolSolicitante !== 'Admin' && solicitanteNombre !== autor) {
-            return res.status(403).json({ error: 'Sin permiso para borrar este comentario.' });
+    const {
+        rolSolicitante,
+        solicitanteNombre
+    } = req.query;
+
+    try {
+        const check = await pool.request()
+            .input('id', sql.Int, id)
+            .query(`
+                SELECT Autor
+                FROM Comentarios
+                WHERE Id = @id
+            `);
+
+        if (check.recordset.length === 0) {
+            return res.status(404).json({
+                error: 'Comentario no encontrado.'
+            });
         }
 
-        await pool.request().input('id', sql.Int, id).query('DELETE FROM Comentarios WHERE Id = @id');
-        res.json({ mensaje: 'Comentario eliminado' });
+        const autor =
+            check.recordset[0].Autor;
+
+        if (
+            rolSolicitante !== 'Admin' &&
+            solicitanteNombre !== autor
+        ) {
+            return res.status(403).json({
+                error: 'Sin permiso para borrar este comentario.'
+            });
+        }
+
+        await pool.request()
+            .input('id', sql.Int, id)
+            .query(`
+                DELETE FROM Comentarios
+                WHERE Id = @id
+            `);
+
+        res.json({
+            mensaje: 'Comentario eliminado'
+        });
     } catch (err) {
-        res.status(500).json({ error: 'No se pudo eliminar el comentario.' });
+        console.error(
+            'Error DELETE /api/comentarios/:id:',
+            err
+        );
+
+        res.status(500).json({
+            error: 'No se pudo eliminar el comentario.'
+        });
     }
 });
 
-// ================= GOOGLE DRIVE MEDIA (DIRECTO) =================
 app.post('/api/media-drive', uploadMemory.single('archivo'), async (req, res) => {
     try {
-        if (!req.file) return res.status(400).json({ error: 'No se envió ningún archivo.' });
-        const nombreUnico = `media_${Date.now()}_${req.file.originalname}`;
-        const driveUrl = await subirADrive(req.file.buffer, nombreUnico, req.file.mimetype);
-        res.json({ mensaje: 'Subido a Google Drive con éxito', url: driveUrl });
+        if (!req.file) {
+            return res.status(400).json({
+                error: 'No se envió ningún archivo.'
+            });
+        }
+
+        const nombreUnico =
+            `media_${Date.now()}_${req.file.originalname}`;
+
+        const driveUrl =
+            await subirADrive(
+                req.file.buffer,
+                nombreUnico,
+                req.file.mimetype
+            );
+
+        res.json({
+            mensaje: 'Subido a Google Drive con éxito',
+            url: driveUrl
+        });
     } catch (err) {
-        console.error('Error subiendo a Drive:', err);
-        res.status(500).json({ error: err.message });
+        console.error(
+            'Error subiendo a Drive:',
+            err
+        );
+
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
@@ -795,135 +1853,335 @@ app.get('/api/media-drive/:id', async (req, res) => {
     try {
         const fileId = req.params.id;
         const range = req.headers.range;
-        const info = await obtenerInfoVideoDrive(fileId);
-        const tamaño = Number(info.size);
 
-        if (!tamaño) return res.status(500).json({ error: 'No se pudo obtener el tamaño del archivo.' });
+        const info =
+            await obtenerInfoVideoDrive(fileId);
+
+        const tamaño =
+            Number(info.size);
+
+        if (!tamaño) {
+            return res.status(500).json({
+                error: 'No se pudo obtener el tamaño del archivo.'
+            });
+        }
 
         if (!range) {
-            const response = await obtenerVideoDrive(fileId);
+            const response =
+                await obtenerVideoDrive(fileId);
+
             res.status(200);
-            res.setHeader('Content-Type', info.mimeType || 'application/octet-stream');
-            res.setHeader('Content-Length', tamaño);
-            res.setHeader('Accept-Ranges', 'bytes');
+            res.setHeader(
+                'Content-Type',
+                info.mimeType ||
+                'application/octet-stream'
+            );
+            res.setHeader(
+                'Content-Length',
+                tamaño
+            );
+            res.setHeader(
+                'Accept-Ranges',
+                'bytes'
+            );
+
             response.data.pipe(res);
             return;
         }
 
-        const match = range.match(/bytes=(\d+)-(\d*)/);
-        if (!match) return res.status(416).json({ error: 'Rango no válido.' });
+        const match =
+            range.match(/bytes=(\d+)-(\d*)/);
 
-        const inicio = Number(match[1]);
-        let fin = match[2] ? Number(match[2]) : tamaño - 1;
+        if (!match) {
+            return res.status(416).json({
+                error: 'Rango no válido.'
+            });
+        }
+
+        const inicio =
+            Number(match[1]);
+
+        let fin = match[2]
+            ? Number(match[2])
+            : tamaño - 1;
 
         if (inicio >= tamaño) {
             res.status(416);
-            res.setHeader('Content-Range', `bytes */${tamaño}`);
+
+            res.setHeader(
+                'Content-Range',
+                `bytes */${tamaño}`
+            );
+
             return res.end();
         }
 
-        if (fin >= tamaño) fin = tamaño - 1;
+        if (fin >= tamaño) {
+            fin = tamaño - 1;
+        }
 
-        const rangoDrive = `bytes=${inicio}-${fin}`;
-        const response = await obtenerVideoDrive(fileId, rangoDrive);
-        const longitud = fin - inicio + 1;
+        const rangoDrive =
+            `bytes=${inicio}-${fin}`;
+
+        const response =
+            await obtenerVideoDrive(
+                fileId,
+                rangoDrive
+            );
+
+        const longitud =
+            fin - inicio + 1;
 
         res.status(206);
-        res.setHeader('Content-Range', `bytes ${inicio}-${fin}/${tamaño}`);
-        res.setHeader('Accept-Ranges', 'bytes');
-        res.setHeader('Content-Length', longitud);
-        res.setHeader('Content-Type', info.mimeType || 'application/octet-stream');
+
+        res.setHeader(
+            'Content-Range',
+            `bytes ${inicio}-${fin}/${tamaño}`
+        );
+
+        res.setHeader(
+            'Accept-Ranges',
+            'bytes'
+        );
+
+        res.setHeader(
+            'Content-Length',
+            longitud
+        );
+
+        res.setHeader(
+            'Content-Type',
+            info.mimeType ||
+            'application/octet-stream'
+        );
+
         response.data.pipe(res);
     } catch (err) {
-        console.error('Error reproduciendo archivo de Drive:', err);
-        res.status(500).json({ error: 'No se pudo cargar el archivo.' });
+        console.error(
+            'Error reproduciendo archivo de Drive:',
+            err
+        );
+
+        res.status(500).json({
+            error: 'No se pudo cargar el archivo.'
+        });
     }
 });
 
-// ================= NOTIFICACIONES =================
 app.get('/api/notificaciones/:usuarioId', async (req, res) => {
     try {
         const result = await pool.request()
-            .input('uId', sql.Int, req.params.usuarioId)
-            .query('SELECT TOP 30 * FROM Notificaciones WHERE UsuarioDestinoId = @uId ORDER BY Fecha DESC');
+            .input(
+                'uId',
+                sql.Int,
+                req.params.usuarioId
+            )
+            .query(`
+                SELECT TOP 30 *
+                FROM Notificaciones
+                WHERE UsuarioDestinoId = @uId
+                ORDER BY Fecha DESC
+            `);
+
         res.json(result.recordset);
     } catch (err) {
-        console.error('Error GET /api/notificaciones:', err);
-        res.status(500).json({ error: err.message });
+        console.error(
+            'Error GET /api/notificaciones:',
+            err
+        );
+
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
 app.put('/api/notificaciones/:id/leer', async (req, res) => {
     try {
         await pool.request()
-            .input('id', sql.Int, req.params.id)
-            .query('UPDATE Notificaciones SET Leido = 1 WHERE Id = @id');
-        res.json({ mensaje: 'Notificación leída' });
+            .input(
+                'id',
+                sql.Int,
+                req.params.id
+            )
+            .query(`
+                UPDATE Notificaciones
+                SET Leido = 1
+                WHERE Id = @id
+            `);
+
+        res.json({
+            mensaje: 'Notificación leída'
+        });
     } catch (err) {
-        console.error('Error PUT /api/notificaciones/leer:', err);
-        res.status(500).json({ error: err.message });
+        console.error(
+            'Error PUT /api/notificaciones/leer:',
+            err
+        );
+
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
-
-// ================= ANUNCIOS =================
 app.get('/api/anuncio', async (req, res) => {
     try {
-        const result = await pool.request().query('SELECT * FROM AnuncioGlobal ORDER BY Id DESC');
+        const result = await pool.request()
+            .query('SELECT * FROM AnuncioGlobal ORDER BY Id DESC');
+
         res.json(result.recordset);
     } catch (err) {
+        console.error('Error GET /api/anuncio:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
 app.post('/api/anuncio', uploadMemory.single('imagenAfiche'), async (req, res) => {
-    const { titulo, descripcion, rolSolicitante, imagenUrlDirecta } = req.body || {};
+    const {
+        titulo,
+        descripcion,
+        rolSolicitante,
+        imagenUrlDirecta
+    } = req.body || {};
+
     if (rolSolicitante !== 'Admin') {
-        return res.status(403).json({ error: 'Solo administradores pueden publicar anuncios.' });
+        return res.status(403).json({
+            error: 'Solo administradores pueden publicar anuncios.'
+        });
     }
 
     try {
         let mediaUrl = imagenUrlDirecta || null;
+
         if (req.file) {
-            mediaUrl = await subirMediaInteligente(req.file, 'anuncio');
+            mediaUrl = await subirMediaInteligente(
+                req.file,
+                'anuncio'
+            );
         }
 
         const insertRes = await pool.request()
-            .input('tit', sql.NVarChar, (titulo || 'Nuevo Anuncio').trim())
-            .input('desc', sql.NVarChar, (descripcion || '').trim())
-            .input('img', sql.NVarChar, mediaUrl)
+            .input(
+                'tit',
+                sql.NVarChar,
+                (titulo || 'Nuevo Anuncio').trim()
+            )
+            .input(
+                'desc',
+                sql.NVarChar,
+                (descripcion || '').trim()
+            )
+            .input(
+                'img',
+                sql.NVarChar,
+                mediaUrl
+            )
             .query(`
-                INSERT INTO AnuncioGlobal (Titulo, Descripcion, ImagenUrl, FechaCreacion, Activo)
+                INSERT INTO AnuncioGlobal
+                (
+                    Titulo,
+                    Descripcion,
+                    ImagenUrl,
+                    FechaCreacion,
+                    Activo
+                )
                 OUTPUT INSERTED.Id
-                VALUES (@tit, @desc, @img, GETDATE(), 1)
+                VALUES
+                (
+                    @tit,
+                    @desc,
+                    @img,
+                    GETDATE(),
+                    1
+                )
             `);
 
-        const newAnuncioId = insertRes.recordset[0].Id;
+        const newAnuncioId =
+            insertRes.recordset[0].Id;
 
         try {
-            const usuariosList = await pool.request().query('SELECT Id FROM UsuariosWeb');
+            const usuariosList =
+                await pool.request()
+                    .query(`
+                        SELECT Id
+                        FROM UsuariosWeb
+                    `);
+
             for (const user of usuariosList.recordset) {
                 await pool.request()
-                    .input('uDest', sql.Int, user.Id)
-                    .input('autor', sql.NVarChar, '📢 Anuncio')
-                    .input('tipo', sql.NVarChar, 'ANUNCIO')
-                    .input('destId', sql.Int, newAnuncioId)
-                    .input('comId', sql.Int, newAnuncioId)
-                    .input('txt', sql.NVarChar, (titulo || 'Nuevo aviso publicado').substring(0, 100))
+                    .input(
+                        'uDest',
+                        sql.Int,
+                        user.Id
+                    )
+                    .input(
+                        'autor',
+                        sql.NVarChar,
+                        '📢 Anuncio'
+                    )
+                    .input(
+                        'tipo',
+                        sql.NVarChar,
+                        'ANUNCIO'
+                    )
+                    .input(
+                        'destId',
+                        sql.Int,
+                        newAnuncioId
+                    )
+                    .input(
+                        'comId',
+                        sql.Int,
+                        newAnuncioId
+                    )
+                    .input(
+                        'txt',
+                        sql.NVarChar,
+                        (titulo || 'Nuevo aviso publicado')
+                            .substring(0, 100)
+                    )
                     .query(`
-                        INSERT INTO Notificaciones 
-                        (UsuarioDestinoId, AutorAccion, Tipo, DestinoId, ComentarioId, TextoPrevio)
-                        VALUES 
-                        (@uDest, @autor, @tipo, @destId, @comId, @txt)
+                        INSERT INTO Notificaciones
+                        (
+                            UsuarioDestinoId,
+                            AutorAccion,
+                            Tipo,
+                            DestinoId,
+                            ComentarioId,
+                            TextoPrevio
+                        )
+                        VALUES
+                        (
+                            @uDest,
+                            @autor,
+                            @tipo,
+                            @destId,
+                            @comId,
+                            @txt
+                        )
                     `);
             }
         } catch (notifErr) {
-            console.warn('Aviso: error insertando notificaciones masivas:', notifErr.message);
+            console.warn(
+                'Aviso: error insertando notificaciones masivas:',
+                notifErr.message
+            );
         }
 
-        res.json({ mensaje: 'Anuncio publicado exitosamente', id: newAnuncioId, url: mediaUrl });
+        res.json({
+            mensaje: 'Anuncio publicado exitosamente',
+            id: newAnuncioId,
+            url: mediaUrl
+        });
     } catch (err) {
-        console.error('Error al publicar anuncio:', err);
-        res.status(500).json({ error: err.message });
+        console.error(
+            'Error al publicar anuncio:',
+            err
+        );
+
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
@@ -931,125 +2189,299 @@ app.delete('/api/anuncio/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const { rolSolicitante } = req.query;
-        if (rolSolicitante !== 'Admin') return res.status(403).json({ error: 'Solo Admin.' });
 
-        await pool.request().input('id', sql.Int, id).query('DELETE FROM AnuncioGlobal WHERE Id = @id');
-        res.json({ mensaje: 'Anuncio eliminado correctamente' });
+        if (rolSolicitante !== 'Admin') {
+            return res.status(403).json({
+                error: 'Solo Admin.'
+            });
+        }
+
+        await pool.request()
+            .input(
+                'id',
+                sql.Int,
+                id
+            )
+            .query(`
+                DELETE FROM AnuncioGlobal
+                WHERE Id = @id
+            `);
+
+        res.json({
+            mensaje: 'Anuncio eliminado correctamente'
+        });
     } catch (err) {
-        console.error('Error eliminando anuncio:', err);
-        res.status(500).json({ error: err.message });
+        console.error(
+            'Error eliminando anuncio:',
+            err
+        );
+
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
-// =========== JUEGOS =======================
 app.post('/api/juegos/record', async (req, res) => {
-    const { usuarioId, juego, puntuacion } = req.body;
-    if (!usuarioId || !juego || puntuacion === undefined) {
-        return res.status(400).json({ error: 'Datos incompletos.' });
+    const {
+        usuarioId,
+        juego,
+        puntuacion
+    } = req.body || {};
+
+    if (
+        !usuarioId ||
+        !juego ||
+        puntuacion === undefined
+    ) {
+        return res.status(400).json({
+            error: 'Datos incompletos.'
+        });
     }
 
     try {
         await pool.request()
-            .input('uId', sql.Int, usuarioId)
-            .input('juego', sql.NVarChar, juego)
-            .input('score', sql.Int, puntuacion)
+            .input(
+                'uId',
+                sql.Int,
+                usuarioId
+            )
+            .input(
+                'juego',
+                sql.NVarChar,
+                juego
+            )
+            .input(
+                'score',
+                sql.Int,
+                puntuacion
+            )
             .query(`
-                INSERT INTO PuntuacionesJuegos (UsuarioId, Juego, Puntuacion, Fecha)
-                VALUES (@uId, @juego, @score, GETDATE())
+                INSERT INTO PuntuacionesJuegos
+                (
+                    UsuarioId,
+                    Juego,
+                    Puntuacion,
+                    Fecha
+                )
+                VALUES
+                (
+                    @uId,
+                    @juego,
+                    @score,
+                    GETDATE()
+                )
             `);
 
-        res.json({ mensaje: 'Puntuación guardada con éxito' });
+        res.json({
+            mensaje: 'Puntuación guardada con éxito'
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error(
+            'Error guardando puntuación:',
+            err
+        );
+
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
 app.get('/api/juegos/leaderboard/:juego', async (req, res) => {
     const { juego } = req.params;
+
     try {
         const result = await pool.request()
-            .input('juego', sql.NVarChar, (juego || '').toLowerCase().trim())
+            .input(
+                'juego',
+                sql.NVarChar,
+                (juego || '')
+                    .toLowerCase()
+                    .trim()
+            )
             .query(`
-                SELECT TOP 10 
+                SELECT TOP 10
                     MAX(p.Puntuacion) AS Puntuacion,
                     MAX(p.Fecha) AS Fecha,
                     u.Username,
                     u.NombreVisible
                 FROM PuntuacionesJuegos p
-                INNER JOIN UsuariosWeb u ON p.UsuarioId = u.Id
+                INNER JOIN UsuariosWeb u
+                    ON p.UsuarioId = u.Id
                 WHERE LOWER(p.Juego) = LOWER(@juego)
-                GROUP BY u.Id, u.Username, u.NombreVisible
+                GROUP BY
+                    u.Id,
+                    u.Username,
+                    u.NombreVisible
                 ORDER BY Puntuacion DESC
             `);
 
         res.json(result.recordset);
     } catch (err) {
-        console.error('Error al obtener leaderboard:', err);
-        res.status(500).json({ error: err.message });
+        console.error(
+            'Error al obtener leaderboard:',
+            err
+        );
+
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
-// =========== DOOM =======================
 app.post('/api/juegos/doom/guardar', async (req, res) => {
-    const { usuarioId, slot, datosBase64 } = req.body || {};
-    if (!usuarioId || slot === undefined || !datosBase64) {
-        return res.status(400).json({ error: 'Faltan parámetros.' });
+    const {
+        usuarioId,
+        slot,
+        datosBase64
+    } = req.body || {};
+
+    if (
+        !usuarioId ||
+        slot === undefined ||
+        !datosBase64
+    ) {
+        return res.status(400).json({
+            error: 'Faltan parámetros.'
+        });
     }
 
     try {
-        const buffer = Buffer.from(datosBase64, 'base64');
+        const buffer = Buffer.from(
+            datosBase64,
+            'base64'
+        );
+
         await pool.request()
-            .input('uId', sql.Int, usuarioId)
-            .input('slot', sql.Int, slot)
-            .input('datos', sql.VarBinary(sql.MAX), buffer)
+            .input(
+                'uId',
+                sql.Int,
+                usuarioId
+            )
+            .input(
+                'slot',
+                sql.Int,
+                slot
+            )
+            .input(
+                'datos',
+                sql.VarBinary(sql.MAX),
+                buffer
+            )
             .query(`
                 MERGE PartidasDoom AS target
-                USING (SELECT @uId AS UsuarioId, @slot AS Slot) AS source
-                ON (target.UsuarioId = source.UsuarioId AND target.Slot = source.Slot)
+                USING (
+                    SELECT
+                        @uId AS UsuarioId,
+                        @slot AS Slot
+                ) AS source
+                ON (
+                    target.UsuarioId = source.UsuarioId
+                    AND target.Slot = source.Slot
+                )
                 WHEN MATCHED THEN
-                    UPDATE SET DatosPartida = @datos, FechaActualizacion = GETDATE()
+                    UPDATE SET
+                        DatosPartida = @datos,
+                        FechaActualizacion = GETDATE()
                 WHEN NOT MATCHED THEN
-                    INSERT (UsuarioId, Slot, DatosPartida, FechaActualizacion)
-                    VALUES (@uId, @slot, @datos, GETDATE());
+                    INSERT
+                    (
+                        UsuarioId,
+                        Slot,
+                        DatosPartida,
+                        FechaActualizacion
+                    )
+                    VALUES
+                    (
+                        @uId,
+                        @slot,
+                        @datos,
+                        GETDATE()
+                    );
             `);
 
-        res.json({ mensaje: 'Partida guardada en la base de datos' });
+        res.json({
+            mensaje: 'Partida guardada en la base de datos'
+        });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error(
+            'Error guardando partida de DOOM:',
+            err
+        );
+
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
 app.get('/api/juegos/doom/cargar/:usuarioId', async (req, res) => {
     const { usuarioId } = req.params;
+
     try {
         const result = await pool.request()
-            .input('uId', sql.Int, usuarioId)
-            .query(`SELECT Slot, DatosPartida FROM PartidasDoom WHERE UsuarioId = @uId`);
+            .input(
+                'uId',
+                sql.Int,
+                usuarioId
+            )
+            .query(`
+                SELECT
+                    Slot,
+                    DatosPartida
+                FROM PartidasDoom
+                WHERE UsuarioId = @uId
+            `);
 
         const partidas = result.recordset.map(row => ({
             slot: row.Slot,
-            datosBase64: row.DatosPartida.toString('base64')
+            datosBase64:
+                row.DatosPartida.toString('base64')
         }));
 
         res.json(partidas);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error(
+            'Error cargando partidas de DOOM:',
+            err
+        );
+
+        res.status(500).json({
+            error: err.message
+        });
     }
 });
 
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-    console.log(`Servidor corriendo en el puerto ${PORT}`);
-    const INTERVALO_PING = 10 * 60 * 1000;
-    const URL_SERVICIO = process.env.RENDER_EXTERNAL_URL;
+    console.log(
+        `Servidor corriendo en el puerto ${PORT}`
+    );
+
+    const INTERVALO_PING =
+        10 * 60 * 1000;
+
+    const URL_SERVICIO =
+        process.env.RENDER_EXTERNAL_URL;
 
     if (URL_SERVICIO) {
         setInterval(async () => {
             try {
-                const respuesta = await fetch(`${URL_SERVICIO}/ping`);
-                console.log(`[KEEP-ALIVE] Ping: ${respuesta.status} - ${new Date().toLocaleTimeString()}`);
+                const respuesta =
+                    await fetch(
+                        `${URL_SERVICIO}/ping`
+                    );
+
+                console.log(
+                    `[KEEP-ALIVE] Ping: ${respuesta.status} - ${new Date().toLocaleTimeString()}`
+                );
             } catch (err) {
-                console.warn('[KEEP-ALIVE] Ping fallido:', err.message);
+                console.warn(
+                    '[KEEP-ALIVE] Ping fallido:',
+                    err.message
+                );
             }
         }, INTERVALO_PING);
     }

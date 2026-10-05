@@ -1,64 +1,157 @@
-// js/session.js - Guardián de sesión común para todas las vistas internas
-const usuarioSesion = JSON.parse(localStorage.getItem('disc_user'));
-if (!usuarioSesion) {
+const TIEMPO_INACTIVIDAD = 15 * 60 * 1000;
+let temporizadorInactividad = null;
+let sesionInicializada = false;
+export function obtenerUsuarioSesion() {
+    try {
+        const usuario = localStorage.getItem('disc_user');
+        if (!usuario) {
+            return null;
+        }
+        return JSON.parse(usuario);
+    } catch (error) {
+        console.error('Error leyendo la sesión:', error);
+        return null;
+    }
+}
+export function verificarSesion() {
+    const usuario = obtenerUsuarioSesion();
+    if (!usuario) {
+        window.location.href = 'login.html';
+        return null;
+    }
+    return usuario;
+}
+export function cerrarSesion() {
+    localStorage.removeItem('disc_user');
     window.location.href = 'login.html';
 }
-
-// Inactividad de 15 minutos
-const TIEMPO_INACTIVIDAD = 15 * 60 * 1000;
-let temporizadorInactividad;
-
+function cerrarSesionPorInactividad() {
+    alert('Tu sesión ha expirado por inactividad.');
+    cerrarSesion();
+}
 function reiniciarTemporizador() {
     clearTimeout(temporizadorInactividad);
-    temporizadorInactividad = setTimeout(() => {
-        alert('Sesión expirada por inactividad.');
-        localStorage.removeItem('disc_user');
-        window.location.href = 'login.html';
-    }, TIEMPO_INACTIVIDAD);
+    temporizadorInactividad = setTimeout(
+        cerrarSesionPorInactividad,
+        TIEMPO_INACTIVIDAD
+    );
+}
+export function actualizarUsuarioSidebar() {
+    const usuario = obtenerUsuarioSesion();
+    const labelUsuario =
+        document.getElementById('labelUsuario');
+    if (!labelUsuario || !usuario) {
+        return;
+    }
+    const nombre =
+        usuario.NombreVisible ||
+        usuario.Username ||
+        'Usuario';
+    const rol =
+        usuario.RolApp ||
+        'Lector';
+    labelUsuario.textContent =
+        `${nombre} [${rol}]`;
+}
+function configurarMenuUsuario() {
+    const btnToggle =
+        document.getElementById('btnToggleMenuUsuario');
+    const menu =
+        document.getElementById('menuDesplegableUsuario');
+    const btnCerrarSesion =
+        document.getElementById('btnCerrarSesion');
+    const btnConfiguracion =
+        document.getElementById('btnConfiguracion');
+    if (btnToggle && menu) {
+        btnToggle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            menu.classList.toggle('oculto');
+        });
+    }
+    document.addEventListener('click', (event) => {
+        if (!menu) return;
+        if (
+            !menu.classList.contains('oculto') &&
+            !menu.contains(event.target) &&
+            !btnToggle?.contains(event.target)
+        ) {
+            menu.classList.add('oculto');
+        }
+    });
+    if (btnCerrarSesion) {
+        btnCerrarSesion.addEventListener(
+            'click',
+            cerrarSesion
+        );
+    }
+    if (btnConfiguracion) {
+        btnConfiguracion.addEventListener('click', () => {
+            window.location.href =
+                'html/configuracion.html';
+
+        });
+
+    }
+
+}
+function configurarMenuMovil() {
+    const btnMenu =
+        document.getElementById('btnMenu');
+    const barraLateral =
+        document.getElementById('barraLateral');
+    if (!btnMenu || !barraLateral) {
+        return;
+    }
+    btnMenu.addEventListener('click', (event) => {
+
+        event.stopPropagation();
+
+        barraLateral.classList.toggle('abierto');
+
+    });
+    document.addEventListener('click', (event) => {
+        if (
+            barraLateral.classList.contains('abierto') &&
+            !barraLateral.contains(event.target) &&
+            !btnMenu.contains(event.target)
+        ) {
+            barraLateral.classList.remove('abierto');
+        }
+
+    });
+
 }
 
-['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'].forEach(e => {
-    window.addEventListener(e, reiniciarTemporizador, { passive: true });
-});
-reiniciarTemporizador();
-
-// Manejo del panel inferior y menú lateral móvil
-document.addEventListener('DOMContentLoaded', () => {
-    const labelUser = document.getElementById('labelUsuario');
-    if (labelUser && usuarioSesion) {
-        labelUser.textContent = `${usuarioSesion.NombreVisible} [${usuarioSesion.RolApp}]`;
+function activarControlInactividad() {
+    if (sesionInicializada) {
+        return;
     }
+    const eventos = [
+        'mousemove',
+        'mousedown',
+        'keydown',
+        'scroll',
+        'touchstart'
+    ];
+    eventos.forEach(evento => {
+        window.addEventListener(
+            evento,
+            reiniciarTemporizador,
+            { passive: true }
+        );
+    });
+    reiniciarTemporizador();
+    sesionInicializada = true;
+}
 
-    const btnToggle = document.getElementById('btnToggleMenuUsuario');
-    const menuPopup = document.getElementById('menuDesplegableUsuario');
-    const btnLogout = document.getElementById('btnCerrarSesion');
-    const btnMenuMobile = document.getElementById('btnMenu');
-    const barraLateral = document.getElementById('barraLateral');
-
-    if (btnToggle && menuPopup) {
-        btnToggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            menuPopup.classList.toggle('oculto');
-        });
-
-        document.addEventListener('click', (e) => {
-            if (!menuPopup.classList.contains('oculto') && !menuPopup.contains(e.target)) {
-                menuPopup.classList.add('oculto');
-            }
-        });
+export function inicializarSesion() {
+    const usuario = verificarSesion();
+    if (!usuario) {
+        return null;
     }
-
-    if (btnLogout) {
-        btnLogout.addEventListener('click', () => {
-            localStorage.removeItem('disc_user');
-            window.location.href = 'login.html';
-        });
-    }
-
-    if (btnMenuMobile && barraLateral) {
-        btnMenuMobile.addEventListener('click', (e) => {
-            e.stopPropagation();
-            barraLateral.classList.toggle('abierto');
-        });
-    }
-});
+    activarControlInactividad();
+    actualizarUsuarioSidebar();
+    configurarMenuUsuario();
+    configurarMenuMovil();
+    return usuario;
+}

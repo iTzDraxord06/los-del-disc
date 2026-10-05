@@ -1,0 +1,48 @@
+/* Vista Anuncios */
+/* ================= AFICHES / ANUNCIOS ================= */
+.feed-afiches {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+}
+
+.tarjeta-afiche {
+    background: var(--bg-lateral);
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    transition: border-color 0.2s ease;
+}
+
+.tarjeta-afiche:hover {
+    border-color: var(--accent-primary);
+}
+
+.tarjeta-afiche img {
+    display: block;
+    margin: 0 auto 14px auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 480px;
+    object-fit: contain;
+    border-radius: 10px;
+}
+
+.tarjeta-afiche h2 {
+    color: #ffffff;
+    margin-top: 8px;
+    font-size: 1.25rem;
+    text-align: center;
+}
+
+.tarjeta-afiche p {
+    color: var(--text-secundario);
+    font-size: 0.9rem;
+    text-align: center;
+    margin-top: 6px;
+}
+

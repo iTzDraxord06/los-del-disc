@@ -1,0 +1,119 @@
+<div class="anuncios-contenedor">
+
+    <div class="anuncios-header">
+
+        <div>
+
+            <h2>
+                📢 Tablón de Anuncios Oficiales
+            </h2>
+
+            <p>
+                Avisos importantes,
+                torneos y actualizaciones
+                de Los del Disc.
+            </p>
+
+        </div>
+
+
+        <button id="btnAbrirModalAfiche" type="button" class="btn-primary oculto">
+            + Publicar Anuncio
+        </button>
+
+    </div>
+
+    <div id="feedAfiches" class="feed-afiches">
+
+        <p class="cargando">
+            Cargando avisos...
+        </p>
+
+    </div>
+
+
+    <div id="aficheDefault" class="oculto sin-datos">
+
+        <p>
+            No hay anuncios publicados
+            por el momento.
+        </p>
+
+    </div>
+
+</div>
+
+<div id="modalAfiche" class="modal oculto">
+
+    <div class="modal-card">
+
+        <div class="modal-header">
+
+            <h3>
+                📢 Publicar Anuncio Oficial
+            </h3>
+
+
+            <button id="btnCerrarModalAfiche" type="button" class="btn-close">
+                &times;
+            </button>
+
+        </div>
+
+
+        <form id="formAfiche">
+
+
+            <div class="campo">
+
+                <label>
+                    Título del anuncio (opcional):
+                </label>
+
+                <input type="text" id="aficheInputTitulo" placeholder="Ej: ¡Torneo de fin de semana!">
+
+            </div>
+
+
+            <div class="campo">
+
+                <label>
+                    Descripción / Mensaje:
+                </label>
+
+                <textarea id="aficheInputDesc" rows="3" placeholder="Escribe aquí los detalles del aviso..."></textarea>
+
+            </div>
+
+
+            <div class="campo">
+
+                <label>
+                    Imagen del afiche / clip:
+                </label>
+
+                <input type="file" id="aficheInputFile" accept="image/*,video/*">
+
+            </div>
+
+
+            <button type="submit" id="btnGuardarAfiche" class="btn-primary btn-block">
+                Publicar Anuncio
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+<div id="modalVisor" class="modal-visor oculto">
+
+    <span id="btnCerrarVisor" class="btn-cerrar-visor" title="Cerrar">
+        &times;
+    </span>
+
+
+    <img id="imagenVisorAmpliada" src="" alt="Vista previa ampliada">
+
+</div>

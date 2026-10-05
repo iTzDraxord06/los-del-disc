@@ -1,0 +1,312 @@
+<div id="vistaGridMiembros" class="contenedor-miembros-central">
+
+    <div class="header-miembros-central">
+
+        <h2>
+            👥 Integrantes del Servidor
+        </h2>
+
+        <p>
+            Selecciona a cualquier miembro
+            para ver su muro personal,
+            su galería y comentarle.
+        </p>
+
+    </div>
+
+
+    <div id="gridCentralMiembros" class="grid-tarjetas-miembros">
+
+        <p class="cargando">
+            Cargando miembros...
+        </p>
+
+    </div>
+
+</div>
+
+<div class="muro-contenido oculto" id="muroDetalle">
+
+    <div class="perfil-volver">
+
+        <button id="btnVolverMiembros" type="button" class="btn-secundario">
+            ← Volver a la lista de miembros
+        </button>
+
+    </div>
+
+    <div class="perfil-banner"></div>
+
+    <div class="perfil-info">
+
+        <div class="perfil-avatar-wrapper">
+
+            <img id="muroAvatar" src="" alt="Avatar">
+
+        </div>
+
+
+        <div class="perfil-textos">
+
+            <div class="perfil-cabecera">
+
+                <div>
+
+                    <h2 id="muroApodo">
+                        Apodo
+                    </h2>
+
+
+                    <span id="muroTag" class="discord-tag">
+                        @username
+                    </span>
+
+
+                    <span id="muroRol" class="badge-rol">
+                        Rol
+                    </span>
+
+                </div>
+
+
+                <div class="perfil-acciones">
+
+                    <button id="btnEditarPerfil" type="button" class="btn-secundario oculto">
+                        ✏️ Editar Perfil
+                    </button>
+
+
+                    <button id="btnEliminarPerfil" type="button" class="btn-eliminar oculto">
+                        🗑️ Eliminar
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <p id="muroDesc" class="bio-texto"></p>
+
+        </div>
+
+        <div class="galeria-waifus">
+
+            <h4>
+                Waifu Shrine / Galería
+            </h4>
+
+
+            <div id="contenedorFadeGaleria" class="contenedor-galeria-fade">
+
+                <div id="gridWaifus" class="grid-waifus"></div>
+
+            </div>
+
+
+            <div id="contenedorBotonGaleria" class="contenedor-toggle-galeria oculto">
+
+                <button type="button" id="btnToggleGaleria" class="btn-toggle-galeria">
+
+                    <span id="textoToggleGaleria">
+                        ▼ Ver más fotos
+                    </span>
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <hr class="divisor">
+
+    <div class="contenedor-comentarios">
+
+        <h4>
+            Muro personal de
+
+            <span id="nombreAmigoMuro"></span>
+        </h4>
+
+
+        <form id="formComentario" class="form-comentario">
+
+            <input type="text" id="inputAutor" placeholder="Tu nombre / apodo" required readonly>
+
+
+            <textarea id="inputComentario" placeholder="Escribe un comentario en este muro..."
+                maxlength="500"></textarea>
+
+
+            <div class="barra-adjuntos-comentario">
+
+                <div class="grupo-adjunto">
+
+                    <label for="inputFotoComentario" class="btn-secundario btn-adjunto">
+                        📷 Subir foto
+                    </label>
+
+
+                    <input type="file" id="inputFotoComentario" accept="image/*" class="oculto">
+
+
+                    <span id="labelNombreFotoComentario" class="nombre-foto-adjunta oculto"></span>
+
+
+                    <button type="button" id="btnQuitarFotoComentario" class="btn-close oculto">
+                        &times;
+                    </button>
+
+                </div>
+
+                <div class="input-grupo-media">
+
+                    <label for="inputVideoComentario" class="btn-secundario lbl-video-trigger">
+                        🎥 Video (Drive)
+                    </label>
+
+
+                    <input type="file" id="inputVideoComentario" accept="video/mp4,video/webm"
+                        class="input-video-media-file oculto">
+
+
+                    <span class="nombre-archivo-video"></span>
+
+                </div>
+
+
+                <button type="submit" id="btnEnviarComentario" class="btn-primary">
+                    Enviar comentario
+                </button>
+
+            </div>
+
+        </form>
+
+
+        <div id="listaComentarios" class="lista-comentarios"></div>
+
+    </div>
+
+</div>
+
+<div id="modalAmigo" class="modal oculto">
+
+    <div class="modal-card">
+
+        <div class="modal-header">
+
+            <h3 id="modalTitulo">
+                Editar Perfil
+            </h3>
+
+
+            <button id="btnCerrarModal" type="button" class="btn-close">
+                &times;
+            </button>
+
+        </div>
+
+
+        <form id="formNuevoAmigo">
+
+            <input type="hidden" id="amigoEditId">
+
+
+            <div class="campo">
+
+                <label>
+                    Usuario de Discord (@):
+                </label>
+
+                <input type="text" id="nuevoUsername" required>
+
+            </div>
+
+
+            <div class="campo">
+
+                <label>
+                    Apodo:
+                </label>
+
+                <input type="text" id="nuevoApodo" required>
+
+            </div>
+
+
+            <div class="campo" id="campoRolServidor">
+
+                <label>
+                    Rol en el servidor:
+                </label>
+
+                <input type="text" id="nuevoRol" placeholder="Mod, Admin, Rango G1...">
+
+            </div>
+
+
+            <div class="campo">
+
+                <label>
+                    Foto de Perfil / Logo:
+                </label>
+
+                <input type="file" id="inputAvatarFile" accept="image/*">
+
+            </div>
+
+
+            <div class="campo">
+
+                <label>
+                    Fotos / Videos Waifu Shrine / Galería:
+                </label>
+
+                <input type="file" id="inputWaifuFiles" accept="image/*,video/mp4,video/webm" multiple>
+
+            </div>
+
+
+            <div class="campo">
+
+                <label>
+                    Descripción / Bio:
+                </label>
+
+                <textarea id="nuevaDesc"></textarea>
+
+            </div>
+
+
+            <button type="submit" id="btnGuardarAmigo" class="btn-primary btn-block">
+                Guardar
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+<div id="modalVisor" class="modal-visor oculto">
+
+    <span id="btnCerrarVisor" class="btn-cerrar-visor" title="Cerrar">
+        &times;
+    </span>
+
+
+    <img id="imagenVisorAmpliada" src="" alt="Vista previa ampliada">
+
+
+    <video id="videoVisorAmpliado" controls playsinline>
+
+        <source id="videoVisorSource" src="" type="video/mp4">
+
+        Tu navegador no soporta reproducción de video.
+
+    </video>
+
+</div>

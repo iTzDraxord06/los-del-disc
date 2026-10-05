@@ -4,144 +4,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Los del Disc - Inicio</title>
+
+    <title>Los del Disc</title>
+
     <link rel="icon" type="image/png" href="imagenes/Logo Pagina Web.png">
-    <link rel="stylesheet" href="css/estilos.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/componentes.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/js-dos@7.7.8/dist/js-dos.css">
 </head>
+
 
 <body>
 
-    <header class="navbar">
-        <div class="logo" onclick="window.location.href='index.html'" style="cursor: pointer;">
-            <button id="btnMenu" class="btn-hamburguesa" aria-label="Abrir menú">☰</button>
-            <img src="imagenes/Logo Pagina Web.png" alt="Logo Los del Disc" class="disc-logo-img">
-            <h2>Los del Disc</h2>
-        </div>
-
-        <div class="nav-derecha">
-            <a href="index.html" class="btn-secundario">🏠 Inicio</a>
-            <a href="miembros.html" class="btn-secundario">👥 Miembros</a>
-            <a href="muro.html" class="btn-secundario">💬 Muro</a>
-            <a href="anuncios.html" class="btn-secundario activo-nav">📢 Anuncios</a>
-
-            <div class="nav-notificaciones">
-                <button id="btnNotis" class="btn-secundario btn-notificaciones-trigger" title="Notificaciones">
-                    🔔 <span id="badgeNotis" class="badge-notificaciones oculto">0</span>
-                </button>
-                <div id="dropdownNotis" class="dropdown-notificaciones oculto">
-                    <div class="dropdown-notificaciones-header">Notificaciones</div>
-                    <div id="listaNotis" class="dropdown-notificaciones-lista"></div>
-                </div>
-            </div>
-        </div>
-    </header>
+    <div id="appHeader"></div>
 
     <main class="contenedor-principal">
-        <!-- BARRA LATERAL (CANALES DEL SERVIDOR) -->
-        <aside class="seccion-amigos" id="barraLateral">
-            <div class="canales-servidor">
-                <span class="categoria-canales">CANALES</span>
-                <a href="index.html" class="btn-canal canal-activo">🏠 #inicio</a>
-                <a href="miembros.html" class="btn-canal">👥 #miembros</a>
-                <a href="muro.html" class="btn-canal">💬 #muro-general</a>
-                <a href="anuncios.html" class="btn-canal">📢 #anuncios</a>
-                <a href="arcade.html" class="btn-canal">🕹️ #arcade-zone</a>
+
+        <div id="appSidebar"></div>
+
+        <section id="appContenido" class="seccion-muro">
+
+            <div class="cargando-pagina">
+                <p>Cargando Los del Disc...</p>
             </div>
 
-            <!-- Panel de usuario inferior estilo Discord -->
-            <div class="panel-usuario-inferior" id="panelUsuarioInferior">
-                <div id="menuDesplegableUsuario" class="menu-popup-usuario oculto">
-                    <a href="configuracion.html" class="item-popup">
-                        <span class="icono-item-popup">⚙️</span> Ajustes de Cuenta
-                    </a>
-                    <div class="separador-popup"></div>
-                    <button id="btnCerrarSesion" class="item-popup item-popup-rojo">
-                        <span class="icono-item-popup">🚪</span> Cerrar Sesión
-                    </button>
-                </div>
-
-                <div class="cuerpo-usuario" id="btnToggleMenuUsuario" title="Opciones de cuenta">
-                    <div class="sesion-info">
-                        <span id="labelUsuario" class="nombre-usuario-texto">Cargando...</span>
-                        <span class="subtexto-estado">🟢 En línea</span>
-                    </div>
-                    <span class="icono-flecha">▲</span>
-                </div>
-            </div>
-        </aside>
-
-        <!-- CONTENIDO CENTRAL: EL HUB DE INICIO -->
-        <section class="seccion-muro">
-            <div class="hub-bienvenida">
-                <div class="hub-hero">
-                    <h1>Bienvenido a Los del Disc</h1>
-                    <p>El punto de encuentro oficial del servidor. Elige qué sección quieres explorar:</p>
-                </div>
-
-                <div class="hub-tarjetas-grid">
-                    <!-- Tarjeta Miembros -->
-                    <a href="miembros.html" class="hub-card">
-                        <div class="hub-card-icon">👥</div>
-                        <div class="hub-card-text">
-                            <h3>Directorio de Miembros</h3>
-                            <p>Explora a los integrantes, mira sus perfiles, sus waifus/galería y coméntales en su muro
-                                personal.</p>
-                        </div>
-                        <span class="hub-card-btn">Entrar a Miembros →</span>
-                    </a>
-
-                    <!-- Tarjeta Muro General -->
-                    <a href="muro.html" class="hub-card">
-                        <div class="hub-card-icon">💬</div>
-                        <div class="hub-card-text">
-                            <h3>Muro General de la Comunidad</h3>
-                            <p>El chat público del servidor. Deja comentarios, responde hilos a tus amigos y debate en
-                                comunidad.</p>
-                        </div>
-                        <span class="hub-card-btn">Ir al Muro →</span>
-                    </a>
-
-                    <!-- Tarjeta Anuncios -->
-                    <a href="anuncios.html" class="hub-card">
-                        <div class="hub-card-icon">📢</div>
-                        <div class="hub-card-text">
-                            <h3>Tablón de Anuncios</h3>
-                            <p>Avisos importantes, torneos, afiches del servidor y novedades publicadas por los
-                                administradores.</p>
-                        </div>
-                        <span class="hub-card-btn">Ver Anuncios →</span>
-                    </a>
-
-                    <a href="arcade.html" class="hub-card">
-                        <div class="hub-card-icon">🕹️</div>
-                        <div class="hub-card-text">
-                            <h3>Arcade Zone</h3>
-                            <p>Juega clásicos retro como Snake, Tetris, Buscaminas o DOOM y compite por el récord más alto en el ranking.</p>
-                        </div>
-                        <span class="hub-card-btn">Jugar ahora →</span>
-                    </a>
-                </div>
-            </div>
         </section>
+
     </main>
     <div id="popupAnuncio" class="popup-anuncio oculto">
-        <div class="popup-contenido">
-            <div class="popup-top">
-                <span class="popup-badge">📢 Nuevo Anuncio</span>
-                <button id="btnCerrarPopupX" class="popup-btn-x">&times;</button>
-            </div>
-            <h4 id="popupTitulo">Título del Anuncio</h4>
-            <p id="popupResumen">Cargando detalles...</p>
-            <div class="popup-botones">
-                <button id="btnDescartarAnuncio" class="btn-popup-secundario">Descartar</button>
-                <button id="btnIrAnuncio" class="btn-popup-primario">Ir al Anuncio →</button>
-            </div>
-        </div>
-    </div>
 
-    <script src="js/app.js"></script>
-    <script src="js/notificacion.js"></script>
+        <div class="popup-contenido">
+
+            <div class="popup-top">
+
+                <span class="popup-badge">
+                    📢 Nuevo Anuncio
+                </span>
+
+                <button id="btnCerrarPopupX" class="popup-btn-x" type="button">
+                    &times;
+                </button>
+
+            </div>
+
+
+            <h4 id="popupTitulo">
+                Título del Anuncio
+            </h4>
+
+
+            <p id="popupResumen">
+                Cargando detalles...
+            </p>
+
+
+            <div class="popup-botones">
+
+                <button id="btnDescartarAnuncio" class="btn-popup-secundario" type="button">
+                    Descartar
+                </button>
+
+
+                <button id="btnIrAnuncio" class="btn-popup-primario" type="button">
+                    Ir al Anuncio →
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+    <script src="https://js-dos.com/cdn/js-dos-api.js"></script>
+    <script type="module" src="js/app.js"></script>
+
 </body>
 
 </html>

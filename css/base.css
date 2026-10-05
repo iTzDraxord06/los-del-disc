@@ -1,0 +1,51 @@
+:root {
+    --bg-base: #0a0b0e;
+    --bg-lateral: #12141a;
+    --bg-tarjeta: #181b22;
+    --bg-input: #0e1015;
+    --accent-primary: #00e5ff;
+    --accent-primary-hover: #00b4cc;
+    --accent-secondary: #7c4dff;
+    --accent-gradient: linear-gradient(135deg, #00e5ff 0%, #7c4dff 100%);
+    --text-principal: #ffffff;
+    --text-secundario: #8b949e;
+    --borde: #242933;
+    --borde-brillante: rgba(0, 229, 255, 0.35);
+    --badge-admin: #ff9100;
+    --badge-default: #7c4dff;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    scrollbar-width: thin;
+    scrollbar-color: #242933 var(--bg-base);
+}
+
+::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-base);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--borde);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: var(--accent-primary-hover);
+}
+
+body {
+    background-color: var(--bg-base);
+    color: var(--text-principal);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
