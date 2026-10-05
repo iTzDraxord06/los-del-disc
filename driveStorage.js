@@ -8,15 +8,11 @@ let oauth2Client = null;
 
 function crearOAuthClient() {
     if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-        throw new Error(
-            'Faltan GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET en las variables de entorno.'
-        );
+        throw new Error('Faltan GOOGLE_CLIENT_ID o GOOGLE_CLIENT_SECRET en las variables de entorno.');
     }
 
     if (!process.env.GOOGLE_REDIRECT_URI) {
-        throw new Error(
-            'Falta GOOGLE_REDIRECT_URI en las variables de entorno.'
-        );
+        throw new Error('Falta GOOGLE_REDIRECT_URI en las variables de entorno.');
     }
 
     if (!oauth2Client) {
@@ -30,7 +26,6 @@ function crearOAuthClient() {
     return oauth2Client;
 }
 
-// ================= OBTENER URL DE AUTORIZACIÓN =================
 function obtenerUrlAutorizacion() {
     const client = crearOAuthClient();
 
@@ -41,37 +36,28 @@ function obtenerUrlAutorizacion() {
     });
 }
 
-// ================= PROCESAR CALLBACK DE GOOGLE =================
 async function procesarCallback(codigo) {
     if (!codigo) {
         throw new Error('Google no devolvió ningún código de autorización.');
     }
 
     const client = crearOAuthClient();
-
     const { tokens } = await client.getToken(codigo);
 
     if (!tokens.refresh_token) {
-        throw new Error(
-            'Google no devolvió GOOGLE_REFRESH_TOKEN. Vuelve a autorizar usando prompt=consent.'
-        );
+        throw new Error('Google no devolvió GOOGLE_REFRESH_TOKEN. Vuelve a autorizar usando prompt=consent.');
     }
 
     client.setCredentials(tokens);
-
     return tokens;
 }
 
-// ================= CONFIGURAR AUTENTICACIÓN PARA DRIVE =================
 function obtenerClienteDrive() {
     const client = crearOAuthClient();
-
     const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
 
     if (!refreshToken) {
-        throw new Error(
-            'Falta GOOGLE_REFRESH_TOKEN. Primero autoriza Google mediante /api/drive/auth y agrega el token obtenido en Render.'
-        );
+        throw new Error('Falta GOOGLE_REFRESH_TOKEN.');
     }
 
     client.setCredentials({
@@ -81,10 +67,8 @@ function obtenerClienteDrive() {
     return client;
 }
 
-// ================= SUBIR ARCHIVO A GOOGLE DRIVE =================
 async function subirADrive(fileBuffer, fileName, mimeType) {
     const auth = obtenerClienteDrive();
-
     const drive = google.drive({
         version: 'v3',
         auth
@@ -93,20 +77,16 @@ async function subirADrive(fileBuffer, fileName, mimeType) {
     const bufferStream = new stream.PassThrough();
     bufferStream.end(fileBuffer);
 
-    const fileMetadata = {
-        name: fileName,
-        parents: [FOLDER_ID]
-    };
-
-    const media = {
-        mimeType,
-        body: bufferStream
-    };
-
     const response = await drive.files.create({
-        resource: fileMetadata,
-        media,
-        fields: 'id, webContentLink, webViewLink'
+        requestBody: {
+            name: fileName,
+            parents: [FOLDER_ID]
+        },
+        media: {
+            mimeType,
+            body: bufferStream
+        },
+        fields: 'id,name,mimeType,size,webContentLink,webViewLink'
     });
 
     await drive.permissions.create({
@@ -120,17 +100,8 @@ async function subirADrive(fileBuffer, fileName, mimeType) {
     return `https://drive.google.com/uc?export=download&id=${response.data.id}`;
 }
 
-module.exports = {
-    subirADrive,
-    obtenerVideoDrive,
-    obtenerInfoVideoDrive,
-    obtenerUrlAutorizacion,
-    procesarCallback
-};
-
 async function obtenerVideoDrive(fileId, range) {
     const auth = obtenerClienteDrive();
-
     const drive = google.drive({
         version: 'v3',
         auth
@@ -146,29 +117,36 @@ async function obtenerVideoDrive(fileId, range) {
         };
     }
 
-    const response = await drive.files.get(
+    return await drive.files.get(
         {
-            fileId: fileId,
-            alt: 'media'
+            fileId,
+            alt: 'media',
+            supportsAllDrives: true
         },
         opciones
     );
-
-    return response;
 }
 
 async function obtenerInfoVideoDrive(fileId) {
     const auth = obtenerClienteDrive();
-
     const drive = google.drive({
         version: 'v3',
         auth
     });
 
     const response = await drive.files.get({
-        fileId: fileId,
-        fields: 'size,mimeType'
+        fileId,
+        fields: 'id,name,size,mimeType',
+        supportsAllDrives: true
     });
 
     return response.data;
 }
+
+module.exports = {
+    subirADrive,
+    obtenerVideoDrive,
+    obtenerInfoVideoDrive,
+    obtenerUrlAutorizacion,
+    procesarCallback
+};

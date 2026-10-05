@@ -1853,118 +1853,56 @@ app.get('/api/media-drive/:id', async (req, res) => {
     try {
         const fileId = req.params.id;
         const range = req.headers.range;
+        const info = await obtenerInfoVideoDrive(fileId);
 
-        const info =
-            await obtenerInfoVideoDrive(fileId);
+        const fileSize = Number(info.size);
+        const mimeType = info.mimeType || 'video/mp4';
 
-        const tamaño =
-            Number(info.size);
-
-        if (!tamaño) {
-            return res.status(500).json({
-                error: 'No se pudo obtener el tamaño del archivo.'
-            });
-        }
+        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('Content-Type', mimeType);
+        res.setHeader('Cache-Control', 'public, max-age=3600');
 
         if (!range) {
-            const response =
-                await obtenerVideoDrive(fileId);
+            res.setHeader('Content-Length', fileSize);
 
-            res.status(200);
-            res.setHeader(
-                'Content-Type',
-                info.mimeType ||
-                'application/octet-stream'
-            );
-            res.setHeader(
-                'Content-Length',
-                tamaño
-            );
-            res.setHeader(
-                'Accept-Ranges',
-                'bytes'
-            );
-
+            const response = await obtenerVideoDrive(fileId);
             response.data.pipe(res);
             return;
         }
 
-        const match =
-            range.match(/bytes=(\d+)-(\d*)/);
+        const partes = range.replace(/bytes=/, '').split('-');
+        const inicio = parseInt(partes[0], 10);
+        const finSolicitado = partes[1] ? parseInt(partes[1], 10) : fileSize - 1;
+        const fin = Math.min(finSolicitado, fileSize - 1);
 
-        if (!match) {
-            return res.status(416).json({
-                error: 'Rango no válido.'
-            });
-        }
-
-        const inicio =
-            Number(match[1]);
-
-        let fin = match[2]
-            ? Number(match[2])
-            : tamaño - 1;
-
-        if (inicio >= tamaño) {
+        if (Number.isNaN(inicio) || inicio >= fileSize || fin < inicio) {
             res.status(416);
-
-            res.setHeader(
-                'Content-Range',
-                `bytes */${tamaño}`
-            );
-
-            return res.end();
+            res.setHeader('Content-Range', `bytes */${fileSize}`);
+            res.end();
+            return;
         }
 
-        if (fin >= tamaño) {
-            fin = tamaño - 1;
-        }
-
-        const rangoDrive =
-            `bytes=${inicio}-${fin}`;
-
-        const response =
-            await obtenerVideoDrive(
-                fileId,
-                rangoDrive
-            );
-
-        const longitud =
-            fin - inicio + 1;
+        const longitud = fin - inicio + 1;
 
         res.status(206);
+        res.setHeader('Content-Range', `bytes ${inicio}-${fin}/${fileSize}`);
+        res.setHeader('Content-Length', longitud);
 
-        res.setHeader(
-            'Content-Range',
-            `bytes ${inicio}-${fin}/${tamaño}`
-        );
-
-        res.setHeader(
-            'Accept-Ranges',
-            'bytes'
-        );
-
-        res.setHeader(
-            'Content-Length',
-            longitud
-        );
-
-        res.setHeader(
-            'Content-Type',
-            info.mimeType ||
-            'application/octet-stream'
+        const response = await obtenerVideoDrive(
+            fileId,
+            `bytes=${inicio}-${fin}`
         );
 
         response.data.pipe(res);
-    } catch (err) {
-        console.error(
-            'Error reproduciendo archivo de Drive:',
-            err
-        );
-
-        res.status(500).json({
-            error: 'No se pudo cargar el archivo.'
-        });
+    } catch (error) {
+        console.error('Error reproduciendo archivo de Drive:', error);
+        if (!res.headersSent) {
+            res.status(500).json({
+                error: 'No se pudo reproducir el archivo'
+            });
+        } else {
+            res.end();
+        }
     }
 });
 
