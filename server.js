@@ -177,17 +177,13 @@ app.get('/api/drive/callback', async (req, res) => {
         const { code } = req.query;
 
         if (!code) {
-            return res.status(400).send(
-                '<h1>Error de autorización</h1><p>Código no devuelto.</p>'
-            );
+            return res.status(400).send('<h1>Error de autorización</h1><p>Código no devuelto.</p>');
         }
 
         const tokens = await procesarCallback(code);
 
         if (!tokens.refresh_token) {
-            return res.status(500).send(
-                '<h1>No se obtuvo el Refresh Token</h1><p>Vuelve a iniciar el proceso.</p>'
-            );
+            return res.status(500).send('<h1>No se obtuvo el Refresh Token</h1><p>Vuelve a iniciar el proceso.</p>');
         }
 
         res.send(`
@@ -205,21 +201,15 @@ app.get('/api/drive/callback', async (req, res) => {
             <body>
                 <div class="box">
                     <h1>✅ Google Drive autorizado</h1>
-                    <p>Copia el valor en Render como <b>GOOGLE_REFRESH_TOKEN</b>:</p>
+                    <p>Copia este valor en Railway como <b>GOOGLE_REFRESH_TOKEN</b>:</p>
                     <code>${tokens.refresh_token}</code>
                 </div>
             </body>
             </html>
         `);
     } catch (err) {
-        console.error(
-            'Error en callback OAuth de Google Drive:',
-            err
-        );
-
-        res.status(500).send(
-            `<h1>Error durante la autorización</h1><p>${err.message}</p>`
-        );
+        console.error('Error en callback OAuth de Google Drive:', err);
+        res.status(500).send(`<h1>Error durante la autorización</h1><p>${err.message}</p>`);
     }
 });
 
