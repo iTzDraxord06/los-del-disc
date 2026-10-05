@@ -381,10 +381,10 @@ export async function init(parametros = {}) {
                             <span class="comentario-autor">${c.Autor}</span>
                             <span class="comentario-fecha">${fechaStr}</span>
                         </div>
-                        <div style="display: flex; gap: 8px; align-items: center;">
+                        <div class="acciones-comentario">
                             <button class="btn-responder-comentario" data-id="${c.Id}" data-autor="${c.Autor}">↩ Responder</button>
-                            ${puedeGestionar ? `<button class="btn-editar-comentario" data-id="${c.Id}" title="Editar" style="background:none; border:none; cursor:pointer; color:#00e5ff; font-size:13px;">✏️</button>` : ''}
-                            ${puedeGestionar ? `<button class="btn-borrar-comentario" data-id="${c.Id}" title="Eliminar" style="background:none; border:none; cursor:pointer; color:#ff3366; font-size:14px;">🗑️</button>` : ''}
+                            ${puedeGestionar ? `<button class="btn-editar-comentario" data-id="${c.Id}" title="Editar">✏️</button>` : ''}
+                            ${puedeGestionar ? `<button class="btn-borrar-comentario" data-id="${c.Id}" title="Eliminar">🗑️</button>` : ''}
                         </div>
                     </div>
                     <p class="comentario-texto" id="texto-comentario-${c.Id}">${c.Texto || ''}</p>
@@ -826,6 +826,6 @@ export async function init(parametros = {}) {
 }
 
 export function destroy() {
-    limpiezasMiembros.forEach(fn => { try { fn(); } catch {} });
+    limpiezasMiembros.forEach(fn => { try { fn(); } catch { } });
     limpiezasMiembros = [];
 }

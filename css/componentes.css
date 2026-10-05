@@ -396,6 +396,26 @@
 .btn-popup-primario:hover {
     background: #4752c4;
 }
+.overlay-sidebar{
+    display:none;
+}
+
+@media(max-width:768px){
+    .overlay-sidebar{
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,.45);
+        z-index:998;
+    }
+
+    .overlay-sidebar.activo{
+        display:block;
+    }
+
+    #barraLateral{
+        z-index:999;
+    }
+}
 
 @keyframes popupEntrada {
     from {
