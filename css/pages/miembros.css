@@ -504,6 +504,69 @@
     display:none;
 }
 
+.btn-responder-comentario,
+.btn-editar-comentario,
+.btn-borrar-comentario {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 4px 5px;
+    margin: 0;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.btn-responder-comentario {
+    color: #8fa1b8 !important;
+    font-size: 13px;
+}
+
+.btn-responder-comentario:hover {
+    color: #00e5ff !important;
+}
+
+.btn-editar-comentario {
+    color: #00e5ff !important;
+    font-size: 13px !important;
+}
+
+.btn-borrar-comentario {
+    color: #ff3366 !important;
+    font-size: 14px !important;
+}
+
+.btn-responder-comentario:hover,
+.btn-editar-comentario:hover,
+.btn-borrar-comentario:hover {
+    background: rgba(255,255,255,.06) !important;
+    border-radius: 5px;
+}
+
+.comentario-item > div:first-child {
+    gap: 8px;
+}
+
+@media (max-width:768px) {
+    .btn-responder-comentario,
+    .btn-editar-comentario,
+    .btn-borrar-comentario {
+        min-width: 34px;
+        min-height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-responder-comentario {
+        min-width: auto;
+        padding: 6px 8px;
+    }
+}
+
 @media(max-width:768px){
     .overlay-sidebar{
         position:fixed;
