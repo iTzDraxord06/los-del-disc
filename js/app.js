@@ -111,6 +111,7 @@ function actualizarNavegacionActiva(pagina) {
 
 function cerrarSidebarMovil() {
     document.getElementById('barraLateral')?.classList.remove('abierto');
+    document.getElementById('overlaySidebar')?.classList.remove('activo');
 }
 
 function actualizarURL(pagina, parametros = {}, reemplazar = false) {

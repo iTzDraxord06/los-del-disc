@@ -97,39 +97,32 @@ function configurarMenuUsuario() {
 function configurarMenuMovil() {
     const btnMenu = document.getElementById('btnMenu');
     const barraLateral = document.getElementById('barraLateral');
-    const overlaySidebar = document.getElementById('overlaySidebar');
-
-    if (!btnMenu || !barraLateral || !overlaySidebar) return;
-
-    function abrirMenu() {
-        barraLateral.classList.add('abierto');
-        overlaySidebar.classList.add('activo');
+    if (!btnMenu || !barraLateral) return;
+    let overlaySidebar = document.getElementById('overlaySidebar');
+    if (!overlaySidebar) {
+        overlaySidebar = document.createElement('div');
+        overlaySidebar.id = 'overlaySidebar';
+        overlaySidebar.className = 'overlay-sidebar';
+        document.body.appendChild(overlaySidebar);
     }
-
-    function cerrarMenu() {
+    const cerrarMenu = () => {
         barraLateral.classList.remove('abierto');
         overlaySidebar.classList.remove('activo');
-    }
-
+    };
     btnMenu.addEventListener('click', event => {
         event.stopPropagation();
-
-        if (barraLateral.classList.contains('abierto')) {
-            cerrarMenu();
-        } else {
-            abrirMenu();
-        }
+        const abierto = barraLateral.classList.toggle('abierto');
+        overlaySidebar.classList.toggle('activo', abierto);
     });
-
     overlaySidebar.addEventListener('click', event => {
         event.preventDefault();
         event.stopPropagation();
         cerrarMenu();
     });
-
     barraLateral.querySelectorAll('[data-page]').forEach(enlace => {
         enlace.addEventListener('click', cerrarMenu);
     });
+    window.addEventListener('popstate', cerrarMenu);
 }
 
 function activarControlInactividad() {
