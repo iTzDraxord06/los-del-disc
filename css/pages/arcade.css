@@ -308,3 +308,18 @@
         min-height: auto;
     }
 }
+.arcade-menu{width:100%;max-width:720px;background:#181b25;border:1px solid #3d4458;border-radius:12px;padding:22px;display:flex;flex-direction:column;align-items:center;gap:13px;margin-bottom:14px;color:#fff;box-sizing:border-box}
+.arcade-menu h2{margin:0;color:#00e5ff}
+.arcade-menu label,.arcade-ranking-label{font-weight:700;font-size:.88rem;color:#bfc6d7}
+.arcade-menu select,#rankingDificultad{background:#101218;border:1px solid #454b5b;border-radius:7px;padding:11px;color:#fff;width:100%;max-width:360px;font:inherit}
+#btnArcadeJugar{background:#5865f2;color:#fff;border:0;border-radius:8px;padding:12px 36px;font-weight:800;cursor:pointer}
+.arcade-partida-tools{display:flex;justify-content:flex-end;width:100%;max-width:720px;margin-bottom:10px}
+#btnArcadeMenu{background:#222633;color:#fff;border:1px solid #464d60;border-radius:7px;padding:8px 12px;cursor:pointer}
+.tetris-panel{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;width:100%;padding:12px;color:#fff}
+.tetris-panel>div{display:flex;flex-direction:column;gap:5px;align-items:center;font-size:.82rem}
+.tetris-panel canvas{background:#101218;border:1px solid #424655;border-radius:6px}
+.tetris-panel span{font-size:.75rem;color:#aeb5c7}
+#rankingDificultad{max-width:none;margin:8px 0}
+.dpad-btn-hold{width:60px;height:42px;font-size:.8rem;background:#5865f2}
+.arcade-menu.oculto,.tetris-panel.oculto,.dpad-btn-hold.oculto{display:none!important}
+@media(max-width:768px){.arcade-menu{padding:15px}.tetris-panel{gap:8px}.tetris-panel canvas{width:90px;height:64px}}

@@ -18,6 +18,86 @@ export async function init() {
     let puntajeActual = 0;
     let loopJuego = null;
     let juegoCorriendo = false;
+    let dificultadActual = 'medio';
+    let cuentaRegresiva = null;
+    let idPartida = 0;
+    let primeraCelda = true;
+    const NIVELES = {
+        muy_facil:{snake:300,tetris:1200,rows:8,cols:8,minas:8},
+        facil:{snake:220,tetris:900,rows:9,cols:9,minas:10},
+        medio:{snake:150,tetris:600,rows:12,cols:12,minas:25},
+        dificil:{snake:90,tetris:250,rows:16,cols:16,minas:60},
+        extremo:{snake:40,tetris:60,rows:20,cols:20,minas:180}
+    };
+    const nombresNiveles={clasico:'Clásico',muy_facil:'Muy fácil',facil:'Fácil',medio:'Medio',dificil:'Difícil',extremo:'¿Para qué intentarlo? 💀'};
+    const menu=document.getElementById('arcadeMenu');
+    const menuTitulo=document.getElementById('arcadeMenuTitulo');
+    const menuNivel=document.getElementById('arcadeDificultad');
+    const btnJugar=document.getElementById('btnArcadeJugar');
+    const btnMenu=document.getElementById('btnArcadeMenu');
+    const selectorRanking=document.getElementById('rankingDificultad');
+    const panelTetris=document.getElementById('panelTetris');
+    const nextCanvas=document.getElementById('tetrisNext');
+    const holdCanvas=document.getElementById('tetrisHold');
+    const ctxNext=nextCanvas.getContext('2d');
+    const ctxHold=holdCanvas.getContext('2d');
+    const labelLineas=document.getElementById('tetrisLineas');
+    const labelNivel=document.getElementById('tetrisNivel');
+    const btnHold=document.getElementById('btnTouchHold');
+    let siguientePieza=null, piezaGuardada=null, puedeGuardar=true, lineasTotales=0;
+    let minasRows=12,minasCols=12,minasCantidad=25,minaSize=400/12;
+    const copiarPieza=p=>({shape:p.shape.map(f=>[...f]),color:p.color});
+    const piezaAleatoria=()=>copiarPieza(PIEZAS[Math.floor(Math.random()*PIEZAS.length)]);
+    function dibujarPreview(context,pieza){
+        context.clearRect(0,0,context.canvas.width,context.canvas.height);
+        if(!pieza)return;
+        const tam=19,ancho=pieza.shape[0].length*tam,alto=pieza.shape.length*tam;
+        const ox=(context.canvas.width-ancho)/2,oy=(context.canvas.height-alto)/2;
+        context.fillStyle=pieza.color;
+        pieza.shape.forEach((fila,r)=>fila.forEach((v,c)=>{if(v)context.fillRect(ox+c*tam+1,oy+r*tam+1,tam-2,tam-2)}));
+    }
+    function mostrarMenu(){
+        limpiarLoops();
+        clearTimeout(cuentaRegresiva);
+        idPartida++;
+        menu.classList.remove('oculto');
+        menuTitulo.textContent={snake:'🐍 Snake',tetris:'🧱 Tetris',buscaminas:'💣 Buscaminas'}[juegoActual]||'Arcade';
+        menuNivel.value=dificultadActual;
+        panelTetris.classList.add('oculto');
+        btnHold.classList.add('oculto');
+        labelScore.textContent='Puntaje: 0';
+        labelInstruccion.textContent='Selecciona la dificultad y pulsa Jugar';
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        actualizarVisibilidadControles();
+    }
+    function comenzarPartida(){
+        if(juegoActual==='doom')return;
+        dificultadActual=menuNivel.value;
+        selectorRanking.value=dificultadActual;
+        cargarLeaderboard(juegoActual,dificultadActual);
+        menu.classList.add('oculto');
+        panelTetris.classList.toggle('oculto',juegoActual!=='tetris');
+        btnHold.classList.toggle('oculto',juegoActual!=='tetris');
+        limpiarLoops();
+        const partida=++idPartida;
+        let segundos=3;
+        const contar=()=>{
+            if(partida!==idPartida)return;
+            ctx.fillStyle='#0f1012';ctx.fillRect(0,0,400,400);
+            ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font='bold 65px sans-serif';ctx.fillText(String(segundos),200,220);
+            if(--segundos>=0)cuentaRegresiva=setTimeout(contar,850);
+            else if(juegoActual==='snake')iniciarSnake();
+            else if(juegoActual==='tetris')iniciarTetris();
+            else iniciarBuscaminas();
+        };
+        contar();
+    }
+    btnJugar.addEventListener('click',comenzarPartida);
+    btnMenu.addEventListener('click',mostrarMenu);
+    menuNivel.addEventListener('change',()=>{dificultadActual=menuNivel.value;selectorRanking.value=dificultadActual;cargarLeaderboard(juegoActual,dificultadActual)});
+    selectorRanking.addEventListener('change',()=>cargarLeaderboard(juegoActual,selectorRanking.value));
+    btnHold.addEventListener('click',()=>manejarAccion('KeyC'));
+
 
     // ==========================================
     // 1. MOTOR SNAKE
@@ -41,7 +121,8 @@ export async function init() {
         labelInstruccion.textContent = 'Flechas/Cruceta para moverte';
         generarComidaSnake();
         juegoCorriendo = true;
-        loopJuego = setInterval(actualizarSnake, 120);
+        loopJuego = setInterval(actualizarSnake, NIVELES[dificultadActual].snake);
+        dibujarSnake();
     }
 
     function generarComidaSnake() {
@@ -64,9 +145,9 @@ export async function init() {
         if (cabeza.x < 0 || cabeza.x >= SNAKE_TILES || cabeza.y < 0 || cabeza.y >= SNAKE_TILES) {
             return gameOverSnake();
         }
-        for (let s of snake) {
-            if (s.x === cabeza.x && s.y === cabeza.y) return gameOverSnake();
-        }
+        const come=cabeza.x===comida.x&&cabeza.y===comida.y;
+        const cuerpo=come?snake:snake.slice(0,-1);
+        if(cuerpo.some(s=>s.x===cabeza.x&&s.y===cabeza.y))return gameOverSnake();
 
         snake.unshift(cabeza);
         if (cabeza.x === comida.x && cabeza.y === comida.y) {
@@ -98,6 +179,7 @@ export async function init() {
     function gameOverSnake() {
         juegoCorriendo = false;
         clearInterval(loopJuego);
+        loopJuego=null;
         pantallaGameOver('Snake');
     }
 
@@ -131,13 +213,19 @@ export async function init() {
         labelScore.textContent = `Puntaje: 0`;
         labelInstruccion.textContent = '◀ ▶ Mover | ▲/Botón A: Rotar | ▼ Caída';
         juegoCorriendo = true;
+        siguientePieza=piezaAleatoria();piezaGuardada=null;puedeGuardar=true;lineasTotales=0;
+        labelLineas.textContent='0';labelNivel.textContent=nombresNiveles[dificultadActual];
+        dibujarPreview(ctxHold,null);
         nuevaPiezaTetris();
-        loopJuego = setInterval(actualizarTetris, 500);
+        dibujarTetris();
+        loopJuego = setInterval(actualizarTetris, NIVELES[dificultadActual].tetris);
     }
 
     function nuevaPiezaTetris() {
-        const random = PIEZAS[Math.floor(Math.random() * PIEZAS.length)];
-        piezaActual = { shape: random.shape, color: random.color };
+        piezaActual=siguientePieza||piezaAleatoria();
+        siguientePieza=piezaAleatoria();
+        dibujarPreview(ctxNext,siguientePieza);
+        puedeGuardar=true;
         piezaX = Math.floor((TETRIS_COLS - piezaActual.shape[0].length) / 2);
         piezaY = 0;
 
@@ -187,7 +275,9 @@ export async function init() {
         }
 
         if (lineas > 0) {
-            puntajeActual += lineas * 100 * lineas; // Bonificación combo
+            lineasTotales+=lineas;
+            labelLineas.textContent=String(lineasTotales);
+            puntajeActual += lineas * 100 * lineas;
             labelScore.textContent = `Puntaje: ${puntajeActual}`;
         }
 
@@ -245,10 +335,10 @@ export async function init() {
     // ==========================================
     // 3. MOTOR BUSCAMINAS
     // ==========================================
-    const MINAS_ROWS = 10;
-    const MINAS_COLS = 10;
-    const MINAS_CANTIDAD = 12;
-    const MINA_SIZE = 40; // 400 / 10
+    const MINAS_ROWS = 20;
+    const MINAS_COLS = 20;
+    const MINAS_CANTIDAD = 180;
+    const MINA_SIZE = 20;
     let buscaminasGrid = [];
     let banderasRestantes = MINAS_CANTIDAD;
     let celdasReveladas = 0;
@@ -257,15 +347,18 @@ export async function init() {
         limpiarLoops();
         puntajeActual = 0;
         celdasReveladas = 0;
-        banderasRestantes = MINAS_CANTIDAD;
+        ({rows:minasRows,cols:minasCols,minas:minasCantidad}=NIVELES[dificultadActual]);
+        minaSize=400/Math.max(minasRows,minasCols);
+        primeraCelda=true;
+        banderasRestantes = minasCantidad;
         labelScore.textContent = `Minas restantes: ${banderasRestantes}`;
         labelInstruccion.textContent = 'Toca una celda. Botón A cambia a modo Bandera 🚩';
         juegoCorriendo = true;
         modoBandera = false;
 
         // Generar matriz
-        buscaminasGrid = Array.from({ length: MINAS_ROWS }, () =>
-            Array.from({ length: MINAS_COLS }, () => ({
+        buscaminasGrid = Array.from({ length: minasRows }, () =>
+            Array.from({ length: minasCols }, () => ({
                 mina: false,
                 revelada: false,
                 bandera: false,
@@ -275,24 +368,27 @@ export async function init() {
 
         // Colocar minas aleatorias
         let minasPuestas = 0;
-        while (minasPuestas < MINAS_CANTIDAD) {
-            const r = Math.floor(Math.random() * MINAS_ROWS);
-            const c = Math.floor(Math.random() * MINAS_COLS);
+        while (minasPuestas < minasCantidad) {
+            const r = Math.floor(Math.random() * minasRows);
+            const c = Math.floor(Math.random() * minasCols);
             if (!buscaminasGrid[r][c].mina) {
                 buscaminasGrid[r][c].mina = true;
                 minasPuestas++;
             }
         }
 
-        // Calcular números
-        for (let r = 0; r < MINAS_ROWS; r++) {
-            for (let c = 0; c < MINAS_COLS; c++) {
+        recalcularNumerosMinas();
+        dibujarBuscaminas();
+    }
+    function recalcularNumerosMinas(){
+        for (let r = 0; r < minasRows; r++) {
+            for (let c = 0; c < minasCols; c++) {
                 if (!buscaminasGrid[r][c].mina) {
                     let cuenta = 0;
                     for (let dr = -1; dr <= 1; dr++) {
                         for (let dc = -1; dc <= 1; dc++) {
                             const nr = r + dr, nc = c + dc;
-                            if (nr >= 0 && nr < MINAS_ROWS && nc >= 0 && nc < MINAS_COLS && buscaminasGrid[nr][nc].mina) {
+                            if (nr >= 0 && nr < minasRows && nc >= 0 && nc < minasCols && buscaminasGrid[nr][nc].mina) {
                                 cuenta++;
                             }
                         }
@@ -302,12 +398,11 @@ export async function init() {
             }
         }
 
-        dibujarBuscaminas();
     }
 
     let modoBandera = false;
     function clickCeldaBuscaminas(col, row, esClickDerecho = false) {
-        if (!juegoCorriendo || row < 0 || row >= MINAS_ROWS || col < 0 || col >= MINAS_COLS) return;
+        if (!juegoCorriendo || row < 0 || row >= minasRows || col < 0 || col >= minasCols) return;
         const celda = buscaminasGrid[row][col];
         if (celda.revelada) return;
 
@@ -322,6 +417,13 @@ export async function init() {
 
         if (celda.bandera) return;
 
+        if(primeraCelda){
+            primeraCelda=false;
+            if(celda.mina){
+                const libre=buscaminasGrid.flat().find(c=>!c.mina&&c!==celda);
+                if(libre){celda.mina=false;libre.mina=true;recalcularNumerosMinas()}
+            }
+        }
         if (celda.mina) {
             // Explotó
             juegoCorriendo = false;
@@ -335,7 +437,7 @@ export async function init() {
         dibujarBuscaminas();
 
         // Condición de victoria
-        if (celdasReveladas === (MINAS_ROWS * MINAS_COLS - MINAS_CANTIDAD)) {
+        if (celdasReveladas === (minasRows * minasCols - minasCantidad)) {
             juegoCorriendo = false;
             puntajeActual = 500; // Puntos por ganar
             pantallaGameOver('Buscaminas', true);
@@ -343,7 +445,7 @@ export async function init() {
     }
 
     function revelarCelda(r, c) {
-        if (r < 0 || r >= MINAS_ROWS || c < 0 || c >= MINAS_COLS) return;
+        if (r < 0 || r >= minasRows || c < 0 || c >= minasCols) return;
         const celda = buscaminasGrid[r][c];
         if (celda.revelada || celda.bandera) return;
 
@@ -362,8 +464,8 @@ export async function init() {
     }
 
     function revelarTodasLasMinas() {
-        for (let r = 0; r < MINAS_ROWS; r++) {
-            for (let c = 0; c < MINAS_COLS; c++) {
+        for (let r = 0; r < minasRows; r++) {
+            for (let c = 0; c < minasCols; c++) {
                 if (buscaminasGrid[r][c].mina) buscaminasGrid[r][c].revelada = true;
             }
         }
@@ -373,37 +475,37 @@ export async function init() {
         ctx.fillStyle = '#0f1012';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        for (let r = 0; r < MINAS_ROWS; r++) {
-            for (let c = 0; c < MINAS_COLS; c++) {
+        for (let r = 0; r < minasRows; r++) {
+            for (let c = 0; c < minasCols; c++) {
                 const celda = buscaminasGrid[r][c];
-                const x = c * MINA_SIZE;
-                const y = r * MINA_SIZE;
+                const x = c * minaSize;
+                const y = r * minaSize;
 
                 ctx.strokeStyle = '#2b2d31';
-                ctx.strokeRect(x, y, MINA_SIZE, MINA_SIZE);
+                ctx.strokeRect(x, y, minaSize, minaSize);
 
                 if (!celda.revelada) {
                     ctx.fillStyle = '#3f4147';
-                    ctx.fillRect(x + 1, y + 1, MINA_SIZE - 2, MINA_SIZE - 2);
+                    ctx.fillRect(x + 1, y + 1, minaSize - 2, minaSize - 2);
                     if (celda.bandera) {
                         ctx.font = '20px sans-serif';
                         ctx.textAlign = 'center';
-                        ctx.fillText('🚩', x + MINA_SIZE / 2, y + MINA_SIZE / 2 + 7);
+                        ctx.fillText('🚩', x + minaSize / 2, y + minaSize / 2 + 7);
                     }
                 } else {
                     ctx.fillStyle = celda.mina ? '#ed4245' : '#1e1f22';
-                    ctx.fillRect(x + 1, y + 1, MINA_SIZE - 2, MINA_SIZE - 2);
+                    ctx.fillRect(x + 1, y + 1, minaSize - 2, minaSize - 2);
 
                     if (celda.mina) {
                         ctx.font = '20px sans-serif';
                         ctx.textAlign = 'center';
-                        ctx.fillText('💣', x + MINA_SIZE / 2, y + MINA_SIZE / 2 + 7);
+                        ctx.fillText('💣', x + minaSize / 2, y + minaSize / 2 + 7);
                     } else if (celda.vecinas > 0) {
                         const colores = ['', '#5865F2', '#57F287', '#FEE75C', '#EB459E', '#ED4245'];
                         ctx.fillStyle = colores[celda.vecinas] || '#fff';
                         ctx.font = 'bold 18px Inter, sans-serif';
                         ctx.textAlign = 'center';
-                        ctx.fillText(celda.vecinas, x + MINA_SIZE / 2, y + MINA_SIZE / 2 + 7);
+                        ctx.fillText(celda.vecinas, x + minaSize / 2, y + minaSize / 2 + 7);
                     }
                 }
             }
@@ -416,8 +518,8 @@ export async function init() {
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
-        const col = Math.floor(((e.clientX - rect.left) * scaleX) / MINA_SIZE);
-        const row = Math.floor(((e.clientY - rect.top) * scaleY) / MINA_SIZE);
+        const col = Math.floor(((e.clientX - rect.left) * scaleX) / minaSize);
+        const row = Math.floor(((e.clientY - rect.top) * scaleY) / minaSize);
         clickCeldaBuscaminas(col, row, false);
     });
 
@@ -427,8 +529,8 @@ export async function init() {
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
-        const col = Math.floor(((e.clientX - rect.left) * scaleX) / MINA_SIZE);
-        const row = Math.floor(((e.clientY - rect.top) * scaleY) / MINA_SIZE);
+        const col = Math.floor(((e.clientX - rect.left) * scaleX) / minaSize);
+        const row = Math.floor(((e.clientY - rect.top) * scaleY) / minaSize);
         clickCeldaBuscaminas(col, row, true);
     });
 
@@ -496,6 +598,8 @@ export async function init() {
     }
     function limpiarLoops() {
         clearInterval(loopJuego);
+        clearTimeout(cuentaRegresiva);
+        idPartida++;
         juegoCorriendo = false;
         canvas.style.display = 'block';
 
@@ -673,14 +777,14 @@ export async function init() {
         ctx.fillStyle = '#dbdee1';
         ctx.font = '15px Inter, sans-serif';
         ctx.fillText(`Puntaje obtenido: ${puntajeActual}`, canvas.width / 2, canvas.height / 2 + 15);
-        ctx.fillText('Toca cualquier control o botón para reiniciar', canvas.width / 2, canvas.height / 2 + 45);
+        ctx.fillText('Pulsa Menú para volver a jugar', canvas.width / 2, canvas.height / 2 + 45);
 
         if (puntajeActual > 0 && typeof usuarioSesion !== 'undefined' && usuarioSesion?.Id) {
-            guardarRecord(juegoActual, puntajeActual);
+            guardarRecord(juegoActual, puntajeActual, dificultadActual);
         }
     }
 
-    async function guardarRecord(juego, puntos) {
+    async function guardarRecord(juego, puntos, dificultad) {
         try {
             const res = await fetch(`${BASE_API}/juegos/record`, {
                 method: 'POST',
@@ -688,21 +792,22 @@ export async function init() {
                 body: JSON.stringify({
                     usuarioId: usuarioSesion.Id,
                     juego: juego,
-                    puntuacion: puntos
+                    puntuacion: puntos,
+                    dificultad
                 })
             });
-            if (res.ok) cargarLeaderboard(juego);
+            if (res.ok && juego===juegoActual) cargarLeaderboard(juego,selectorRanking.value);
         } catch (err) {
             console.error('Error guardando récord:', err);
         }
     }
 
-    async function cargarLeaderboard(juego) {
-        subtituloLeaderboard.textContent = juego.toUpperCase();
+    async function cargarLeaderboard(juego,dificultad=selectorRanking.value) {
+        subtituloLeaderboard.textContent = `${juego.toUpperCase()} · ${nombresNiveles[dificultad]}`;
         listaLeaderboard.innerHTML = '<li class="leaderboard-item" style="color: #949ba4;">Cargando marcas...</li>';
 
         try {
-            const res = await fetch(`${BASE_API}/juegos/leaderboard/${juego}`);
+            const res = await fetch(`${BASE_API}/juegos/leaderboard/${juego}?dificultad=${encodeURIComponent(dificultad)}`);
             const data = await res.json();
 
             listaLeaderboard.innerHTML = '';
@@ -733,12 +838,7 @@ export async function init() {
     // CONTROLES Y ENLACE DE EVENTOS
     // ==========================================
     function manejarAccion(tecla) {
-        if (!juegoCorriendo) {
-            if (juegoActual === 'snake') iniciarSnake();
-            else if (juegoActual === 'tetris') iniciarTetris();
-            else if (juegoActual === 'buscaminas') iniciarBuscaminas();
-            return;
-        }
+        if(!juegoCorriendo)return;
 
         if (juegoActual === 'snake') {
             if ((tecla === 'ArrowUp' || tecla === 'KeyW') && snakeDir.y === 0) snakeDir = { x: 0, y: -1 };
@@ -753,6 +853,20 @@ export async function init() {
                 if (!colisionTetris(piezaActual.shape, piezaX + 1, piezaY)) piezaX++;
             } else if (tecla === 'ArrowDown' || tecla === 'KeyS') {
                 if (!colisionTetris(piezaActual.shape, piezaX, piezaY + 1)) piezaY++;
+            } else if(tecla==='KeyC'){
+                if(!puedeGuardar)return;
+                const anterior=piezaGuardada;
+                piezaGuardada=copiarPieza(piezaActual);
+                dibujarPreview(ctxHold,piezaGuardada);
+                if(anterior){
+                    piezaActual=anterior;
+                    piezaX=Math.floor((TETRIS_COLS-piezaActual.shape[0].length)/2);
+                    piezaY=0;
+                    if(colisionTetris(piezaActual.shape,piezaX,piezaY)){
+                        juegoCorriendo=false;clearInterval(loopJuego);pantallaGameOver('Tetris');return;
+                    }
+                }else nuevaPiezaTetris();
+                puedeGuardar=false;
             } else if (tecla === 'ArrowUp' || tecla === 'KeyW' || tecla === 'Space') {
                 // Rotar
                 const rotada = rotarMatriz(piezaActual.shape);
@@ -769,7 +883,9 @@ export async function init() {
     }
 
     const manejarTecladoArcade = (e) => {
-        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+        if(juegoActual==='doom')return;
+        if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();
+        if(e.target.closest('input,select,textarea,button'))return;
         manejarAccion(e.code);
     };
     window.addEventListener('keydown', manejarTecladoArcade);
@@ -800,12 +916,15 @@ export async function init() {
             juegoActual = tab.dataset.game;
 
             limpiarLoops();
-            cargarLeaderboard(juegoActual);
-
-            if (juegoActual === 'snake') iniciarSnake();
-            else if (juegoActual === 'tetris') iniciarTetris();
-            else if (juegoActual === 'buscaminas') iniciarBuscaminas();
-            else if (juegoActual === 'doom') cargarDoom();
+            clearTimeout(cuentaRegresiva);
+            idPartida++;
+            cargarLeaderboard(juegoActual,selectorRanking.value);
+            if(juegoActual==='doom'){
+                menu.classList.add('oculto');
+                panelTetris.classList.add('oculto');
+                btnHold.classList.add('oculto');
+                cargarDoom();
+            }else mostrarMenu();
         });
     });
     limpiezasArcade.push(() => {
@@ -815,8 +934,8 @@ export async function init() {
             if (dosboxInstance && typeof dosboxInstance.stop === 'function') dosboxInstance.stop();
         } catch {}
     });
-    await cargarLeaderboard('snake');
-    iniciarSnake();
+    await cargarLeaderboard('snake','medio');
+    mostrarMenu();
 }
 
 export function destroy() {

@@ -12,10 +12,32 @@
             <span id="labelInstruccion">Usa las flechas del teclado</span>
         </div>
 
+        <div class="arcade-menu oculto" id="arcadeMenu">
+            <h2 id="arcadeMenuTitulo">🐍 Snake</h2>
+            <label for="arcadeDificultad">Dificultad</label>
+            <select id="arcadeDificultad">
+                <option value="muy_facil">Muy fácil</option>
+                <option value="facil">Fácil</option>
+                <option value="medio" selected>Medio</option>
+                <option value="dificil">Difícil</option>
+                <option value="extremo">¿Para qué intentarlo? 💀</option>
+            </select>
+            <button type="button" id="btnArcadeJugar">▶ Jugar</button>
+        </div>
+        <div class="arcade-partida-tools">
+            <button type="button" id="btnArcadeMenu">↩ Menú / Reiniciar</button>
+        </div>
         <div class="game-canvas-area" id="contenedorJuego">
             <canvas id="arcadeCanvas" width="400" height="400"></canvas>
         </div>
 
+        <div class="tetris-panel oculto" id="panelTetris">
+            <div><strong>SIGUIENTE</strong><canvas id="tetrisNext" width="120" height="85"></canvas></div>
+            <div><strong>GUARDADA (HOLD)</strong><canvas id="tetrisHold" width="120" height="85"></canvas></div>
+            <div>Líneas: <strong id="tetrisLineas">0</strong></div>
+            <div>Nivel: <strong id="tetrisNivel">Medio</strong></div>
+            <span>Tecla C para guardar/intercambiar pieza</span>
+        </div>
         <div class="dpad-container" id="dpadControles">
             <div class="dpad-layout" id="dpadModoBasico">
                 <div class="dpad-cruceta">
@@ -27,6 +49,7 @@
 
                 <div class="dpad-acciones">
                     <button type="button" class="dpad-btn dpad-btn-accion" id="btnTouchAccion">A</button>
+                    <button type="button" class="dpad-btn dpad-btn-hold oculto" id="btnTouchHold">HOLD</button>
                 </div>
             </div>
 
@@ -62,6 +85,15 @@
 
     <div class="leaderboard-card">
         <h3>🏆 Récords Top 10</h3>
+        <label class="arcade-ranking-label" for="rankingDificultad">Dificultad del ranking</label>
+        <select id="rankingDificultad">
+            <option value="clasico">Clásico (récords anteriores)</option>
+            <option value="muy_facil">Muy fácil</option>
+            <option value="facil">Fácil</option>
+            <option value="medio" selected>Medio</option>
+            <option value="dificil">Difícil</option>
+            <option value="extremo">¿Para qué intentarlo? 💀</option>
+        </select>
         <p id="subtituloLeaderboard">Snake</p>
         <ul class="leaderboard-lista" id="listaLeaderboard">
             <li class="leaderboard-item">Cargando marcas...</li>

@@ -2150,112 +2150,25 @@ app.delete('/api/anuncio/:id', async (req, res) => {
     }
 });
 
-app.post('/api/juegos/record', async (req, res) => {
-    const {
-        usuarioId,
-        juego,
-        puntuacion
-    } = req.body || {};
-
-    if (
-        !usuarioId ||
-        !juego ||
-        puntuacion === undefined
-    ) {
-        return res.status(400).json({
-            error: 'Datos incompletos.'
-        });
-    }
-
-    try {
-        await pool.request()
-            .input(
-                'uId',
-                sql.Int,
-                usuarioId
-            )
-            .input(
-                'juego',
-                sql.NVarChar,
-                juego
-            )
-            .input(
-                'score',
-                sql.Int,
-                puntuacion
-            )
-            .query(`
-                INSERT INTO PuntuacionesJuegos
-                (
-                    UsuarioId,
-                    Juego,
-                    Puntuacion,
-                    Fecha
-                )
-                VALUES
-                (
-                    @uId,
-                    @juego,
-                    @score,
-                    GETDATE()
-                )
-            `);
-
-        res.json({
-            mensaje: 'Puntuación guardada con éxito'
-        });
-    } catch (err) {
-        console.error(
-            'Error guardando puntuación:',
-            err
-        );
-
-        res.status(500).json({
-            error: err.message
-        });
-    }
+const DIFICULTADES_ARCADE=new Set(['clasico','muy_facil','facil','medio','dificil','extremo']);
+const JUEGOS_ARCADE=new Set(['snake','tetris','buscaminas']);
+app.post('/api/juegos/record',async(req,res)=>{
+    const {usuarioId,juego,puntuacion,dificultad='clasico'}=req.body||{};
+    const juegoNormalizado=String(juego||'').toLowerCase().trim();
+    if(!Number.isInteger(Number(usuarioId))||Number(usuarioId)<=0||!JUEGOS_ARCADE.has(juegoNormalizado)||!Number.isInteger(puntuacion)||puntuacion<0||!DIFICULTADES_ARCADE.has(dificultad))return res.status(400).json({error:'Datos de récord inválidos.'});
+    try{
+        await pool.request().input('uId',sql.Int,Number(usuarioId)).input('juego',sql.NVarChar,juegoNormalizado).input('score',sql.Int,puntuacion).input('dificultad',sql.VarChar(20),dificultad).query('INSERT INTO PuntuacionesJuegos(UsuarioId,Juego,Puntuacion,Fecha,Dificultad) VALUES(@uId,@juego,@score,GETDATE(),@dificultad)');
+        res.json({mensaje:'Puntuación guardada con éxito'});
+    }catch(err){console.error('Error guardando puntuación:',err);res.status(500).json({error:'Error al guardar la puntuación'});}
 });
-
-app.get('/api/juegos/leaderboard/:juego', async (req, res) => {
-    const { juego } = req.params;
-
-    try {
-        const result = await pool.request()
-            .input(
-                'juego',
-                sql.NVarChar,
-                (juego || '')
-                    .toLowerCase()
-                    .trim()
-            )
-            .query(`
-                SELECT TOP 10
-                    MAX(p.Puntuacion) AS Puntuacion,
-                    MAX(p.Fecha) AS Fecha,
-                    u.Username,
-                    u.NombreVisible
-                FROM PuntuacionesJuegos p
-                INNER JOIN UsuariosWeb u
-                    ON p.UsuarioId = u.Id
-                WHERE LOWER(p.Juego) = LOWER(@juego)
-                GROUP BY
-                    u.Id,
-                    u.Username,
-                    u.NombreVisible
-                ORDER BY Puntuacion DESC
-            `);
-
+app.get('/api/juegos/leaderboard/:juego',async(req,res)=>{
+    const juego=String(req.params.juego||'').toLowerCase().trim();
+    const dificultad=String(req.query.dificultad||'clasico');
+    if(!JUEGOS_ARCADE.has(juego)||!DIFICULTADES_ARCADE.has(dificultad))return res.status(400).json({error:'Juego o dificultad inválidos.'});
+    try{
+        const result=await pool.request().input('juego',sql.NVarChar,juego).input('dificultad',sql.VarChar(20),dificultad).query(`SELECT TOP 10 MAX(p.Puntuacion) AS Puntuacion,u.Username,u.NombreVisible FROM PuntuacionesJuegos p INNER JOIN UsuariosWeb u ON p.UsuarioId=u.Id WHERE LOWER(p.Juego)=@juego AND p.Dificultad=@dificultad GROUP BY u.Id,u.Username,u.NombreVisible ORDER BY Puntuacion DESC`);
         res.json(result.recordset);
-    } catch (err) {
-        console.error(
-            'Error al obtener leaderboard:',
-            err
-        );
-
-        res.status(500).json({
-            error: err.message
-        });
-    }
+    }catch(err){console.error('Error al obtener leaderboard:',err);res.status(500).json({error:'Error al cargar el ranking'});}
 });
 
 app.post('/api/juegos/doom/guardar', async (req, res) => {
