@@ -103,8 +103,8 @@ function configurarMenuMovil() {
         overlaySidebar = document.createElement('div');
         overlaySidebar.id = 'overlaySidebar';
         overlaySidebar.className = 'overlay-sidebar';
-        document.body.appendChild(overlaySidebar);
     }
+    document.body.appendChild(overlaySidebar);
     const cerrarMenu = () => {
         barraLateral.classList.remove('abierto');
         overlaySidebar.classList.remove('activo');
@@ -123,6 +123,7 @@ function configurarMenuMovil() {
         enlace.addEventListener('click', cerrarMenu);
     });
     window.addEventListener('popstate', cerrarMenu);
+    window.addEventListener('hashchange', cerrarMenu);
 }
 
 function activarControlInactividad() {
